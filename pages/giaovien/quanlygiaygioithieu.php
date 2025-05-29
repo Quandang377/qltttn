@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Báo Cáo Tuần</title>
+    <title>Quản lý giấy giới thiệu</title>
    <?php
     require_once $_SERVER['DOCUMENT_ROOT'] . "/qltttn/template/head.php";
     ?>

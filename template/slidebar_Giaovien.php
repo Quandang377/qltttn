@@ -17,16 +17,16 @@
                             <!-- /input-group -->
                         </li>
                         <li>
-                            <a href="pages/sinhvien/trangchu" class="active"><i class="fa fa-dashboard fa-fw"></i> Trang chủ</a>
+                            <a href="pages/giaovien/trangchu" class="active"><i class="fa fa-dashboard fa-fw"></i> Trang chủ</a>
                         </li>
                         <li>
-                            <a href="pages/sinhvien/dangkygiaygioithieu" class="active"><i class="fa fa-dashboard fa-fw"></i> Đăng ký giấy giới thiệu</a>
+                            <a href="pages/giaovien/quanlygiaygioithieu" class="active"><i class="fa fa-dashboard fa-fw"></i> Quản lý giấy giới thiệu</a>
                         </li>
                         <li>
-                            <a href="pages/sinhvien/baocaotuan" class="active"><i class="fa fa-dashboard fa-fw"></i> Báo cáo tuần</a>
+                            <a href="pages/giaovien/quanlycongty" class="active"><i class="fa fa-dashboard fa-fw"></i> Quản lý công ty</a>
                         </li>
                         <li>
-                            <a href="pages/sinhvien/tainguyen" class="active"><i class="fa fa-dashboard fa-fw"></i> Tài nguyên</a>
+                            <a href="pages/giaovien/quanlycongty" class="active"><i class="fa fa-dashboard fa-fw"></i>Danh sách sinh viên</a>
                         </li>
                     </ul>
                 </div>
