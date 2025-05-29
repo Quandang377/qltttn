@@ -1,4 +1,4 @@
-<base href="/datn/">
+<base href="/qltttn/">
 <link href="access/css/bootstrap.min.css" rel="stylesheet">
 <link href="access/css/startmin.css" rel="stylesheet">
 <link href="access/css/font-awesome.min.css" rel="stylesheet">

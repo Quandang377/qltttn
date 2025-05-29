@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Đăng ký giấy giới thiệu</title>
     <?php
-    require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php";
+    require_once $_SERVER['DOCUMENT_ROOT'] . "/qltttn/template/head.php";
     ?>
       <style>
     #page-wrapper {
@@ -19,7 +19,7 @@
 <body>
     <div id="wrapper">
     <?php
-    require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_Sinhvien.php";
+    require_once $_SERVER['DOCUMENT_ROOT'] . "/qltttn/template/slidebar_Sinhvien.php";
     ?>
         
         <div id="page-wrapper">

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Báo Cáo Tuần</title>
    <?php
-    require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php";
+    require_once $_SERVER['DOCUMENT_ROOT'] . "/qltttn/template/head.php";
     ?>
     <style>
     #page-wrapper {
@@ -18,7 +18,7 @@
 <body>
     <div id="wrapper">
         <?php
-    require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_Giaovien.php";
+    require_once $_SERVER['DOCUMENT_ROOT'] . "/qltttn/template/slidebar_Giaovien.php";
     ?>
         
         <div id="page-wrapper">
