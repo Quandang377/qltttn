@@ -1,4 +1,9 @@
 <?php
+$successMessage = "";
+if (isset($_SESSION['success'])) {
+    $successMessage = $_SESSION['success'];
+    unset($_SESSION['success']); 
+}
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/database.php"; 
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/funtions.php"; 
 
@@ -34,7 +39,11 @@ $danhSachDotThucTap = getAllInternships($pdo);
                     <h1 class="page-header"><?= htmlspecialchars($dot['TenDot']) ?></h1>
                 </div>
             </div>
-
+                <?php if (!empty($successMessage)): ?>
+                <div id="successAlert" class="alert alert-success">
+                    <?= $successMessage ?>
+                </div>
+                <?php endif; ?>
             <div class="panel panel-default">
                 <div class="panel-body">
                     <div class="row">
@@ -115,3 +124,15 @@ $danhSachDotThucTap = getAllInternships($pdo);
 
 </body>
 </html>
+<script>
+    window.addEventListener('DOMContentLoaded', () => {
+        const alertBox = document.getElementById('successAlert');
+        if (alertBox) {
+            setTimeout(() => {
+                alertBox.style.transition = 'opacity 0.5s ease';
+                alertBox.style.opacity = '0';
+                setTimeout(() => alertBox.remove(), 500);
+            }, 2000);
+        }
+    });
+</script>

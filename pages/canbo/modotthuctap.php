@@ -7,10 +7,21 @@ function countSimilar($pdo, $tendot) {
     $stmt->execute(['tendot' => $tendot . '%']);
     return $stmt->fetchColumn();
 }
-
-function saveInternship($pdo, $tendot, $loai, $namHoc, $nganh,$thoigian,$nguoiquanly, $nguoitao) {
-    $stmt = $pdo->prepare("INSERT INTO DOTTHUCTAP (TENDOT,NAM,LOAI,Nganh,NGUOIQUANLY,THOIGIANKETTHUC,TENNGUOIMODOT,TRANGTHAI) VALUES (:tendot,:nam, :loai,  :nganh,:nguoiquanly,:thoigianketthuc, :tennguoimodot, 1)");
-    return $stmt->execute(['tendot' => $tendot,'nam' => $namHoc, 'loai' => $loai,  'nganh' => $nganh,'nguoiquanly' => $nguoiquanly,'thoigianketthuc' => $thoigian, 'tennguoimodot' => $nguoitao]);
+function saveInternship($pdo, $tendot, $loai, $namHoc, $nganh, $thoigian, $nguoiquanly, $nguoitao) {
+    $stmt = $pdo->prepare("INSERT INTO DOTTHUCTAP (TENDOT, NAM, LOAI, Nganh, NGUOIQUANLY, THOIGIANKETTHUC, TENNGUOIMODOT, TRANGTHAI) 
+                           VALUES (:tendot, :nam, :loai, :nganh, :nguoiquanly, :thoigianketthuc, :tennguoimodot, 1)");
+    if ($stmt->execute([
+        'tendot' => $tendot,
+        'nam' => $namHoc,
+        'loai' => $loai,
+        'nganh' => $nganh,
+        'nguoiquanly' => $nguoiquanly,
+        'thoigianketthuc' => $thoigian,
+        'tennguoimodot' => $nguoitao
+    ])) {
+        return $pdo->lastInsertId();
+    }
+    return false;
 }
 $successMessage="";
 $notification = "";
@@ -32,9 +43,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $count = countSimilar($pdo, $tendot);
         $tendot .= ($count + 1);
         
-        if (saveInternship($pdo, $tendot, $loai, $namHoc, $nganhModified,  thoigian: $thoigian, nguoiquanly: $nguoiquanly,nguoitao: $nguoitao)) {
-            $successMessage = "Đợt thực tập $tendot được mở thành công!";
-            unset($_POST);
+        $idDot = saveInternship($pdo, $tendot, $loai, $namHoc, $nganhModified, $thoigian, $nguoiquanly, $nguoitao);
+        if ($idDot) {
+            session_start();
+            $_SESSION['success'] = "Đợt thực tập $tendot được mở thành công!";
+            header("Location: /datn/pages/canbo/chitietdot?id=" . urlencode($idDot));
+            exit;
         } else {
             $notification = "Mở đợt thực tập thất bại!";
             unset($_POST);
@@ -70,10 +84,6 @@ $canbokhoa = $pdo->query("SELECT ID_TaiKhoan,Ten FROM canbokhoa where TrangThai=
                     </h1>
                 </div>
                 <div class="row">
-                        <div class="col-md-offset">
-                        <?php if (!empty($successMessage)) echo "<div class='alert alert-success'>$successMessage</div>"; ?>
-                        <?php if (!empty($notification)) echo "<div class='alert alert-danger'>$notification</div>"; ?>
-                        </div>
                 <div class="form-container">
                 <form id="FormMoDot" method="post">
                     <div class="row mb-3">
@@ -178,4 +188,41 @@ $canbokhoa = $pdo->query("SELECT ID_TaiKhoan,Ten FROM canbokhoa where TrangThai=
             row.style.display = text.includes(filter) ? "" : "none";
         });
     });
+
+    <?php if (!empty($notification)): ?>
+    Swal.fire({
+        title: 'Thất bại!',
+        text: '<?= addslashes($notification) ?>',
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#dc3545'
+    });
+    <?php endif ?>
+    document.getElementById('FormMoDot').addEventListener('submit', function (e) {
+    e.preventDefault();
+    
+    const loai = document.getElementById('loai').value;
+    const nam = document.getElementById('namhoc').value;
+    const nganh = document.getElementById('nganh').options[document.getElementById('nganh').selectedIndex].text;
+    const thoigian = document.getElementById('thoigian').value;
+    const nguoiquanly = document.getElementById('nguoiquanly').value;
+       
+    Swal.fire({
+        title: 'Xác nhận mở đợt?',
+        html: `
+            <p><strong>Loại:</strong> ${loai}</p>
+            <p><strong>Năm:</strong> ${nam}</p>
+            <p><strong>Ngành:</strong> ${nganh}</p>
+            <p><strong>Thời gian kết thúc:</strong> ${thoigian}</p>
+            <p><strong>Người quản lý:</strong> ${nguoiquanly}</p>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Xác nhận',
+        cancelButtonText: 'Hủy',
+        confirmButtonColor: '#3085d6',
+    }).then((result) => {
+        if (result.isConfirmed) {
+            e.target.submit();
+        }
+    });
+});
 </script>

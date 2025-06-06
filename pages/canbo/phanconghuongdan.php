@@ -27,7 +27,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['GiaoVien'], $_POST['c
     $update->execute(['gvId' => $gvId]);
 
     $successMessage="Phân công thành công!";
-    exit;
     }
 }
 
@@ -104,11 +103,14 @@ $giaoviens = $pdo->query("SELECT ID_TaiKhoan,Ten FROM giaovien where TrangThai=1
         <div class="row">
             <div class="text-center">
                 <button type="submit" class="btn btn-primary btn-lg mt-3">Xác nhận</button>
+                <a href="/datn/pages/canbo/chitietdot?id=<?= urlencode($id) ?>" class="btn btn-default btn-lg">Thoát</a>
             </div>
             </div>
         </form>
     </div>
 </div>
+</body>
+</html>
 
 <script>
     function toggleCheckbox(row) {
@@ -149,13 +151,18 @@ $giaoviens = $pdo->query("SELECT ID_TaiKhoan,Ten FROM giaovien where TrangThai=1
         rows.forEach(row => tbody.appendChild(row));
     }
     document.getElementById("FormPhanCong").addEventListener("submit", function (e) {
+        e.preventDefault();
+
         const checkboxes = document.querySelectorAll('input[name="chon[]"]:checked');
         const selectGV = document.querySelector('select[name="GiaoVien"]');
         const gvTen = selectGV.options[selectGV.selectedIndex].text;
 
         if (checkboxes.length === 0) {
-            alert("Hãy chọn ít nhất một sinh viên!");
-            e.preventDefault();
+            Swal.fire({
+                title: 'Chưa chọn sinh viên!',
+                text: 'Bạn phải chọn ít nhất một sinh viên để phân công.',
+                confirmButtonColor: '#3085d6'
+            });
             return;
         }
 
@@ -164,15 +171,21 @@ $giaoviens = $pdo->query("SELECT ID_TaiKhoan,Ten FROM giaovien where TrangThai=1
             const row = cb.closest("tr");
             const mssv = row.children[1].textContent.trim();
             const ten = row.children[2].textContent.trim();
-            svInfo += `- ${ten} (${mssv})\n`;
+            const lop = row.children[3].textContent.trim();
+            svInfo += `• ${ten} ${mssv} ${lop}\n`;
         });
 
-        const message = `Bạn có chắc muốn phân công:\nGiáo viên: ${gvTen}\nSinh viên:\n${svInfo}`;
-        if (!confirm(message)) {
-            e.preventDefault();
-        }
+        Swal.fire({
+            title: 'Xác nhận phân công?',
+            html: `<b>Giáo viên:</b> ${gvTen}<br><b>Sinh viên:</b><pre style="text-align:left;">${svInfo}</pre>`,
+            showCancelButton: true,
+            confirmButtonText: 'Xác nhận',
+            cancelButtonText: 'Huỷ',
+            confirmButtonColor: '#3085d6',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                e.target.submit();
+            }
+        });
     });
 </script>
-</body>
-</html>
-

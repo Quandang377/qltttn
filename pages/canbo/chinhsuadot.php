@@ -82,8 +82,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <h1 class="page-header">Chỉnh sửa đợt: <?= htmlspecialchars($dot['TenDot']) ?></h1>
 
             <div class="col-md-offset">
-            <?php if (!empty($successMessage)) echo "<div class='alert alert-success'>$successMessage</div>"; ?>
-            <?php if (!empty($notification)) echo "<div class='alert alert-danger'>$notification</div>"; ?>
+            <?php if (!empty($successMessage)): ?>
+                <div id="successAlert" class="alert alert-success">
+                    <?= $successMessage ?>
+                </div>
+                <?php endif; ?>
+            <?php if (!empty($notification)): ?>
+                <div id="notificationAlert" class="alert alert-success">
+                    <?= $notification ?>
+                </div>
+                <?php endif; ?>
             </div>
             <form method="post" class="form-horizontal">
                 <div class="form-group">
@@ -152,3 +160,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 </body>
 </html>
+<script>
+     window.addEventListener('DOMContentLoaded', () => {
+        const alertBox = document.getElementById('successAlert');
+        if (alertBox) {
+            setTimeout(() => {
+                alertBox.style.transition = 'opacity 0.5s ease';
+                alertBox.style.opacity = '0';
+                setTimeout(() => alertBox.remove(), 500);
+            }, 2000);
+        }
+    });
+    window.addEventListener('DOMContentLoaded', () => {
+        const alertBox = document.getElementById('notificationAlert');
+        if (alertBox) {
+            setTimeout(() => {
+                alertBox.style.transition = 'opacity 0.5s ease';
+                alertBox.style.opacity = '0';
+                setTimeout(() => alertBox.remove(), 500);
+            }, 2000);
+        }
+    });
+</script>
