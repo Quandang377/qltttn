@@ -10,7 +10,7 @@
 <body>
     <div id="wrapper">
     <?php
-    require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_SinhVien.php";
+    require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_CanBo.php";
     ?>
 <div id="page-wrapper">
 <div class="container-fluid">
@@ -21,7 +21,7 @@
     </div>
 <div class="row panel-row">
     <div class="col-md-3 panel-container">
-        <a href="pages/sinhvien/xemdanhsachcongty" style="text-decoration: none; color: inherit;">
+        <a href="pages/canbo/quanlycongty" style="text-decoration: none; color: inherit;">
         <div class="panel panel-default"style="min-height: 170px;">
           <div class="panel-heading">Tìm công ty thực tập</div>
           <div class="panel-body">
@@ -32,7 +32,7 @@
       </a>
       </div>
       <div class="col-md-3 panel-container">
-        <a href="pages/sinhvien/dangkygiaygioithieu" style="text-decoration: none; color: inherit;">
+        <a href="pages/canbo/quanlygiaygioithieu" style="text-decoration: none; color: inherit;">
         <div class="panel panel-default"style="min-height: 170px;">
           <div class="panel-heading">Xin giấy giới thiệu thực tập</div>
           <div class="panel-body">
@@ -42,7 +42,7 @@
       </a>
       </div>
       <div class="col-md-3 panel-container">
-        <a href="pages/sinhvien/baocaotuan" style="text-decoration: none; color: inherit;">
+        <a href="pages/canbo/thongkebaocao" style="text-decoration: none; color: inherit;">
         <div class="panel panel-default"style="min-height: 170px;">
           <div class="panel-heading">Thực tập, báo cáo tuần</div>
           <div class="panel-body">
@@ -53,7 +53,7 @@
       </div>
       <!-- Nút -->
        <div class="col-md-3 ">
-<a href="#" data-toggle="modal" data-target="#detailModal" style="text-decoration: none; color: inherit;">
+<a href="" data-toggle="modal" data-target="#detailModal" style="text-decoration: none; color: inherit;">
   <div class="panel panel-default"style="min-height: 170px;">
     <div class="panel-heading">Chấm điểm kết thúc</div>
     <div class="panel-body">
@@ -91,7 +91,7 @@
     </div>
 <div class="row Notification">
     <div class="col-md-9">
-        <a href="pages/sinhvien/chitietthongbao" style="text-decoration: none; color: inherit;">
+        <a href="pages/canbo/chitietthongbao" style="text-decoration: none; color: inherit;">
         <div class="panel panel-default">
           <div class="panel-heading">Thông báo số 1</div>
           <div class="panel-body">
@@ -99,7 +99,7 @@
           </div>
         </div>
       </a>
-      <a href="pages/sinhvien/chitietthongbao" style="text-decoration: none; color: inherit;">
+      <a href="pages/canbo/chitietthongbao" style="text-decoration: none; color: inherit;">
         <div class="panel panel-default">
           <div class="panel-heading">Thông báo số 1</div>
           <div class="panel-body">
@@ -107,7 +107,7 @@
           </div>
         </div>
       </a>
-      <a href="pages/sinhvien/chitietthongbao" style="text-decoration: none; color: inherit;">
+      <a href="pages/canbo/chitietthongbao" style="text-decoration: none; color: inherit;">
         <div class="panel panel-default">
           <div class="panel-heading">Thông báo số 1</div>
           <div class="panel-body">
@@ -115,7 +115,7 @@
           </div>
         </div>
       </a>
-      <a href="pages/sinhvien/chitietthongbao" style="text-decoration: none; color: inherit;">
+      <a href="pages/canbo/chitietthongbao" style="text-decoration: none; color: inherit;">
         <div class="panel panel-default">
           <div class="panel-heading">Thông báo số 1</div>
           <div class="panel-body">
@@ -128,9 +128,15 @@
         <div class="">
             <select id="Lọc" name="Lọc"class="form-control">
             <option value="Mới nhất">Mới nhất</option>
+            <option value="Cũ nhất">Thông báo của tôi</option>
             <option value="Cũ nhất">Cũ nhất</option>
             </select>
         </div>
+    </div>
+    <div style="position: fixed; bottom: 10%; right: 10%;">
+    <a href="pages/canbo/taothongbao" class="fixed-button btn btn-primary btn-lg">
+    Tạo thông báo
+    </a>
     </div>
     </div>
 

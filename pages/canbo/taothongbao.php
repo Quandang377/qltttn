@@ -4,14 +4,14 @@
     <meta charset="UTF-8">
     <title>Đăng thông báo</title>
     <?php
-    require_once $_SERVER['DOCUMENT_ROOT'] . "/qltttn/template/head.php";
+    require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php";
     ?>
 </head>
 <body>
     <div id="wrapper">
         
     <?php
-    require_once $_SERVER['DOCUMENT_ROOT'] . "/qltttn/template/slidebar_CanBo.php";
+    require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_CanBo.php";
     ?>
 <div id="page-wrapper">
     <div class="container-fluid">

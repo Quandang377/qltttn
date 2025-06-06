@@ -10,7 +10,7 @@
 <body>
     <div id="wrapper">
     <?php
-    require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_CanBo.php";
+    require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_SinhVien.php";
     ?>
 <div id="page-wrapper">
 <div class="container-fluid">
@@ -53,7 +53,7 @@
 </div>
 <div class="row Notification">
     <div class="col-md-9">
-        <a href="pages/canbo/chitietthongbao" style="text-decoration: none; color: inherit;">
+        <a href="pages/sinhvien/chitietthongbao" style="text-decoration: none; color: inherit;">
         <div class="panel panel-default">
           <div class="panel-heading">Thông báo số 1</div>
           <div class="panel-body">
@@ -61,7 +61,7 @@
           </div>
         </div>
       </a>
-      <a href="pages/canbo/chitietthongbao" style="text-decoration: none; color: inherit;">
+      <a href="pages/sinhvien/chitietthongbao" style="text-decoration: none; color: inherit;">
         <div class="panel panel-default">
           <div class="panel-heading">Thông báo số 1</div>
           <div class="panel-body">
@@ -69,7 +69,7 @@
           </div>
         </div>
       </a>
-      <a href="pages/canbo/chitietthongbao" style="text-decoration: none; color: inherit;">
+      <a href="pages/sinhvien/chitietthongbao" style="text-decoration: none; color: inherit;">
         <div class="panel panel-default">
           <div class="panel-heading">Thông báo số 1</div>
           <div class="panel-body">
@@ -77,7 +77,7 @@
           </div>
         </div>
       </a>
-      <a href="pages/canbo/chitietthongbao" style="text-decoration: none; color: inherit;">
+      <a href="pages/sinhvien/chitietthongbao" style="text-decoration: none; color: inherit;">
         <div class="panel panel-default">
           <div class="panel-heading">Thông báo số 1</div>
           <div class="panel-body">
@@ -90,7 +90,6 @@
         <div class="">
             <select id="Lọc" name="Lọc"class="form-control">
             <option value="Mới nhất">Mới nhất</option>
-            <option value="Cũ nhất">Thông báo của tôi</option>
             <option value="Cũ nhất">Cũ nhất</option>
             </select>
         </div>

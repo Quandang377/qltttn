@@ -1,19 +1,67 @@
+<?php
+require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/database.php"; 
+require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/funtions.php"; 
+
+function countSimilar($pdo, $tendot) {
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM DOTTHUCTAP WHERE TENDOT LIKE :tendot");
+    $stmt->execute(['tendot' => $tendot . '%']);
+    return $stmt->fetchColumn();
+}
+
+function saveInternship($pdo, $tendot, $loai, $namHoc, $nganh,$thoigian,$nguoiquanly, $nguoitao) {
+    $stmt = $pdo->prepare("INSERT INTO DOTTHUCTAP (TENDOT,NAM,LOAI,Nganh,NGUOIQUANLY,THOIGIANKETTHUC,TENNGUOIMODOT,TRANGTHAI) VALUES (:tendot,:nam, :loai,  :nganh,:nguoiquanly,:thoigianketthuc, :tennguoimodot, 1)");
+    return $stmt->execute(['tendot' => $tendot,'nam' => $namHoc, 'loai' => $loai,  'nganh' => $nganh,'nguoiquanly' => $nguoiquanly,'thoigianketthuc' => $thoigian, 'tennguoimodot' => $nguoitao]);
+}
+$successMessage="";
+$notification = "";
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $loai = $_POST['loai'];
+    $namHoc = $_POST['namhoc'];
+    $nganh = $_POST['nganh'];
+    $nguoitao = $_POST['nguoitao'];
+    $nguoiquanly = $_POST['nguoiquanly'];
+    $thoigian = $_POST['thoigian'];
+    if ($loai ==""|| $namHoc=="" || $nganh=="" || $nguoitao==""||$thoigian=="") {
+        $notification = "Vui lòng điền tất cả các trường.";
+    }else {
+        $nganhArr = explode(' ', trim($nganh));
+        $lastWord = array_pop($nganhArr);
+        $nganhModified = implode(' ', $nganhArr);
+        $tendot = ($loai === 'Cao đẳng' ? 'CĐ' : 'CĐN') . substr($namHoc, -2) . $lastWord;
+        
+        $count = countSimilar($pdo, $tendot);
+        $tendot .= ($count + 1);
+        
+        if (saveInternship($pdo, $tendot, $loai, $namHoc, $nganhModified,  thoigian: $thoigian, nguoiquanly: $nguoiquanly,nguoitao: $nguoitao)) {
+            $successMessage = "Đợt thực tập $tendot được mở thành công!";
+            unset($_POST);
+        } else {
+            $notification = "Mở đợt thực tập thất bại!";
+            unset($_POST);
+        }
+    }
+    
+}
+$today = date('Y-m-d');
+$updateStmt = $pdo->prepare("UPDATE DOTTHUCTAP SET TRANGTHAI = 0 WHERE THOIGIANKETTHUC < :today AND TRANGTHAI = 1");
+$updateStmt->execute(['today' => $today]);
+$danhSachDotThucTap = getAllInternships($pdo);
+$canbokhoa = $pdo->query("SELECT ID_TaiKhoan,Ten FROM canbokhoa where TrangThai=1")->fetchAll();
+?>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <title>Mở đợt thực tập</title>
     <?php
-    require_once $_SERVER['DOCUMENT_ROOT'] . "/qltttn/template/head.php";
+    require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php";
     ?>
 </head>
 <body>
     <div id="wrapper">
-        
     <?php
-    require_once $_SERVER['DOCUMENT_ROOT'] . "/qltttn/template/slidebar_CanBo.php";
+    require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_CanBo.php";
     ?>
-        
         <div id="page-wrapper">
             <div class="container-fluid">
                 <div class="page-header">
@@ -21,43 +69,37 @@
                         Mở Đợt Thực Tập
                     </h1>
                 </div>
+                <div class="row">
+                        <div class="col-md-offset">
+                        <?php if (!empty($successMessage)) echo "<div class='alert alert-success'>$successMessage</div>"; ?>
+                        <?php if (!empty($notification)) echo "<div class='alert alert-danger'>$notification</div>"; ?>
+                        </div>
                 <div class="form-container">
-                <form id="intershipForm" method="post">
+                <form id="FormMoDot" method="post">
                     <div class="row mb-3">
                     <div class="col-lg-6">
                         <div class="form-group">
                         <div class="form-group">
                             <label >Năm</label>
-                            <input class="form-control"id="namhoc"name="namhoc" type="text" placeholder="Nhập năm học" >
+                            <input class="form-control"id="namhoc"name="namhoc" type="number" min="1000" max="9999"placeholder="Nhập năm học" >
                         </div>
                         <div class="form-group">
-                            <label >Ngành:</label>
+                            <label >Chuyên ngành</label>
                             <select id="nganh" name="nganh"class="form-control">
-                            <option value="Công nghệ Kỹ thuật Cơ khí CK">Công nghệ Kỹ thuật Cơ khí</option>
-                            <option value="Công nghệ Kỹ thuật Ô tô KTOT">Công nghệ Kỹ thuật Ô tô</option>
-                            <option value="Công nghệ Kỹ thuật Điện, Điện tử DT">Công nghệ Kỹ thuật Điện, Điện tử</option>
-                            <option value="Công nghệ Thông tin TH">Công nghệ Thông tin</option>
-                            <option value="Công nghệ Kỹ thuật Nhiệt (Cơ điện lạnh) DL">Công nghệ Kỹ Thuật Nhiệt (Cơ điện lạnh)</option>
-                            <option value="Công nghệ Kỹ thuật Cơ điện tử CDT">Công nghệ Kỹ thuật Cơ điện tử</option>
-                            <option value="Công nghệ Kỹ thuật Điều khiển và Tự động hóa TDH">Công nghệ Kỹ thuật Điều khiển và Tự động hóa</option>
-                            <option value="Công nghệ Kỹ thuật Điện tử - Viễn thông DVVT">Công nghệ Kỹ thuật Điện tử - Viễn thông</option>
-                            <option value="Kế toán doanh nghiệp (Kế toán tin học) KT">Kế toán doanh nghiệp (Kế toán tin học)</option>
-                            <option value="Cơ khí chế tạo (Cắt gọt kim loại) CKCT">Cơ khí chế tạo (Cắt gọt kim loại)</option>
-                            <option value="Sửa chữa cơ khí (Nguội sửa chữa máy công cụ) SCCK">Sửa chữa cơ khí (Nguội sửa chữa máy công cụ)</option>
-                            <option value="Hàn (Công nghệ cao) HCN">Hàn (Công nghệ cao)</option>
-                            <option value="Kỹ thuật máy lạnh và điều hòa không khí KTML">Kỹ thuật máy lạnh và điều hòa không khí</option>
-                            <option value="Bảo trì, sửa chữa Ô tô (Công nghệ Ô tô) CNOT">Bảo trì, sửa chữa Ô tô (Công nghệ Ô tô)</option>
-                            <option value="Điện Công nghiệp DCN">Điện Công nghiệp</option>
-                            <option value="Điện tử công nghiệp DTCN">Điện tử công nghiệp</option>
-                            <option value="Quản trị mạng máy tính MMT">Quản trị mạng máy tính</option>
-                            <option value="Kỹ thuật sửa chữa, lắp ráp máy tính SCMT">Kỹ thuật sửa chữa, lắp ráp máy tính</option>
+                            <option value="Lập trình di động DĐ">Lập trình di động</option>
+                            <option value="Lập trình website WEB">Lập trình website</option>
+                            <option value="Mạng máy tính MMT">Mạng máy tính</option>
                             </select>
+                        </div>
+                        <div class="form-group">
+                            <label >Thời gian kết thúc</label>
+                            <input class="form-control"id="thoigian"name="thoigian" type="date" placeholder="Chọn thời gian kết thúc" >
                         </div>
                         </div>
                     </div>
                     <div class="col-lg-6">
                         <div class="form-group">
-                            <label >Loại:</label>
+                            <label >Loại</label>
                             <select id="loai" name="loai"class="form-control">
                             <option value="Cao đẳng">Cao đẳng</option>
                             <option value="Cao đẳng ngành">Cao đẳng ngành</option>
@@ -65,28 +107,23 @@
                         </div>
                         <div class="form-group">
                             <label >Người quản lý đợt</label>
-                            <select id="nguoiQL" name="nguoiQl"class="form-control">
-                            <option value="Lữ Cao Tiến">Lữ Cao Tiến</option>
-                            <option value="Lữ Cao Tiến">Lữ Cao Tiến</option>
+                            <select id="nguoiquanly" name="nguoiquanly"class="form-control">
+                            <?php foreach ($canbokhoa as $cb): ?>
+                            <option value="<?=$cb['Ten'] ?>"><?= htmlspecialchars($cb['Ten']) ?></option>
+                            <?php endforeach; ?>
                             </select>
                         </div>
                         </div>
-                        <div class="col-lg-6 col-md-offset-3">
-                        <div class="form-group">
-                            <label >Thời gian kết thúc</label>
-                            <input class="form-control"id="endTime"name="endTime" type="date" placeholder="Chọn thời gian kết thúc" >
-                        </div>
-                        </div>
-                        </div>
+                        <input type="hidden" class="form-control"id="nguoitao"name="nguoitao"value="Lữ Cao Tiến">
+                        </div>       
                         <div class="row">
                         <div class="col-md-offset text-center">
-                            <button type="button" class="btn btn-primary btn-lg mt-3">Xác nhận</button>
+                            <button type="submit" class="btn btn-primary btn-lg mt-3">Xác nhận</button>
                         </div>
                         </div>
                     </div>
                 </form>
             </div>
-        <div id="notification" style="display: none;"></div>
         <div id="containerDotThucTap" class="mt-3">
             <h2>Danh sách các đợt thực tập</h2>
             <div id="listDotThucTap" class="row">
@@ -95,12 +132,11 @@
                         <div class="col-lg-12">
                             <div class="panel panel-default">
                                 <div class="panel-heading">
-                                    
+                                    <input class="form-control mb-3" id="timkiem" type="text" placeholder="TÌm tên đợt...">
                                 </div>
-                                <!-- /.panel-heading -->
                                 <div class="panel-body">
                                     <div class="table-responsive">
-                                        <table class="table">
+                                        <table class="table"id="TableDotTT">
                                             <thead>
                                                 <tr>
                                                     <th>#</th>
@@ -111,30 +147,18 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <tr onclick="window.location='pages/canbo/chitietdot';" style="cursor: pointer;">
-                                                    <td>1</td>
-                                                    <td>CĐTH21K1</td>
-                                                    <td>2021</td>
-                                                    <td>Công nghệ thông tin</td>
-                                                    <td>Lữ Cao Tiến</td>
-                                                    
+                                            <?php $i = 1; foreach ($danhSachDotThucTap as $dot): ?>
+                                                <?php $link = 'pages/canbo/chitietdot?id=' . urlencode($dot['ID']); ?>
+                                                <tr onclick="window.location='<?= $link ?>';" style="cursor: pointer;">
+                                                    <td><?= $i++ ?></td>
+                                                    <td><?= htmlspecialchars($dot['TenDot']) ?></td>
+                                                    <td><?= htmlspecialchars($dot['Nam']) ?></td>
+                                                    <td><?= htmlspecialchars($dot['Nganh']) ?></td>
+                                                    <td><?= htmlspecialchars($dot['NguoiQuanLy']) ?></td>
                                                 </tr>
-                                                <tr onclick="window.location='pages/canbo/chitietdot';" style="cursor: pointer;">
-                                                    <td>2</td>
-                                                    <td>CĐTH21K1</td>
-                                                    <td>2021</td>
-                                                    <td>Công nghệ thông tin</td>
-                                                    <td>Lữ Cao Tiến</td>
-                                                </tr>
-                                                <tr onclick="window.location='pages/canbo/chitietdot';" style="cursor: pointer;">
-                                                    <td>3</td>
-                                                    <td>CĐTH21K1</td>
-                                                    <td>2021</td>
-                                                    <td>Công nghệ thông tin</td>
-                                                    <td>Lữ Cao Tiến</td>
-                                                </tr>
+                                            <?php endforeach; ?>
                                             </tbody>
-                                        </table>
+                                            </table>
                                     </div>
                                     <!-- /.table-responsive -->
                                 </div>
@@ -145,3 +169,13 @@
                         <!-- /.col-lg-6 -->
                     </div>
 </div>      </div>
+<script>
+    document.getElementById("timkiem").addEventListener("keyup", function () {
+        const filter = this.value.toLowerCase();
+        const rows = document.querySelectorAll("#TableDotTT tbody tr");
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(filter) ? "" : "none";
+        });
+    });
+</script>

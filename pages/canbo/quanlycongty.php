@@ -18,7 +18,7 @@
 <body>
     <div id="wrapper">
         <?php
-    require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_Giaovien.php";
+    require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_CanBo.php";
     ?>
         <div id="page-wrapper">
             <div class="container-fluid">

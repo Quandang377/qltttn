@@ -1,113 +1,145 @@
+<?php
+require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/database.php"; 
+require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/funtions.php"; 
+
+$id = $_GET['id'] ?? null;
+
+if (!$id) {
+    die("Không tìm thấy ID đợt thực tập.");
+}
+
+$stmt = $pdo->prepare("SELECT * FROM DOTTHUCTAP WHERE ID = :id");
+$stmt->execute(['id' => $id]);
+$dot = $stmt->fetch();
+
+if (!$dot) {
+    die("Không tìm thấy đợt thực tập.");
+}
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['GiaoVien'], $_POST['chon'])) {
+    $gvId = $_POST['GiaoVien'];
+    $sinhVienIds = $_POST['chon'];
+
+    $update = $pdo->prepare("UPDATE SinhVien SET ID_GVHD = :gvId WHERE ID_TaiKhoan IN (" . implode(",", array_map('intval', $sinhVienIds)) . ")");
+    $update->execute(['gvId' => $gvId]);
+
+    echo "<script>alert('Phân công thành công!');</script>";
+    exit;
+}
+
+$sinhviens = $pdo->prepare("SELECT ID_TaiKhoan,Ten,MSSV,ID_Dot,ID_GVHD,Lop,TrangThai FROM SinhVien WHERE ID_DOT = :id AND (ID_GVHD IS NULL or ID_GVHD='')");
+$sinhviens->execute(['id' => $id]);
+
+$giaoviens = $pdo->query("SELECT ID_TaiKhoan,Ten FROM giaovien where TrangThai=1")->fetchAll();
+?>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <title>Phân công hướng dẫn</title>
-    <link rel="stylesheet" href=".../access/css/styles/style_phanconghuongdan.css"> 
-    <?php
-    require_once $_SERVER['DOCUMENT_ROOT'] . "/qltttn/template/head.php";
-    ?>
+    <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php"; ?>
 </head>
 <body>
-    <div id="wrapper">
-        
-    <?php
-    require_once $_SERVER['DOCUMENT_ROOT'] . "/qltttn/template/slidebar_CanBo.php";
-    ?>
+<div id="wrapper">
+<?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_CanBo.php"; ?>
+
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row mt-5">
             <div class="col-lg-12">
-                <h1 class="page-header">CĐTH21K1</h1>
+                <h1 class="page-header"><?= htmlspecialchars($dot['TenDot']) ?></h1>
             </div>
-            <!-- /.col-lg-12 -->
-            <div class="form-container">
-                <form id="intershipForm" method="post">
-                    <div class="row mb-3">
-                    <div class="col-md-4 col-md-offset-4">
-                        <div class="form-group">
-                            <label >Chọn Giáo Viên</label>
-                            <select id="nguoiQL" name="nguoiQl"class="form-control">
-                            <option value="Lữ Cao Tiến">Lữ Cao Tiến</option>
-                            <option value="Lữ Cao Tiến">Lữ Cao Tiến</option>
-                            </select>
-                        </div>
-                        </div>
-                        
-                    </div>
-                
-            </div>
-        </div>
-        <div id="containerDotThucTap" class="mt-5">
-            <h2>Chọn sinh viên</h2>
-            <div id="listDotThucTap" class="row">
         </div>
         <div class="row">
-                        <div class="col-lg-12">
-                            <div class="panel panel-default">
-                                <div class="panel-heading">
-                                </div>
-                                <div class="panel-body">
-                                    <div class="table-responsive">
-                                        <table class="table">
-                                            <thead>
-                                                <tr>
-                                                    <th></th>
-                                                    <th>Họ Tên</th>
-                                                    <th>Lớp</th>
-                                                    <th>Ngành</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    <tr onclick="toggleCheckbox(this)">
-                                                        <td><input type="checkbox" name="chon[]" value="1"></td>
-                                                        <td>Đặng Minh Quân</td>
-                                                        <td>2021</td>
-                                                        <td>Công nghệ thông tin</td>
-                                                    </tr>
-                                                </tr>
-                                               <tr>
-                                                    <tr onclick="toggleCheckbox(this)">
-                                                        <td><input type="checkbox" name="chon[]" value="1"></td>
-                                                        <td>Đặng Minh Quân</td>
-                                                        <td>2021</td>
-                                                        <td>Công nghệ thông tin</td>
-                                                    </tr>
-                                                </tr>
-                                                <tr>
-                                                    <tr onclick="toggleCheckbox(this)">
-                                                        <td><input type="checkbox" name="chon[]" value="1"></td>
-                                                        <td>Đặng Minh Quân</td>
-                                                        <td>2021</td>
-                                                        <td>Công nghệ thông tin</td>
-                                                    </tr>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                    <!-- /.table-responsive -->
-                                </div>
-                                <!-- /.panel-body -->
-                            </div>
-                            <!-- /.panel -->
-                        </div>
-                        <!-- /.col-lg-6 -->
-                    </div>
-                                
-    <div class="row">
-  <div class=" col-md-offset text-center">
-    <button  type="button" class=" btn btn-primary btn-lg mt-3">Xác nhận</button>
-  </div>
+        <form method="post" id="FormPhanCong">
+            <div class="row">
+            <div class="form-group col-md-4 col-md-offset-4">
+                <label>Chọn Giáo Viên</label>
+                <select name="GiaoVien" class="form-control" required>
+                    <?php foreach ($giaoviens as $gv): ?>
+                        <option value="<?= $gv['ID_TaiKhoan'] ?>"><?= htmlspecialchars($gv['Ten']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+                </div>
+            </div>
+        <div class="row">
+            <h3>Chọn sinh viên</h3>
+            <div class="panel panel-default">
+            <div class="panel-heading">
+                <input class="form-control mb-3" id="timkiem" type="text" placeholder="Nhập tên, mssv hoặc lớp...">
+            </div>
+            <div class="panel-body">
+            <div class="table-responsive">
+                <table class="table" id="tableSinhVien">
+                    <thead>
+                    <tr>
+                        <th></th>
+                        <th onclick="sortTable(1)"style="cursor: pointer;">MSSV ⬍</th>
+                        <th onclick="sortTable(2)"style="cursor: pointer;">Họ Tên ⬍</th>
+                        <th onclick="sortTable(3)"style="cursor: pointer;">Lớp ⬍</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <?php foreach ($sinhviens as $sv): ?>
+                        <tr onclick="toggleCheckbox(this)">
+                            <td style="cursor: pointer;"><input type="checkbox" name="chon[]" value="<?= $sv['ID_TaiKhoan'] ?>"></td>
+                            <td style="cursor: pointer;"><?= htmlspecialchars($sv['MSSV']) ?></td>
+                            <td style="cursor: pointer;"><?= htmlspecialchars($sv['Ten']) ?></td>
+                            <td style="cursor: pointer;"><?= htmlspecialchars($sv['Lop']) ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+</div>
+        <div class="row">
+            <div class="text-center">
+                <button type="submit" class="btn btn-primary btn-lg mt-3">Xác nhận</button>
+            </div>
+            </div>
+        </form>
+    </div>
 </div>
 
-</form>
-</div>
-    </div>
 <script>
-  function toggleCheckbox(row) {
-    if (event.target.type === 'checkbox') return;
-    const checkbox = row.querySelector('input[type="checkbox"]');
-    checkbox.checked = !checkbox.checked;
-  }
+    function toggleCheckbox(row) {
+        if (event.target.type === 'checkbox') return;
+        const checkbox = row.querySelector('input[type="checkbox"]');
+        checkbox.checked = !checkbox.checked;
+    }
+    function toggleCheckbox(row) {
+        if (event.target.type === 'checkbox') return;
+        const checkbox = row.querySelector('input[type="checkbox"]');
+        checkbox.checked = !checkbox.checked;
+    }
+
+    document.getElementById("timkiem").addEventListener("keyup", function () {
+        const filter = this.value.toLowerCase();
+        const rows = document.querySelectorAll("#tableSinhVien tbody tr");
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(filter) ? "" : "none";
+        });
+    });
+
+    let sortDirection = {};
+
+    function sortTable(colIndex) {
+        const table = document.getElementById("tableSinhVien");
+        const tbody = table.tBodies[0];
+        const rows = Array.from(tbody.querySelectorAll("tr"));
+        const isAsc = !sortDirection[colIndex];
+        sortDirection[colIndex] = isAsc;
+
+        rows.sort((a, b) => {
+            const aText = a.children[colIndex].textContent.trim().toLowerCase();
+            const bText = b.children[colIndex].textContent.trim().toLowerCase();
+
+            return isAsc ? aText.localeCompare(bText) : bText.localeCompare(aText);
+        });
+        rows.forEach(row => tbody.appendChild(row));
+    }
 </script>
+</body>
+</html>
+

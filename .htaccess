@@ -1,5 +1,5 @@
 RewriteEngine On
-RewriteBase /qltttn/
+RewriteBase /datn/
 
 RewriteCond %{REQUEST_URI} \.(css|js|png|jpg)$ [NC]
 RewriteRule ^ - [L]

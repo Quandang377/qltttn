@@ -17,7 +17,7 @@
                             <!-- /input-group -->
                         </li>
                         <li>
-                            <a href="pages/sinhvien/trangchu" class="active"><i class="fa fa-dashboard fa-fw"></i> Trang chủ</a>
+                            <a href="pages/canbo/trangchu" class="active"><i class="fa fa-dashboard fa-fw"></i> Trang chủ</a>
                         </li>
                         <li>
                             <a href="pages/canbo/modotthuctap" class="active"><i class="fa fa-dashboard fa-fw"></i>Mở đợt thực tập</a>
@@ -26,7 +26,10 @@
                             <a href="pages/canbo/quanlythongbao" class="active"><i class="fa fa-dashboard fa-fw"></i> Quản lý thông báo</a>
                         </li>
                         <li>
-                            <a href="pages/canbo/phanconghuongdan" class="active"><i class="fa fa-dashboard fa-fw"></i>Phân công hướng dẫn</a>
+                            <a href="pages/canbo/khaosat" class="active"><i class="fa fa-dashboard fa-fw"></i>Khảo sát</a>
+                        </li>
+                        <li>
+                            <a href="pages/canbo/quanlycongty" class="active"><i class="fa fa-dashboard fa-fw"></i>Quản lý công ty</a>
                         </li>
                     </ul>
                 </div>
