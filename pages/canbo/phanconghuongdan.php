@@ -11,19 +11,24 @@ if (!$id) {
 $stmt = $pdo->prepare("SELECT * FROM DOTTHUCTAP WHERE ID = :id");
 $stmt->execute(['id' => $id]);
 $dot = $stmt->fetch();
-
+$successMessage="";
+$notification = "";
 if (!$dot) {
     die("Không tìm thấy đợt thực tập.");
 }
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['GiaoVien'], $_POST['chon'])) {
+    
     $gvId = $_POST['GiaoVien'];
     $sinhVienIds = $_POST['chon'];
-
+    if(empty($sinhVienIds))
+    $notification = "Hãy chọn sinh viên!";
+    else{
     $update = $pdo->prepare("UPDATE SinhVien SET ID_GVHD = :gvId WHERE ID_TaiKhoan IN (" . implode(",", array_map('intval', $sinhVienIds)) . ")");
     $update->execute(['gvId' => $gvId]);
 
-    echo "<script>alert('Phân công thành công!');</script>";
+    $successMessage="Phân công thành công!";
     exit;
+    }
 }
 
 $sinhviens = $pdo->prepare("SELECT ID_TaiKhoan,Ten,MSSV,ID_Dot,ID_GVHD,Lop,TrangThai FROM SinhVien WHERE ID_DOT = :id AND (ID_GVHD IS NULL or ID_GVHD='')");
@@ -50,6 +55,10 @@ $giaoviens = $pdo->query("SELECT ID_TaiKhoan,Ten FROM giaovien where TrangThai=1
             </div>
         </div>
         <div class="row">
+            <div class="col-md-offset">
+                <?php if (!empty($successMessage)) echo "<div class='alert alert-success'>$successMessage</div>"; ?>
+                <?php if (!empty($notification)) echo "<div class='alert alert-danger'>$notification</div>"; ?>
+            </div>
         <form method="post" id="FormPhanCong">
             <div class="row">
             <div class="form-group col-md-4 col-md-offset-4">
@@ -139,6 +148,30 @@ $giaoviens = $pdo->query("SELECT ID_TaiKhoan,Ten FROM giaovien where TrangThai=1
         });
         rows.forEach(row => tbody.appendChild(row));
     }
+    document.getElementById("FormPhanCong").addEventListener("submit", function (e) {
+        const checkboxes = document.querySelectorAll('input[name="chon[]"]:checked');
+        const selectGV = document.querySelector('select[name="GiaoVien"]');
+        const gvTen = selectGV.options[selectGV.selectedIndex].text;
+
+        if (checkboxes.length === 0) {
+            alert("Hãy chọn ít nhất một sinh viên!");
+            e.preventDefault();
+            return;
+        }
+
+        let svInfo = "";
+        checkboxes.forEach(cb => {
+            const row = cb.closest("tr");
+            const mssv = row.children[1].textContent.trim();
+            const ten = row.children[2].textContent.trim();
+            svInfo += `- ${ten} (${mssv})\n`;
+        });
+
+        const message = `Bạn có chắc muốn phân công:\nGiáo viên: ${gvTen}\nSinh viên:\n${svInfo}`;
+        if (!confirm(message)) {
+            e.preventDefault();
+        }
+    });
 </script>
 </body>
 </html>
