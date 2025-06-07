@@ -13,7 +13,7 @@ if (!$id) {
     die("Không tìm thấy ID đợt thực tập.");
 }
 
-$stmt = $pdo->prepare("SELECT ID,TenDot,Loai,Nganh,Nam,TenNguoiMoDot,NguoiQuanLy,ThoiGianKetThuc,TrangThai FROM DOTTHUCTAP WHERE ID = :id");
+$stmt = $pdo->prepare("SELECT ID,TenDot,Loai,Nam,TenNguoiMoDot,NguoiQuanLy,ThoiGianKetThuc,TrangThai FROM DOTTHUCTAP WHERE ID = :id");
 $stmt->execute(['id' => $id]);
 $dot = $stmt->fetch();
 
@@ -48,8 +48,8 @@ $danhSachDotThucTap = getAllInternships($pdo);
                 <div class="panel-body">
                     <div class="row">
                         <div class="col-md-6">
-                            <h2>Ngành: <?= htmlspecialchars($dot['Nganh']) ?></h2>
                             <h2>Loại: <?= htmlspecialchars($dot['Loai']) ?></h2>
+                            <h2>Thời gian kết thúc: <?= htmlspecialchars($dot['ThoiGianKetThuc']) ?></h2>
                             <h2>Trạng thái: <?= $dot['TrangThai'] == 1 ? 'Đang mở' : 'Đã đóng' ?></h2>
                         </div>
                         <div class="col-md-6">
@@ -94,7 +94,7 @@ $danhSachDotThucTap = getAllInternships($pdo);
                                                     <th>#</th>
                                                     <th>Tên đợt</th>
                                                     <th>Năm</th>
-                                                    <th>Ngành</th>
+                                                    <th>Thời gian kết thúc</th>
                                                     <th>Người quản lý</th>
                                                 </tr>
                                             </thead>
@@ -105,7 +105,7 @@ $danhSachDotThucTap = getAllInternships($pdo);
                                                     <td><?= $i++ ?></td>
                                                     <td><?= htmlspecialchars($dot['TenDot']) ?></td>
                                                     <td><?= htmlspecialchars($dot['Nam']) ?></td>
-                                                    <td><?= htmlspecialchars($dot['Nganh']) ?></td>
+                                                    <td><?= htmlspecialchars($dot['ThoiGianKetThuc']) ?></td>
                                                     <td><?= htmlspecialchars($dot['NguoiQuanLy']) ?></td>
                                                 </tr>
                                             <?php endforeach; ?>

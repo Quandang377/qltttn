@@ -8,7 +8,7 @@ if (!$id) {
     die("Không tìm thấy ID đợt thực tập.");
 }
 
-$stmt = $pdo->prepare("SELECT ID,TenDot,Loai,Nganh,Nam,TenNguoiMoDot,NguoiQuanLy,ThoiGianKetThuc,TrangThai FROM DOTTHUCTAP WHERE ID = :id");
+$stmt = $pdo->prepare("SELECT ID,TenDot,Loai,Nam,TenNguoiMoDot,NguoiQuanLy,ThoiGianKetThuc,TrangThai FROM DOTTHUCTAP WHERE ID = :id");
 $stmt->execute(['id' => $id]);
 $dot = $stmt->fetch();
 $successMessage = "";
@@ -23,7 +23,6 @@ if (!$dot) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $tenDot = $_POST['TenDot'] ?? '';
     $nam = $_POST['Nam'] ?? '';
-    $nganh = $_POST['Nganh'] ?? '';
     $loai = $_POST['Loai'] ?? '';
     $thoiGianKetThuc = $_POST['ThoiGianKetThuc'] ?? '';
     $nguoiQuanLy = $_POST['NguoiQuanLy'] ?? '';
@@ -39,7 +38,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             UPDATE DOTTHUCTAP SET
                 TenDot = :tenDot,
                 Nam = :nam,
-                Nganh = :nganh,
                 Loai = :loai,
                 ThoiGianKetThuc = :thoiGianKetThuc,
                 NguoiQuanLy = :nguoiQuanLy
@@ -49,7 +47,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $updateStmt->execute([
             'tenDot' => $tenDot,
             'nam' => $nam,
-            'nganh' => $nganh,
             'loai' => $loai,
             'thoiGianKetThuc' => $thoiGianKetThuc,
             'nguoiQuanLy' => $nguoiQuanLy,
@@ -58,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $successMessage = "Cập nhật thành công!";
 
-        $stmt = $pdo->prepare("SELECT ID,TenDot,Loai,Nganh,Nam,TenNguoiMoDot,NguoiQuanLy,ThoiGianKetThuc,TrangThai FROM DOTTHUCTAP WHERE ID = :id");
+        $stmt = $pdo->prepare("SELECT ID,TenDot,Loai,Nam,TenNguoiMoDot,NguoiQuanLy,ThoiGianKetThuc,TrangThai FROM DOTTHUCTAP WHERE ID = :id");
         $stmt->execute(['id' => $id]);
         $dot = $stmt->fetch();
     }
@@ -105,17 +102,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <label class="col-sm-2 control-label">Năm</label>
                     <div class="col-sm-10">
                         <input type="number" name="Nam" class="form-control" value="<?= htmlspecialchars($dot['Nam']) ?>" required>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label class="col-sm-2 control-label">Ngành</label>
-                    <div class="col-sm-10">
-                        <select id="Nganh" name="Nganh" class="form-control" required>
-                            <option value="Lập trình di động DĐ" <?= $dot['Nganh'] == 'Lập trình di động DĐ' ? 'selected' : '' ?>>Lập trình di động</option>
-                            <option value="Lập trình website WEB" <?= $dot['Nganh'] == 'Lập trình website WEB' ? 'selected' : '' ?>>Lập trình website</option>
-                            <option value="Mạng máy tính MMT" <?= $dot['Nganh'] == 'Mạng máy tính MMT' ? 'selected' : '' ?>>Mạng máy tính</option>
-                        </select>
                     </div>
                 </div>
 

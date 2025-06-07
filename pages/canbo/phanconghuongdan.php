@@ -55,8 +55,16 @@ $giaoviens = $pdo->query("SELECT ID_TaiKhoan,Ten FROM giaovien where TrangThai=1
         </div>
         <div class="row">
             <div class="col-md-offset">
-                <?php if (!empty($successMessage)) echo "<div class='alert alert-success'>$successMessage</div>"; ?>
-                <?php if (!empty($notification)) echo "<div class='alert alert-danger'>$notification</div>"; ?>
+            <?php if (!empty($successMessage)): ?>
+                <div id="successAlert" class="alert alert-success">
+                    <?= $successMessage ?>
+                </div>
+                <?php endif; ?>
+            <?php if (!empty($notification)): ?>
+                <div id="notificationAlert" class="alert alert-success">
+                    <?= $notification ?>
+                </div>
+                <?php endif; ?>
             </div>
         <form method="post" id="FormPhanCong">
             <div class="row">
@@ -82,7 +90,7 @@ $giaoviens = $pdo->query("SELECT ID_TaiKhoan,Ten FROM giaovien where TrangThai=1
                     <tr>
                         <th></th>
                         <th onclick="sortTable(1)"style="cursor: pointer;">MSSV ⬍</th>
-                        <th onclick="sortTable(2)"style="cursor: pointer;">Họ Tên ⬍</th>
+                        <th>Họ Tên</th>
                         <th onclick="sortTable(3)"style="cursor: pointer;">Lớp ⬍</th>
                     </tr>
                     </thead>
@@ -187,5 +195,25 @@ $giaoviens = $pdo->query("SELECT ID_TaiKhoan,Ten FROM giaovien where TrangThai=1
                 e.target.submit();
             }
         });
+    });
+    window.addEventListener('DOMContentLoaded', () => {
+        const alertBox = document.getElementById('successAlert');
+        if (alertBox) {
+            setTimeout(() => {
+                alertBox.style.transition = 'opacity 0.5s ease';
+                alertBox.style.opacity = '0';
+                setTimeout(() => alertBox.remove(), 500);
+            }, 2000);
+        }
+    });
+    window.addEventListener('DOMContentLoaded', () => {
+        const alertBox = document.getElementById('notificationAlert');
+        if (alertBox) {
+            setTimeout(() => {
+                alertBox.style.transition = 'opacity 0.5s ease';
+                alertBox.style.opacity = '0';
+                setTimeout(() => alertBox.remove(), 500);
+            }, 2000);
+        }
     });
 </script>

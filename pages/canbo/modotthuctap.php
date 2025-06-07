@@ -7,14 +7,13 @@ function countSimilar($pdo, $tendot) {
     $stmt->execute(['tendot' => $tendot . '%']);
     return $stmt->fetchColumn();
 }
-function saveInternship($pdo, $tendot, $loai, $namHoc, $nganh, $thoigian, $nguoiquanly, $nguoitao) {
-    $stmt = $pdo->prepare("INSERT INTO DOTTHUCTAP (TENDOT, NAM, LOAI, Nganh, NGUOIQUANLY, THOIGIANKETTHUC, TENNGUOIMODOT, TRANGTHAI) 
-                           VALUES (:tendot, :nam, :loai, :nganh, :nguoiquanly, :thoigianketthuc, :tennguoimodot, 1)");
+function saveInternship($pdo, $tendot, $loai, $namHoc, $thoigian, $nguoiquanly, $nguoitao) {
+    $stmt = $pdo->prepare("INSERT INTO DOTTHUCTAP (TENDOT, NAM, LOAI, NGUOIQUANLY, THOIGIANKETTHUC, TENNGUOIMODOT, TRANGTHAI) 
+                           VALUES (:tendot, :nam, :loai, :nguoiquanly, :thoigianketthuc, :tennguoimodot, 1)");
     if ($stmt->execute([
         'tendot' => $tendot,
         'nam' => $namHoc,
         'loai' => $loai,
-        'nganh' => $nganh,
         'nguoiquanly' => $nguoiquanly,
         'thoigianketthuc' => $thoigian,
         'tennguoimodot' => $nguoitao
@@ -28,22 +27,18 @@ $notification = "";
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $loai = $_POST['loai'];
     $namHoc = $_POST['namhoc'];
-    $nganh = $_POST['nganh'];
     $nguoitao = $_POST['nguoitao'];
     $nguoiquanly = $_POST['nguoiquanly'];
     $thoigian = $_POST['thoigian'];
-    if ($loai ==""|| $namHoc=="" || $nganh=="" || $nguoitao==""||$thoigian=="") {
+    if ($loai ==""|| $namHoc=="" || $nguoitao==""||$thoigian=="") {
         $notification = "Vui lòng điền tất cả các trường.";
     }else {
-        $nganhArr = explode(' ', trim($nganh));
-        $lastWord = array_pop($nganhArr);
-        $nganhModified = implode(' ', $nganhArr);
-        $tendot = ($loai === 'Cao đẳng' ? 'CĐ' : 'CĐN') . substr($namHoc, -2) . $lastWord;
+        $tendot = ($loai === 'Cao đẳng' ? 'CĐTH' : 'CĐNTH') . substr($namHoc, -2) . $lastWord;
         
         $count = countSimilar($pdo, $tendot);
-        $tendot .= ($count + 1);
+        $tendot = $tendot.'-'.($count + 1);
         
-        $idDot = saveInternship($pdo, $tendot, $loai, $namHoc, $nganhModified, $thoigian, $nguoiquanly, $nguoitao);
+        $idDot = saveInternship($pdo, $tendot, $loai, $namHoc, $thoigian, $nguoiquanly, $nguoitao);
         if ($idDot) {
             session_start();
             $_SESSION['success'] = "Đợt thực tập $tendot được mở thành công!";
@@ -94,16 +89,9 @@ $canbokhoa = $pdo->query("SELECT ID_TaiKhoan,Ten FROM canbokhoa where TrangThai=
                             <input class="form-control"id="namhoc"name="namhoc" type="number" min="1000" max="9999"placeholder="Nhập năm học" >
                         </div>
                         <div class="form-group">
-                            <label >Chuyên ngành</label>
-                            <select id="nganh" name="nganh"class="form-control">
-                            <option value="Lập trình di động DĐ">Lập trình di động</option>
-                            <option value="Lập trình website WEB">Lập trình website</option>
-                            <option value="Mạng máy tính MMT">Mạng máy tính</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
                             <label >Thời gian kết thúc</label>
-                            <input class="form-control"id="thoigian"name="thoigian" type="date" placeholder="Chọn thời gian kết thúc" >
+                            <?php $ThangSau = date('Y-m-01', strtotime('first day of next month')); ?>
+                            <input class="form-control" id="thoigian" name="thoigian" type="date" min="<?= $ThangSau ?>" placeholder="Chọn thời gian kết thúc">
                         </div>
                         </div>
                     </div>
@@ -139,46 +127,56 @@ $canbokhoa = $pdo->query("SELECT ID_TaiKhoan,Ten FROM canbokhoa where TrangThai=
             <div id="listDotThucTap" class="row">
         </div>
         <div class="row">
-                        <div class="col-lg-12">
-                            <div class="panel panel-default">
-                                <div class="panel-heading">
-                                    <input class="form-control mb-3" id="timkiem" type="text" placeholder="TÌm tên đợt...">
-                                </div>
-                                <div class="panel-body">
-                                    <div class="table-responsive">
-                                        <table class="table"id="TableDotTT">
-                                            <thead>
-                                                <tr>
-                                                    <th>#</th>
-                                                    <th>Tên đợt</th>
-                                                    <th>Năm</th>
-                                                    <th>Ngành</th>
-                                                    <th>Người quản lý</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                            <?php $i = 1; foreach ($danhSachDotThucTap as $dot): ?>
-                                                <?php $link = 'pages/canbo/chitietdot?id=' . urlencode($dot['ID']); ?>
-                                                <tr onclick="window.location='<?= $link ?>';" style="cursor: pointer;">
-                                                    <td><?= $i++ ?></td>
-                                                    <td><?= htmlspecialchars($dot['TenDot']) ?></td>
-                                                    <td><?= htmlspecialchars($dot['Nam']) ?></td>
-                                                    <td><?= htmlspecialchars($dot['Nganh']) ?></td>
-                                                    <td><?= htmlspecialchars($dot['NguoiQuanLy']) ?></td>
-                                                </tr>
-                                            <?php endforeach; ?>
-                                            </tbody>
-                                            </table>
-                                    </div>
-                                    <!-- /.table-responsive -->
-                                </div>
-                                <!-- /.panel-body -->
-                            </div>
-                            <!-- /.panel -->
-                        </div>
-                        <!-- /.col-lg-6 -->
+            <div class="col-lg-10">
+            </div>
+            <div class="fill col-md-2">
+                <select id="locDot" name="locDot"class="form-control">
+                <option value="moinhat">Mới nhất</option>
+                <option value="toiquanly">Tôi quản lý</option>
+                <option value="cunhat">Cũ nhất</option>
+                </select>
+            </div>
+            <div class="col-lg-12">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <input class="form-control mb-3" id="timkiem" type="text" placeholder="TÌm tên đợt...">
                     </div>
-</div>      </div>
+                    <div class="panel-body">
+                        <div class="table-responsive">
+                            <table class="table"id="TableDotTT">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th onclick="sortTable(1)"style="cursor: pointer;">Tên đợt ⬍</th>
+                                        <th onclick="sortTable(2)"style="cursor: pointer;">Năm ⬍</th>
+                                        <th>Thời gian kết thúc</th>
+                                        <th>Người quản lý</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                <?php $i = 1; foreach ($danhSachDotThucTap as $dot): ?>
+                                    <?php $link = 'pages/canbo/chitietdot?id=' . urlencode($dot['ID']); ?>
+                                    <tr onclick="window.location='<?= $link ?>';" style="cursor: pointer;">
+                                        <td><?= $i++ ?></td>
+                                        <td><?= htmlspecialchars($dot['TenDot']) ?></td>
+                                        <td><?= htmlspecialchars($dot['Nam']) ?></td>
+                                        <td><?= htmlspecialchars($dot['ThoiGianKetThuc']) ?></td>
+                                        <td><?= htmlspecialchars($dot['NguoiQuanLy']) ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                                </tbody>
+                                </table>
+                        </div>
+                        <!-- /.table-responsive -->
+                    </div>
+                    <!-- /.panel-body -->
+                </div>
+                <!-- /.panel -->
+            </div>
+            <!-- /.col-lg-6 -->
+        </div>
+</div>      
+</div>
 <script>
     document.getElementById("timkiem").addEventListener("keyup", function () {
         const filter = this.value.toLowerCase();
@@ -188,6 +186,40 @@ $canbokhoa = $pdo->query("SELECT ID_TaiKhoan,Ten FROM canbokhoa where TrangThai=
             row.style.display = text.includes(filter) ? "" : "none";
         });
     });
+
+    document.getElementById('locDot').addEventListener('change', function () {
+    const value = this.value;
+    const rows = Array.from(document.querySelectorAll("#TableDotTT tbody tr"));
+
+    if (value === "moinhat" || value === "cunhat") {
+        const index = 2;
+        rows.sort((a, b) => {
+            const aYear = parseInt(a.children[index].textContent.trim());
+            const bYear = parseInt(b.children[index].textContent.trim());
+            return value === "moinhat" ? bYear - aYear : aYear - bYear;
+        });
+    }
+
+    const tbody = document.querySelector("#TableDotTT tbody");
+    rows.forEach(row => tbody.appendChild(row));
+});
+
+    let sortDirection = {};
+    function sortTable(colIndex) {
+        const table = document.getElementById("TableDotTT");
+        const tbody = table.tBodies[0];
+        const rows = Array.from(tbody.querySelectorAll("tr"));
+        const isAsc = !sortDirection[colIndex];
+        sortDirection[colIndex] = isAsc;
+
+        rows.sort((a, b) => {
+            const aText = a.children[colIndex].textContent.trim().toLowerCase();
+            const bText = b.children[colIndex].textContent.trim().toLowerCase();
+
+            return isAsc ? aText.localeCompare(bText) : bText.localeCompare(aText);
+        });
+        rows.forEach(row => tbody.appendChild(row));
+    }
 
     <?php if (!empty($notification)): ?>
     Swal.fire({
@@ -202,7 +234,6 @@ $canbokhoa = $pdo->query("SELECT ID_TaiKhoan,Ten FROM canbokhoa where TrangThai=
     
     const loai = document.getElementById('loai').value;
     const nam = document.getElementById('namhoc').value;
-    const nganh = document.getElementById('nganh').options[document.getElementById('nganh').selectedIndex].text;
     const thoigian = document.getElementById('thoigian').value;
     const nguoiquanly = document.getElementById('nguoiquanly').value;
        
@@ -211,7 +242,6 @@ $canbokhoa = $pdo->query("SELECT ID_TaiKhoan,Ten FROM canbokhoa where TrangThai=
         html: `
             <p><strong>Loại:</strong> ${loai}</p>
             <p><strong>Năm:</strong> ${nam}</p>
-            <p><strong>Ngành:</strong> ${nganh}</p>
             <p><strong>Thời gian kết thúc:</strong> ${thoigian}</p>
             <p><strong>Người quản lý:</strong> ${nguoiquanly}</p>
         `,
