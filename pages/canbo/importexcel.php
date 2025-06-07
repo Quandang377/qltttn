@@ -43,33 +43,29 @@
                                 <thead>
                                     <tr>
                                         <th>#</th>
-                                        <th>Tên công ty</th>
-                                        <th>Mã số thuế</th>
-                                        <th>Địa chỉ</th>
-                                        <th>Trạng thái</th>
+                                        <th>Tên đợt</th>
+                                        <th>Năm</th>
+                                        <th>Nghành</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr>
                                         <td>1</td>
-                                        <td>VNG</td>
-                                        <td>0303490096</td>
-                                        <td>Z06 Đường số 13, Phường Tân Thuận Đông, Quận 7, TP. Hồ Chí Minh</td>
-                                        <td>Đã duyệt</td>
+                                        <td>CDTH21k1</td>
+                                        <td>2025</td>
+                                        <td>Công nghệ thông tin</td>
                                     </tr>
                                     <tr>
                                         <td>2</td>
-                                        <td>Riotgame</td>
-                                        <td>0314419070</td>
-                                        <td>Z06 Đường số 13, Phường Tân Thuận Đông, Quận 7, TP. Hồ Chí Minh</td>
-                                        <td>Từ chối</td>
+                                        <td>CDTH21K2</td>
+                                        <td>2025</td>
+                                        <td>Công nghệ thông tin</td>
                                     </tr>
                                     <tr>
                                         <td>3</td>
-                                        <td>Tencent</td>
-                                        <td>3702686925</td>
-                                        <td>Z06 Đường số 13, Phường Tân Thuận Đông, Quận 7, TP. Hồ Chí Minh</td>
-                                        <td>Đã duyệt</td>
+                                        <td>CDTH21k1</td>
+                                        <td>2025</td>
+                                        <td>Công nghệ thông tin</td>
                                     </tr>
                                 </tbody>
                             </table>
