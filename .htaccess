@@ -1,7 +1,7 @@
 RewriteEngine On
 RewriteBase /datn/
 
-RewriteCond %{REQUEST_URI} \.(css|js|png|jpg)$ [NC]
+RewriteCond %{REQUEST_URI} \.(css|js|png|jpg|wff|wff2)$ [NC]
 RewriteRule ^ - [L]
 
 RewriteRule ^(.*)$ index.php [QSA,L]
