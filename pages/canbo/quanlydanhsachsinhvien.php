@@ -100,7 +100,6 @@
                             ]);
                             
                             echo '<div class="alert alert-success">Thêm sinh viên thành công!</div>';
-                            
                         } catch(PDOException $e) {
                             echo '<div class="alert alert-danger">Lỗi: ' . $e->getMessage() . '</div>';
                         }
@@ -145,10 +144,7 @@
                                     ':mssv' => $mssv
                                 ]);
                                 echo '<script>document.addEventListener("DOMContentLoaded", function() { clearForm(); });</script>';
-
                                 echo '<div class="alert alert-success">Cập nhật sinh viên thành công!</div>';
-
-
                             } catch (PDOException $e) {
                                 echo '<div class="alert alert-danger">Lỗi: ' . $e->getMessage() . '</div>';
                             }
@@ -156,6 +152,26 @@
                             echo '<div class="alert alert-danger">Vui lòng kiểm tra lại thông tin nhập!</div>';
                         }
                     }
+                        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_sinh_vien'])) {
+                            require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
+
+                            $mssv = trim($_POST['mssv']);
+
+                            if (empty($mssv)) {
+                                echo '<div class="alert alert-danger">Vui lòng chọn sinh viên để xóa.</div>';
+                            } else {
+                                try {
+                                    $sql = "UPDATE SinhVien SET TrangThai = 0 WHERE MSSV = :mssv";
+                                    $stmt = $conn->prepare($sql);
+                                    $stmt->execute([':mssv' => $mssv]);
+
+                                    echo '<div class="alert alert-success">Xóa sinh viên thành công!</div>';
+                                    echo '<script>document.addEventListener("DOMContentLoaded", function() { clearForm(); });</script>';
+                                } catch (PDOException $e) {
+                                    echo '<div class="alert alert-danger">Lỗi: ' . $e->getMessage() . '</div>';
+                                }
+                            }
+                        }
 
                 ?>
                 
@@ -242,7 +258,7 @@
                     <div class="col-md-8 col-md-offset-2 text-center">
                         <button type="submit" class="btn btn-primary" name="them_sinh_vien">Thêm</button>
                         <button type="submit" class="btn btn-warning" name="sua_sinh_vien">Sửa</button>
-                        <button type="button" class="btn btn-danger" id="btn-delete">Xoá</button>
+                        <button type="submit" class="btn btn-danger" name ="xoa_sinh_vien" id="btn-delete">Xoá</button>
                     </div>
                 </div>
                 </form>
@@ -338,7 +354,6 @@ $(document).ready(function () {
 
             var data = table.row(this).data();
 
-            // Gán dữ liệu vào form
             $('#ten-sinh-vien').val(data[0]);
             $('#mssv').val(data[1]).prop('readonly', true);
             $('#xep_loai').val(data[2]);
