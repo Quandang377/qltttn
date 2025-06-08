@@ -117,7 +117,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="form-group">
                     <label class="col-sm-2 control-label">Thời gian kết thúc</label>
                     <div class="col-sm-10">
-                        <input type="date" name="ThoiGianKetThuc" class="form-control" value="<?= htmlspecialchars($dot['ThoiGianKetThuc']) ?>" required>
+                       <?php 
+                        $ThangSau = date('Y-m-01', strtotime('first day of next month')); 
+                        ?>
+                        <input 
+                            class="form-control" 
+                            value="<?= isset($dot['ThoiGianKetThuc']) ? htmlspecialchars($dot['ThoiGianKetThuc']) : '' ?>" 
+                            id="ThoiGianKetThuc" 
+                            name="ThoiGianKetThuc" 
+                            type="date" 
+                            min="<?= $ThangSau ?>" 
+                            placeholder="Chọn thời gian kết thúc" 
+                            required
+                        >
                     </div>
                 </div>
 
