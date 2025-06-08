@@ -1,6 +1,5 @@
 <?php
-require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/database.php"; 
-require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/funtions.php"; 
+require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
 $id = $_GET['id'] ?? null;
 
@@ -8,7 +7,7 @@ if (!$id) {
     die("Không tìm thấy ID đợt thực tập.");
 }
 
-$stmt = $pdo->prepare("SELECT * FROM DOTTHUCTAP WHERE ID = :id");
+$stmt = $conn->prepare("SELECT * FROM DOTTHUCTAP WHERE ID = :id");
 $stmt->execute(['id' => $id]);
 $dot = $stmt->fetch();
 $successMessage="";
@@ -23,17 +22,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['GiaoVien'], $_POST['c
     if(empty($sinhVienIds))
     $notification = "Hãy chọn sinh viên!";
     else{
-    $update = $pdo->prepare("UPDATE SinhVien SET ID_GVHD = :gvId WHERE ID_TaiKhoan IN (" . implode(",", array_map('intval', $sinhVienIds)) . ")");
+    $update = $conn->prepare("UPDATE SinhVien SET ID_GVHD = :gvId WHERE ID_TaiKhoan IN (" . implode(",", array_map('intval', $sinhVienIds)) . ")");
     $update->execute(['gvId' => $gvId]);
 
     $successMessage="Phân công thành công!";
     }
 }
 
-$sinhviens = $pdo->prepare("SELECT ID_TaiKhoan,Ten,MSSV,ID_Dot,ID_GVHD,Lop,TrangThai FROM SinhVien WHERE ID_DOT = :id AND (ID_GVHD IS NULL or ID_GVHD='')");
+$sinhviens = $conn->prepare("SELECT ID_TaiKhoan,Ten,MSSV,ID_Dot,ID_GVHD,Lop,TrangThai FROM SinhVien WHERE ID_DOT = :id AND (ID_GVHD IS NULL or ID_GVHD='')");
 $sinhviens->execute(['id' => $id]);
 
-$giaoviens = $pdo->query("SELECT ID_TaiKhoan,Ten FROM giaovien where TrangThai=1")->fetchAll();
+$giaoviens = $conn->query("SELECT ID_TaiKhoan,Ten FROM giaovien where TrangThai=1")->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -78,20 +77,19 @@ $giaoviens = $pdo->query("SELECT ID_TaiKhoan,Ten FROM giaovien where TrangThai=1
                 </div>
             </div>
         <div class="row">
-            <h3>Chọn sinh viên</h3>
+            <h3>Danh sách sinh viên chưa được hướng dẫn</h3>
             <div class="panel panel-default">
             <div class="panel-heading">
-                <input class="form-control mb-3" id="timkiem" type="text" placeholder="Nhập tên, mssv hoặc lớp...">
             </div>
             <div class="panel-body">
             <div class="table-responsive">
                 <table class="table" id="tableSinhVien">
                     <thead>
-                    <tr>
+                     <tr>
                         <th></th>
-                        <th onclick="sortTable(1)"style="cursor: pointer;">MSSV ⬍</th>
+                        <th>MSSV</th>
                         <th>Họ Tên</th>
-                        <th onclick="sortTable(3)"style="cursor: pointer;">Lớp ⬍</th>
+                        <th>Lớp</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -121,43 +119,27 @@ $giaoviens = $pdo->query("SELECT ID_TaiKhoan,Ten FROM giaovien where TrangThai=1
 </html>
 
 <script>
-    function toggleCheckbox(row) {
-        if (event.target.type === 'checkbox') return;
-        const checkbox = row.querySelector('input[type="checkbox"]');
-        checkbox.checked = !checkbox.checked;
-    }
-    function toggleCheckbox(row) {
-        if (event.target.type === 'checkbox') return;
-        const checkbox = row.querySelector('input[type="checkbox"]');
-        checkbox.checked = !checkbox.checked;
-    }
-
-    document.getElementById("timkiem").addEventListener("keyup", function () {
-        const filter = this.value.toLowerCase();
-        const rows = document.querySelectorAll("#tableSinhVien tbody tr");
-        rows.forEach(row => {
-            const text = row.textContent.toLowerCase();
-            row.style.display = text.includes(filter) ? "" : "none";
+    $(document).ready(function () {
+        var table = $('#tableSinhVien').DataTable({
+            responsive: true,
+            pageLength: 20,
+            language: {
+                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json'
+            }
         });
+
     });
-
-    let sortDirection = {};
-
-    function sortTable(colIndex) {
-        const table = document.getElementById("tableSinhVien");
-        const tbody = table.tBodies[0];
-        const rows = Array.from(tbody.querySelectorAll("tr"));
-        const isAsc = !sortDirection[colIndex];
-        sortDirection[colIndex] = isAsc;
-
-        rows.sort((a, b) => {
-            const aText = a.children[colIndex].textContent.trim().toLowerCase();
-            const bText = b.children[colIndex].textContent.trim().toLowerCase();
-
-            return isAsc ? aText.localeCompare(bText) : bText.localeCompare(aText);
-        });
-        rows.forEach(row => tbody.appendChild(row));
+    function toggleCheckbox(row) {
+        if (event.target.type === 'checkbox') return;
+        const checkbox = row.querySelector('input[type="checkbox"]');
+        checkbox.checked = !checkbox.checked;
     }
+    function toggleCheckbox(row) {
+        if (event.target.type === 'checkbox') return;
+        const checkbox = row.querySelector('input[type="checkbox"]');
+        checkbox.checked = !checkbox.checked;
+    }
+
     document.getElementById("FormPhanCong").addEventListener("submit", function (e) {
         e.preventDefault();
 

@@ -27,7 +27,7 @@
 <body>
     <div id="wrapper">  
         <?php
-            require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_Sinhvien.php";
+            require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_CanBo.php";
         ?>
     
         <div id="page-wrapper">

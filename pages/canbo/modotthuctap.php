@@ -1,14 +1,18 @@
 <?php
-require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/database.php"; 
-require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/funtions.php"; 
+require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
-function countSimilar($pdo, $tendot) {
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM DOTTHUCTAP WHERE TENDOT LIKE :tendot");
+function getAllInternships($pdo) {
+    $stmt = $pdo->prepare("SELECT ID,TenDot,Nam,Loai,NguoiQuanLy,ThoiGianKetThuc,TenNguoiMoDot,TrangThai FROM DOTTHUCTAP where TrangThai !=-1 ORDER BY ID DESC");
+    $stmt->execute();
+    return $stmt->fetchAll();
+}
+function countSimilar($conn, $tendot) {
+    $stmt = $conn->prepare("SELECT COUNT(*) FROM DOTTHUCTAP WHERE TENDOT LIKE :tendot");
     $stmt->execute(['tendot' => $tendot . '%']);
     return $stmt->fetchColumn();
 }
-function saveInternship($pdo, $tendot, $loai, $namHoc, $thoigian, $nguoiquanly, $nguoitao) {
-    $stmt = $pdo->prepare("INSERT INTO DOTTHUCTAP (TENDOT, NAM, LOAI, NGUOIQUANLY, THOIGIANKETTHUC, TENNGUOIMODOT, TRANGTHAI) 
+function saveInternship($conn, $tendot, $loai, $namHoc, $thoigian, $nguoiquanly, $nguoitao) {
+    $stmt = $conn->prepare("INSERT INTO DOTTHUCTAP (TENDOT, NAM, LOAI, NGUOIQUANLY, THOIGIANKETTHUC, TENNGUOIMODOT, TRANGTHAI) 
                            VALUES (:tendot, :nam, :loai, :nguoiquanly, :thoigianketthuc, :tennguoimodot, 1)");
     if ($stmt->execute([
         'tendot' => $tendot,
@@ -18,7 +22,7 @@ function saveInternship($pdo, $tendot, $loai, $namHoc, $thoigian, $nguoiquanly, 
         'thoigianketthuc' => $thoigian,
         'tennguoimodot' => $nguoitao
     ])) {
-        return $pdo->lastInsertId();
+        return $conn->lastInsertId();
     }
     return false;
 }
@@ -35,10 +39,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }else {
         $tendot = ($loai === 'Cao đẳng' ? 'CĐTH' : 'CĐNTH') . substr($namHoc, -2) . $lastWord;
         
-        $count = countSimilar($pdo, $tendot);
+        $count = countSimilar($conn, $tendot);
         $tendot = $tendot.'-'.($count + 1);
         
-        $idDot = saveInternship($pdo, $tendot, $loai, $namHoc, $thoigian, $nguoiquanly, $nguoitao);
+        $idDot = saveInternship($conn, $tendot, $loai, $namHoc, $thoigian, $nguoiquanly, $nguoitao);
         if ($idDot) {
             session_start();
             $_SESSION['success'] = "Đợt thực tập $tendot được mở thành công!";
@@ -52,10 +56,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     
 }
 $today = date('Y-m-d');
-$updateStmt = $pdo->prepare("UPDATE DOTTHUCTAP SET TRANGTHAI = 0 WHERE THOIGIANKETTHUC < :today AND TRANGTHAI = 1");
+$updateStmt = $conn->prepare("UPDATE DOTTHUCTAP SET TRANGTHAI = 0 WHERE THOIGIANKETTHUC < :today AND TRANGTHAI = 1");
 $updateStmt->execute(['today' => $today]);
-$danhSachDotThucTap = getAllInternships($pdo);
-$canbokhoa = $pdo->query("SELECT ID_TaiKhoan,Ten FROM canbokhoa where TrangThai=1")->fetchAll();
+$danhSachDotThucTap = getAllInternships($conn);
+$canbokhoa = $conn->query("SELECT ID_TaiKhoan,Ten FROM canbokhoa where TrangThai=1")->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -127,19 +131,9 @@ $canbokhoa = $pdo->query("SELECT ID_TaiKhoan,Ten FROM canbokhoa where TrangThai=
             <div id="listDotThucTap" class="row">
         </div>
         <div class="row">
-            <div class="col-lg-10">
-            </div>
-            <div class="fill col-md-2">
-                <select id="locDot" name="locDot"class="form-control">
-                <option value="moinhat">Mới nhất</option>
-                <option value="toiquanly">Tôi quản lý</option>
-                <option value="cunhat">Cũ nhất</option>
-                </select>
-            </div>
             <div class="col-lg-12">
                 <div class="panel panel-default">
                     <div class="panel-heading">
-                        <input class="form-control mb-3" id="timkiem" type="text" placeholder="TÌm tên đợt...">
                     </div>
                     <div class="panel-body">
                         <div class="table-responsive">
@@ -147,8 +141,8 @@ $canbokhoa = $pdo->query("SELECT ID_TaiKhoan,Ten FROM canbokhoa where TrangThai=
                                 <thead>
                                     <tr>
                                         <th>#</th>
-                                        <th onclick="sortTable(1)"style="cursor: pointer;">Tên đợt ⬍</th>
-                                        <th onclick="sortTable(2)"style="cursor: pointer;">Năm ⬍</th>
+                                        <th>Tên đợt</th>
+                                        <th>Năm </th>
                                         <th>Thời gian kết thúc</th>
                                         <th>Người quản lý</th>
                                     </tr>
@@ -178,48 +172,16 @@ $canbokhoa = $pdo->query("SELECT ID_TaiKhoan,Ten FROM canbokhoa where TrangThai=
 </div>      
 </div>
 <script>
-    document.getElementById("timkiem").addEventListener("keyup", function () {
-        const filter = this.value.toLowerCase();
-        const rows = document.querySelectorAll("#TableDotTT tbody tr");
-        rows.forEach(row => {
-            const text = row.textContent.toLowerCase();
-            row.style.display = text.includes(filter) ? "" : "none";
+    $(document).ready(function () {
+        var table = $('#TableDotTT').DataTable({
+            responsive: true,
+            pageLength: 20,
+            language: {
+                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json'
+            }
         });
+
     });
-
-    document.getElementById('locDot').addEventListener('change', function () {
-    const value = this.value;
-    const rows = Array.from(document.querySelectorAll("#TableDotTT tbody tr"));
-
-    if (value === "moinhat" || value === "cunhat") {
-        const index = 2;
-        rows.sort((a, b) => {
-            const aYear = parseInt(a.children[index].textContent.trim());
-            const bYear = parseInt(b.children[index].textContent.trim());
-            return value === "moinhat" ? bYear - aYear : aYear - bYear;
-        });
-    }
-
-    const tbody = document.querySelector("#TableDotTT tbody");
-    rows.forEach(row => tbody.appendChild(row));
-});
-
-    let sortDirection = {};
-    function sortTable(colIndex) {
-        const table = document.getElementById("TableDotTT");
-        const tbody = table.tBodies[0];
-        const rows = Array.from(tbody.querySelectorAll("tr"));
-        const isAsc = !sortDirection[colIndex];
-        sortDirection[colIndex] = isAsc;
-
-        rows.sort((a, b) => {
-            const aText = a.children[colIndex].textContent.trim().toLowerCase();
-            const bText = b.children[colIndex].textContent.trim().toLowerCase();
-
-            return isAsc ? aText.localeCompare(bText) : bText.localeCompare(aText);
-        });
-        rows.forEach(row => tbody.appendChild(row));
-    }
 
     <?php if (!empty($notification)): ?>
     Swal.fire({

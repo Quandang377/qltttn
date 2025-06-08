@@ -43,6 +43,7 @@ CREATE TABLE SinhVien (
     ID_Dot INT,
     Ten NVARCHAR(50),
     Lop NVARCHAR(50),
+    Diem INT,
     XepLoai NVARCHAR(50),
     MSSV VARCHAR(12),
     ID_GVHD VARCHAR(5),

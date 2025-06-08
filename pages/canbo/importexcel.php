@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Đăng ký giấy giới thiệu</title>
+    <title>Import excel</title>
     <?php
         require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php";
     ?>
@@ -22,7 +22,7 @@
 <body>
     <div id="wrapper">  
         <?php
-            require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_Sinhvien.php";
+            require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_Canbo.php";
         ?>
     
         <div id="page-wrapper">

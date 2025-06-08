@@ -1,6 +1,5 @@
 <?php
-require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/database.php";
-require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/funtions.php";
+require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
 $id = $_GET['id'] ?? null;
 
@@ -8,13 +7,13 @@ if (!$id) {
     die("Không tìm thấy ID đợt thực tập.");
 }
 
-$stmt = $pdo->prepare("SELECT ID,TenDot,Loai,Nam,TenNguoiMoDot,NguoiQuanLy,ThoiGianKetThuc,TrangThai FROM DOTTHUCTAP WHERE ID = :id");
+$stmt = $conn->prepare("SELECT ID,TenDot,Loai,Nam,TenNguoiMoDot,NguoiQuanLy,ThoiGianKetThuc,TrangThai FROM DOTTHUCTAP WHERE ID = :id");
 $stmt->execute(['id' => $id]);
 $dot = $stmt->fetch();
 $successMessage = "";
 $notification = "";
 
-$canbokhoa = $pdo->query("SELECT ID_TaiKhoan, Ten FROM canbokhoa WHERE TrangThai = 1")->fetchAll();
+$canbokhoa = $conn->query("SELECT ID_TaiKhoan, Ten FROM canbokhoa WHERE TrangThai = 1")->fetchAll();
 
 if (!$dot) {
     die("Không tìm thấy đợt thực tập.");
@@ -27,14 +26,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $thoiGianKetThuc = $_POST['ThoiGianKetThuc'] ?? '';
     $nguoiQuanLy = $_POST['NguoiQuanLy'] ?? '';
 
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM DOTTHUCTAP WHERE TenDot = :tenDot AND ID != :id");
+    $stmt = $conn->prepare("SELECT COUNT(*) FROM DOTTHUCTAP WHERE TenDot = :tenDot AND ID != :id");
     $stmt->execute(['tenDot' => $tenDot, 'id' => $id]);
     $count = $stmt->fetchColumn();
 
     if ($count > 0) {
         $notification = "Tên đợt đã tồn tại!";
     } else {
-        $updateStmt = $pdo->prepare("
+        $updateStmt = $conn->prepare("
             UPDATE DOTTHUCTAP SET
                 TenDot = :tenDot,
                 Nam = :nam,
@@ -55,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $successMessage = "Cập nhật thành công!";
 
-        $stmt = $pdo->prepare("SELECT ID,TenDot,Loai,Nam,TenNguoiMoDot,NguoiQuanLy,ThoiGianKetThuc,TrangThai FROM DOTTHUCTAP WHERE ID = :id");
+        $stmt = $conn->prepare("SELECT ID,TenDot,Loai,Nam,TenNguoiMoDot,NguoiQuanLy,ThoiGianKetThuc,TrangThai FROM DOTTHUCTAP WHERE ID = :id");
         $stmt->execute(['id' => $id]);
         $dot = $stmt->fetch();
     }
