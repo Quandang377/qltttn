@@ -64,101 +64,103 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <title>Chỉnh sửa đợt thực tập</title>
     <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php"; ?>
 </head>
+
 <body>
-<div id="wrapper">
-    <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_CanBo.php"; ?>
+    <div id="wrapper">
+        <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_CanBo.php"; ?>
 
-    <div id="page-wrapper">
-        <div class="container-fluid">
-            <h1 class="page-header">Chỉnh sửa đợt: <?= htmlspecialchars($dot['TenDot']) ?></h1>
+        <div id="page-wrapper">
+            <div class="container-fluid">
+                <h1 class="page-header">Chỉnh sửa đợt: <?= htmlspecialchars($dot['TenDot']) ?></h1>
 
-            <div class="col-md-offset">
-            <?php if (!empty($successMessage)): ?>
-                <div id="successAlert" class="alert alert-success">
-                    <?= $successMessage ?>
+                <div class="col-md-offset">
+                    <?php if (!empty($successMessage)): ?>
+                        <div id="successAlert" class="alert alert-success">
+                            <?= $successMessage ?>
+                        </div>
+                    <?php endif; ?>
+                    <?php if (!empty($notification)): ?>
+                        <div id="notificationAlert" class="alert alert-success">
+                            <?= $notification ?>
+                        </div>
+                    <?php endif; ?>
                 </div>
-                <?php endif; ?>
-            <?php if (!empty($notification)): ?>
-                <div id="notificationAlert" class="alert alert-success">
-                    <?= $notification ?>
-                </div>
-                <?php endif; ?>
-            </div>
-            <form method="post" class="form-horizontal">
-                <div class="form-group">
-                    <label class="col-sm-2 control-label">Tên đợt</label>
-                    <div class="col-sm-10">
-                        <input type="text" name="TenDot" class="form-control" value="<?= htmlspecialchars($dot['TenDot']) ?>" required>
+                <form method="post" class="form-horizontal">
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">Tên đợt</label>
+                        <div class="col-sm-10">
+                            <input type="text" name="TenDot" class="form-control"
+                                value="<?= htmlspecialchars($dot['TenDot']) ?>" required>
+                        </div>
                     </div>
-                </div>
 
-                <div class="form-group">
-                    <label class="col-sm-2 control-label">Năm</label>
-                    <div class="col-sm-10">
-                        <input type="number" name="Nam" class="form-control" value="<?= htmlspecialchars($dot['Nam']) ?>" required>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">Năm</label>
+                        <div class="col-sm-10">
+                            <input type="number" name="Nam" class="form-control"
+                                value="<?= htmlspecialchars($dot['Nam']) ?>" required>
+                        </div>
                     </div>
-                </div>
 
-                <div class="form-group">
-                    <label class="col-sm-2 control-label">Loại</label>
-                    <div class="col-sm-10">
-                        <select id="Loai" name="Loai" class="form-control" required>
-                            <option value="Cao đẳng" <?= $dot['Loai'] == 'Cao đẳng' ? 'selected' : '' ?>>Cao đẳng</option>
-                            <option value="Cao đẳng ngành" <?= $dot['Loai'] == 'Cao đẳng ngành' ? 'selected' : '' ?>>Cao đẳng ngành</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label class="col-sm-2 control-label">Thời gian kết thúc</label>
-                    <div class="col-sm-10">
-                       <?php 
-                        $ThangSau = date('Y-m-01', strtotime('first day of next month')); 
-                        ?>
-                        <input 
-                            class="form-control" 
-                            value="<?= isset($dot['ThoiGianKetThuc']) ? htmlspecialchars($dot['ThoiGianKetThuc']) : '' ?>" 
-                            id="ThoiGianKetThuc" 
-                            name="ThoiGianKetThuc" 
-                            type="date" 
-                            min="<?= $ThangSau ?>" 
-                            placeholder="Chọn thời gian kết thúc" 
-                            required
-                        >
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label class="col-sm-2 control-label">Người quản lý</label>
-                    <div class="col-sm-10">
-                        <select id="NguoiQuanLy" name="NguoiQuanLy" class="form-control" required>
-                            <?php foreach ($canbokhoa as $cb): ?>
-                                <option value="<?= $cb['Ten'] ?>" <?= $dot['NguoiQuanLy'] == $cb['Ten'] ? 'selected' : '' ?>>
-                                    <?= htmlspecialchars($cb['Ten']) ?>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">Loại</label>
+                        <div class="col-sm-10">
+                            <select id="Loai" name="Loai" class="form-control" required>
+                                <option value="Cao đẳng" <?= $dot['Loai'] == 'Cao đẳng' ? 'selected' : '' ?>>Cao đẳng
                                 </option>
-                            <?php endforeach; ?>
-                        </select>
+                                <option value="Cao đẳng ngành" <?= $dot['Loai'] == 'Cao đẳng ngành' ? 'selected' : '' ?>>
+                                    Cao đẳng ngành</option>
+                            </select>
+                        </div>
                     </div>
-                </div>
 
-                <div class="form-group text-center">
-                    <button type="submit" class="btn btn-success btn-lg">Lưu thay đổi</button>
-                   <a href="/datn/pages/canbo/chitietdot?id=<?= urlencode($id) ?>" class="btn btn-default btn-lg">Thoát</a>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">Thời gian kết thúc</label>
+                        <div class="col-sm-10">
+                            <?php
+                            $ThangSau = date('Y-m-01', strtotime('first day of next month'));
+                            ?>
+                            <input class="form-control"
+                                value="<?= isset($dot['ThoiGianKetThuc']) ? htmlspecialchars($dot['ThoiGianKetThuc']) : '' ?>"
+                                id="ThoiGianKetThuc" name="ThoiGianKetThuc" type="date" min="<?= $ThangSau ?>"
+                                placeholder="Chọn thời gian kết thúc" required>
+                        </div>
+                    </div>
 
-                </div>
-            </form>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">Người quản lý</label>
+                        <div class="col-sm-10">
+                            <select id="NguoiQuanLy" name="NguoiQuanLy" class="form-control" required>
+                                <?php foreach ($canbokhoa as $cb): ?>
+                                    <option value="<?= $cb['Ten'] ?>" <?= $dot['NguoiQuanLy'] == $cb['Ten'] ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($cb['Ten']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group text-center">
+                        <button type="submit" class="btn btn-success btn-lg">Lưu thay đổi</button>
+                        <a href="/datn/pages/canbo/chitietdot?id=<?= urlencode($id) ?>"
+                            class="btn btn-default btn-lg">Thoát</a>
+
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
-</div>
 </body>
+
 </html>
 <script>
-     window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', () => {
         const alertBox = document.getElementById('successAlert');
         if (alertBox) {
             setTimeout(() => {

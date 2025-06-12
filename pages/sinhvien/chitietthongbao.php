@@ -1,96 +1,192 @@
+<?php
+require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
+require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/ThongBao_funtions.php";
+
+if (!isset($_GET['id'])) {
+  die("Không tìm thấy ID thông báo.");
+}
+
+$id = intval($_GET['id']);
+
+$stmt = $conn->prepare("SELECT ID, TIEUDE, NOIDUNG ,ID_TAIKHOAN,NGAYDANG,TRANGTHAI FROM THONGBAO WHERE ID = ?");
+$stmt->execute([$id]);
+$thongbao = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$thongbao) {
+  die("Không tìm thấy thông báo.");
+}
+$stmt_khac = $conn->prepare("SELECT ID, TIEUDE, NOIDUNG ,ID_TAIKHOAN,NGAYDANG,TRANGTHAI FROM THONGBAO WHERE ID != ? ORDER BY NGAYDANG DESC LIMIT 4");
+$stmt_khac->execute([$id]);
+$thongbao_khac = $stmt_khac->fetchAll(PDO::FETCH_ASSOC);
+?>
+
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
-    <meta charset="UTF-8">
-    <title>[THÔNG BÁO] THÔNG TIN VỀ NỘI DUNG THỰC TẬP TỐT NGHIỆP</title>
-    <?php
-    require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php";
-    ?>
+  <meta charset="UTF-8">
+  <title>[THÔNG BÁO] <?= htmlspecialchars($thongbao['TIEUDE']) ?></title>
+  <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php"; ?>
+
 </head>
+
 <body>
-    <div id="wrapper">
-    <?php
-    require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_SinhVien.php";
-    ?>
-<div id="page-wrapper">
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-lg-12">
-            <h1 class="page-header">[THÔNG BÁO] THÔNG TIN VỀ NỘI DUNG THỰC TẬP TỐT NGHIỆP</h1>
-        </div>
-    </div>
-    <div>
-        <div class="news-content">
-                <p>Khoa Công nghệ thông tin xin thông báo một số thông tin về thực tập tốt nghiệp CĐTH 22 như sau:</p>
+  <div id="wrapper">
+    <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_SinhVien.php"; ?>
 
-                <p><strong>- Các mốc thời gian thực tập:</strong></p>
-
-                <ul>
-                    <li>Thời gian thực tập chính thức: <strong>Từ 24/02/2025&nbsp;đến 20/04/2025</strong></li>
-                    <li>Báo cáo và chấm điểm (dự kiến): <strong>Từ 21/04/2025&nbsp;đến 04/05/2025</strong></li>
-                </ul>
-
-                <p><strong>- Danh sách phân công GVHD:</strong></p>
-
-                <ul>
-                    <li>Danh sách GVHD thực tập: <u><a content="http://tinyurl.com/huongdantt-cdth21" data-z-element-type="link" href="https://tinyurl.com/huongdantt-cdth22" rel="noopener noreferrer" target="_blank">https://tinyurl.com/huongdantt-cdth22</a></u></li>
-                    <li>Danh sách email liên hệ GVHD:&nbsp;<a href="https://tinyurl.com/gvhd-email">https://tinyurl.com/gvhd-email</a></li>
-                </ul>
-                <p>&nbsp;</p>
-
-                <p>Đối với sinh viên khóa trước đăng ký thực tập (ghép) chưa có trong danh sách hướng dẫn, sinh viên liên hệ thầy Nguyên qua email: <u><a data-z-element-type="email" href="mailto:lvhnguyen@caothang.edu.vn" target="_blank">lvhnguyen@caothang.edu.vn</a></u> để được phổ biến thông tin hướng dẫn.</p>
-
-                <p>Khoa CNTT ./.</p>
-                <h5>Các tệp đính kèm: </h5>
-                <a>DanhMuc.slxc</a><br>
-                <a>DanhMuc.slxc</a>
-         </div>
-    </div>
-<div class="row">
-    <div class="col-lg-12">
-        <h1 class="page-header">Thông Tin Khác</h1>
-    </div>
-</div>
-<div class="row Notification">
-    <div class="col-md-9">
-        <a href="pages/sinhvien/chitietthongbao" style="text-decoration: none; color: inherit;">
-        <div class="panel panel-default">
-          <div class="panel-heading">Thông báo số 1</div>
-          <div class="panel-body">
-            <p>Nội dung thông báo số 1.</p>
+    <div id="page-wrapper">
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col-lg-12">
+            <h1 class="page-header">[THÔNG BÁO] <?= htmlspecialchars($thongbao['TIEUDE']) ?></h1>
           </div>
         </div>
-      </a>
-      <a href="pages/sinhvien/chitietthongbao" style="text-decoration: none; color: inherit;">
-        <div class="panel panel-default">
-          <div class="panel-heading">Thông báo số 1</div>
-          <div class="panel-body">
-            <p>Nội dung thông báo số 1.</p>
+        <div class="news-content mb-4">
+          <?= $thongbao['NOIDUNG'] ?>
+        </div>
+        <div class="row mt-5">
+          <div class="col-lg-12">
+            <h2 class="page-header">Thông báo khác</h2>
           </div>
         </div>
-      </a>
-      <a href="pages/sinhvien/chitietthongbao" style="text-decoration: none; color: inherit;">
-        <div class="panel panel-default">
-          <div class="panel-heading">Thông báo số 1</div>
-          <div class="panel-body">
-            <p>Nội dung thông báo số 1.</p>
+        <div class="row Notification">
+          <div class="container mt-4">
+            <div id="notification-list">
+            </div>
+            <div class="text-center" style="margin-top: 20px;">
+              <button id="prevBtn" class="btn btn-default">&laquo; Trước</button>
+              <button id="nextBtn" class="btn btn-default">Sau &raquo;</button>
+            </div>
           </div>
         </div>
-      </a>
-      <a href="pages/sinhvien/chitietthongbao" style="text-decoration: none; color: inherit;">
-        <div class="panel panel-default">
-          <div class="panel-heading">Thông báo số 1</div>
-          <div class="panel-body">
-            <p>Nội dung thông báo số 1.</p>
-          </div>
-        </div>
-      </a>
       </div>
-      <div class="col-md-2">
-        <div class="">
-            <select id="Lọc" name="Lọc"class="form-control">
-            <option value="Mới nhất">Mới nhất</option>
-            <option value="Cũ nhất">Cũ nhất</option>
-            </select>
-        </div>
     </div>
+  </div>
+</body>
+
+</html>
+<script>
+  const thongbao_khac = <?= json_encode($thongbao_khac) ?>;
+  const pageSize = 5;
+  let currentPage = 0;
+
+  function renderNotifications() {
+    const container = document.getElementById('notification-list');
+
+    container.classList.add('fade-out');
+
+    setTimeout(() => {
+      const start = currentPage * pageSize;
+      const end = start + pageSize;
+      const list = thongbao_khac.slice(start, end);
+
+      container.innerHTML = '';
+
+      list.forEach(tb => {
+        const html = `
+                <div class="row" style="margin-bottom: 15px; border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
+                    <div class="col-md-2 text-center">
+                        <a href="pages/sinhvien/chitietthongbao.php?id=${tb.ID}">
+                            <img src="/datn/uploads/Images/ThongBao.jpg" alt="${tb.TIEUDE}" style="width: 100px; height: 70px; object-fit: cover;">
+                        </a>
+                    </div>
+                    <div class="col-lg-10">
+                        <p style="margin-bottom: 5px;">
+                            <a href="pages/sinhvien/chitietthongbao.php?id=${tb.ID}" style="font-weight: bold; text-decoration: none;">
+                                ${tb.TIEUDE}
+                            </a>
+                        </p>
+                        <ul class="list-inline" style="color: #888; font-size: 13px; margin: 0;">
+                            <li>Thông báo</li>
+                            <li>|</li>
+                            <li>${new Date(tb.NGAYDANG).toLocaleDateString('vi-VN')}</li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+        container.insertAdjacentHTML('beforeend', html);
+      });
+
+      document.getElementById('prevBtn').disabled = currentPage === 0;
+      document.getElementById('nextBtn').disabled = end >= thongbao_khac.length;
+
+      container.classList.remove('fade-out');
+      container.classList.add('fade-in');
+
+      setTimeout(() => container.classList.remove('fade-in'), 500);
+    }, 300);
+  }
+
+  document.getElementById('prevBtn').addEventListener('click', () => {
+    if (currentPage > 0) {
+      currentPage--;
+      renderNotifications();
+    }
+  });
+
+  document.getElementById('nextBtn').addEventListener('click', () => {
+    if ((currentPage + 1) * pageSize < thongbao_khac.length) {
+      currentPage++;
+      renderNotifications();
+    }
+  });
+
+  renderNotifications();
+</script>
+<style>
+  .news-content p,
+  .news-content ul,
+  .news-content ol {
+    font-size: 16px;
+    line-height: 1.6;
+    margin-bottom: 1em;
+  }
+
+  .news-content ul {
+    padding-left: 20px;
+  }
+
+  .panel-body p {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-bottom: 0;
+  }
+
+  .ls-list {
+    margin-bottom: 20px;
+  }
+
+  .noidung-rutgon {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+  }
+
+  #notification-list {
+    transition: opacity 0.5s ease;
+    opacity: 1;
+  }
+
+  #notification-list.fade-out {
+    opacity: 0;
+  }
+
+  #notification-list.fade-in {
+    opacity: 1;
+  }
+
+  .container,
+  .container-fluid,
+  #wrapper,
+  #page-wrapper {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .row {
+    margin-left: 0;
+    margin-right: 0;
+  }
+</style>

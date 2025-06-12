@@ -17,19 +17,22 @@
                             <!-- /input-group -->
                         </li>
                         <li>
-                            <a href="pages/canbo/trangchu" class="active"><i class="fa fa-dashboard fa-fw"></i> Trang chủ</a>
+                            <a href="pages/canbo/trangchu" class="active"><i class="fa fa-home fa-fw"></i>Trang chủ</a>
                         </li>
                         <li>
-                            <a href="pages/canbo/modotthuctap" class="active"><i class="fa fa-dashboard fa-fw"></i>Mở đợt thực tập</a>
+                            <a href="pages/canbo/modotthuctap" class="active"><i class="fa fa-briefcase"></i> Mở đợt thực tập</a>
                         </li>
                         <li>
-                            <a href="pages/canbo/quanlythongbao" class="active"><i class="fa fa-dashboard fa-fw"></i> Quản lý thông báo</a>
+                            <a href="pages/canbo/quanlydanhsachsinhvien" class="active"><i class="fa fa-users fa-fw"></i> Quản lý sinh viên</a>
                         </li>
                         <li>
-                            <a href="pages/canbo/khaosat" class="active"><i class="fa fa-dashboard fa-fw"></i>Khảo sát</a>
+                            <a href="pages/canbo/quanlythongbao" class="active"><i class="fa fa-bell fa-fw"></i> Quản lý thông báo</a>
                         </li>
                         <li>
-                            <a href="pages/canbo/quanlycongty" class="active"><i class="fa fa-dashboard fa-fw"></i>Quản lý công ty</a>
+                            <a href="pages/canbo/khaosat" class="active"><i class="fa fa-check-square-o fa-fw"></i> Khảo sát</a>
+                        </li>
+                        <li>
+                            <a href="pages/canbo/quanlycongty" class="active"><i class="fa fa-building fa-fw"></i> Quản lý công ty</a>
                         </li>
                     </ul>
                 </div>
