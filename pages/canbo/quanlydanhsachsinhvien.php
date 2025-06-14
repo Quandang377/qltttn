@@ -356,7 +356,7 @@ $(document).ready(function () {
 
             $('#ten-sinh-vien').val(data[0]);
             $('#mssv').val(data[1]).prop('readonly', true);
-            $('#xep_loai').val(data[2]);
+            $('#xep_loai').val($.trim(data[2]));
             $("#id_dot option").filter(function () {
                 return $(this).text() === data[3];
             }).prop('selected', true);
