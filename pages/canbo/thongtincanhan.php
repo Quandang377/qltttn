@@ -1,0 +1,1 @@
+Đây là trang xem thông tin cá nhân của cán bộ
