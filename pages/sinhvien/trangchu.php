@@ -1,8 +1,6 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/ThongBao_funtions.php";
-
-
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -107,9 +105,10 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/ThongBao_funtions.php";
       </div>
     </div>
   </div>
-</body>
 
-</html>
+<?php
+require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
+  ?>
 <script>
   const thongbaos = <?= json_encode($thongbaos) ?>;
   const pageSize = 5;
@@ -178,7 +177,8 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/ThongBao_funtions.php";
 
   renderNotifications();
 </script>
-
+</body>
+</html>
 <style>
   .panel-row {
     display: flex;

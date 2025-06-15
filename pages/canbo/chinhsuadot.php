@@ -156,9 +156,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
     </div>
-</body>
-
-</html>
+<?php
+        require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
+    ?>
 <script>
     window.addEventListener('DOMContentLoaded', () => {
         const alertBox = document.getElementById('successAlert');
@@ -181,3 +181,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     });
 </script>
+</body>
+
+</html>

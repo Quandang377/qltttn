@@ -1,9 +1,9 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
-function getAllInternships($pdo)
+function getAllInternships($conn)
 {
-    $stmt = $pdo->prepare("SELECT ID,TenDot,Nam,Loai,NguoiQuanLy,ThoiGianBatDau,ThoiGianKetThuc,TenNguoiMoDot,TrangThai FROM DOTTHUCTAP where TrangThai !=-1 ORDER BY ID DESC");
+    $stmt = $conn->prepare("SELECT ID,TenDot,Nam,Loai,NguoiQuanLy,ThoiGianBatDau,ThoiGianKetThuc,TenNguoiMoDot,TrangThai FROM DOTTHUCTAP where TrangThai !=-1 ORDER BY ID DESC");
     $stmt->execute();
     return $stmt->fetchAll();
 }
@@ -194,89 +194,92 @@ $canbokhoa = $conn->query("SELECT ID_TaiKhoan,Ten FROM canbokhoa where TrangThai
             </div>
         </div>
     </div>
-</body>
+    <?php
+    require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
+        ?>
+    <script>
 
-</html>
-<script>
-
-    $(document).ready(function () {
-        var table = $('#TableDotTT').DataTable({
-            responsive: true,
-            pageLength: 20,
-            language: {
-                url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json"
-            }
-        });
-
-    });
-    document.addEventListener('DOMContentLoaded', function () {
-        const startInput = document.getElementById('thoigianbatdau');
-        const endInput = document.getElementById('thoigianketthuc');
-        const form = document.getElementById('FormMoDot');
-
-        const today = new Date();
-        today.setDate(today.getDate() + 1);
-        const minStartDate = today.toISOString().split('T')[0];
-        startInput.min = minStartDate;
-
-        startInput.addEventListener('change', function () {
-            const startDate = new Date(this.value);
-            if (!isNaN(startDate)) {
-                startDate.setDate(startDate.getDate() + 28);
-                const minEndDate = startDate.toISOString().split('T')[0];
-                endInput.min = minEndDate;
-            }
-        });
-
-        <?php if (!empty($notification)): ?>
-            Swal.fire({
-                title: 'Thất bại!',
-                text: '<?= addslashes($notification) ?>',
-                confirmButtonText: 'OK',
-                confirmButtonColor: '#dc3545'
+        $(document).ready(function () {
+            var table = $('#TableDotTT').DataTable({
+                responsive: true,
+                pageLength: 20,
+                language: {
+                    url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json"
+                }
             });
-        <?php endif ?>
 
-        form.addEventListener('submit', function (e) {
-            e.preventDefault();
+        });
+        document.addEventListener('DOMContentLoaded', function () {
+            const startInput = document.getElementById('thoigianbatdau');
+            const endInput = document.getElementById('thoigianketthuc');
+            const form = document.getElementById('FormMoDot');
 
-            const loai = document.getElementById('loai').value;
-            const nam = document.getElementById('namhoc').value;
-            const nguoiquanly = document.getElementById('nguoiquanly').value;
-            const batdau = new Date(startInput.value);
-            const ketthuc = new Date(endInput.value);
+            const today = new Date();
+            today.setDate(today.getDate() + 1);
+            const minStartDate = today.toISOString().split('T')[0];
+            startInput.min = minStartDate;
 
-            if (!startInput.value || !endInput.value || isNaN(batdau) || isNaN(ketthuc)) {
-                Swal.fire("Lỗi", "Vui lòng chọn đầy đủ thời gian hợp lệ");
-                return;
-            }
+            startInput.addEventListener('change', function () {
+                const startDate = new Date(this.value);
+                if (!isNaN(startDate)) {
+                    startDate.setDate(startDate.getDate() + 28);
+                    const minEndDate = startDate.toISOString().split('T')[0];
+                    endInput.min = minEndDate;
+                }
+            });
 
-            const minKetThuc = new Date(batdau);
-            minKetThuc.setDate(minKetThuc.getDate() + 28);
+            <?php if (!empty($notification)): ?>
+                Swal.fire({
+                    title: 'Thất bại!',
+                    text: '<?= addslashes($notification) ?>',
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#dc3545'
+                });
+            <?php endif ?>
 
-            if (ketthuc < minKetThuc) {
-                Swal.fire("Lỗi", "Thời gian kết thúc phải sau thời gian bắt đầu ít nhất 4 tuần");
-                return;
-            }
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
 
-            Swal.fire({
-                title: 'Xác nhận mở đợt?',
-                html: `
+                const loai = document.getElementById('loai').value;
+                const nam = document.getElementById('namhoc').value;
+                const nguoiquanly = document.getElementById('nguoiquanly').value;
+                const batdau = new Date(startInput.value);
+                const ketthuc = new Date(endInput.value);
+
+                if (!startInput.value || !endInput.value || isNaN(batdau) || isNaN(ketthuc)) {
+                    Swal.fire("Lỗi", "Vui lòng chọn đầy đủ thời gian hợp lệ");
+                    return;
+                }
+
+                const minKetThuc = new Date(batdau);
+                minKetThuc.setDate(minKetThuc.getDate() + 28);
+
+                if (ketthuc < minKetThuc) {
+                    Swal.fire("Lỗi", "Thời gian kết thúc phải sau thời gian bắt đầu ít nhất 4 tuần");
+                    return;
+                }
+
+                Swal.fire({
+                    title: 'Xác nhận mở đợt?',
+                    html: `
                 <p><strong>Loại:</strong> ${loai}</p>
                 <p><strong>Năm học:</strong> ${nam}</p>
                 <p><strong>Thời gian bắt đầu:</strong> ${startInput.value}</p>
                 <p><strong>Thời gian kết thúc:</strong> ${endInput.value}</p>
                 <p><strong>Người quản lý:</strong> ${nguoiquanly}</p>
             `,
-                showCancelButton: true,
-                confirmButtonText: 'Xác nhận',
-                cancelButtonText: 'Hủy',
-                confirmButtonColor: '#3085d6',
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    form.submit();
-                }
+                    showCancelButton: true,
+                    confirmButtonText: 'Xác nhận',
+                    cancelButtonText: 'Hủy',
+                    confirmButtonColor: '#3085d6',
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
             });
         });
-    });
-</script>
+    </script>
+</body>
+
+</html>
