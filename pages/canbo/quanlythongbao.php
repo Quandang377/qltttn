@@ -8,20 +8,9 @@ if (isset($_GET['loc'])) {
     $order = "ASC";
 }
 
-$stmt = $conn->prepare("SELECT ID, TIEUDE, NOIDUNG, NGAYDANG FROM THONGBAO WHERE TRANGTHAI=1 ORDER BY NGAYDANG $order");
+$stmt = $conn->prepare("SELECT ID, TIEUDE, NOIDUNG, NGAYDANG FROM THONGBAO ORDER BY NGAYDANG $order");
 $stmt->execute();
 $thongbaos = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_thongbao_id'])) {
-  $idThongBao = $_POST['xoa_thongbao_id'];
-
-  $stmt = $conn->prepare("UPDATE ThongBao SET TrangThai = 0 WHERE ID = ?");
-  $stmt->execute([$idThongBao]);
-
-  $_SESSION['success'] = "Xoá thông báo thành công.";
-  header("Location: " . $_SERVER['REQUEST_URI']);
-  exit;
-}
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -61,27 +50,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_thongbao_id'])) {
                         <th>#</th>
                         <th>Tiêu đề</th>
                         <th>Thời gian đăng</th>
-                        <th>Hành động</th>
                       </tr>
                     </thead>
                     <tbody>
                       <?php $i = 1;
                       foreach ($thongbaos as $thongbao): ?>
                         <?php $link = 'pages/canbo/chitietthongbao?id=' . urlencode($thongbao['ID']); ?>
-                        <tr>
-                          <td onclick="window.location='<?= $link ?>';" style="cursor: pointer;"><?= $i++ ?></td>
-                          <td onclick="window.location='<?= $link ?>';" style="cursor: pointer;">
-                            <?= htmlspecialchars($thongbao['TIEUDE']) ?>
-                          </td>
-                          <td onclick="window.location='<?= $link ?>';" style="cursor: pointer;">
-                            <?= htmlspecialchars($thongbao['NGAYDANG']) ?>
-                          </td>
-                          <td>
-                            <form method="post" onsubmit="return confirm('Bạn có chắc chắn muốn xóa thông báo này?');">
-                              <input type="hidden" name="xoa_thongbao_id" value="<?= $thongbao['ID'] ?>">
-                              <button type="submit" class="btn btn-danger btn-sm">Xoá</button>
-                            </form>
-                          </td>
+                        <tr onclick="window.location='<?= $link ?>';" style="cursor: pointer;">
+                          <td><?= $i++ ?></td>
+                          <td><?= htmlspecialchars($thongbao['TIEUDE']) ?></td>
+                          <td><?= htmlspecialchars($thongbao['NGAYDANG']) ?></td>
                         </tr>
                       <?php endforeach; ?>
                     </tbody>
@@ -104,24 +82,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_thongbao_id'])) {
 
     </div>
   </div>
-  <?php
-  require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
-    ?>
-  <script>
-    $(document).ready(function () {
-      var table = $('#TableDotTT').DataTable({
-        responsive: true,
-        pageLength: 20,
-        language: {
-          url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json"
-        }
-      });
-
-    });
-  </script>
 </body>
 
 </html>
+<script>
+  $(document).ready(function () {
+    var table = $('#TableDotTT').DataTable({
+      responsive: true,
+      pageLength: 20,
+      language: {
+        url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json"
+      }
+    });
+
+  });
+</script>
 <style>
   .noidung-rutgon {
     white-space: nowrap;

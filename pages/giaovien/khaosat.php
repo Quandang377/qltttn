@@ -57,12 +57,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_khaosat_id'])) {
     require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php";
     ?>
 </head>
-
 <body>
     <div id="wrapper">
-        <?php
-        require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_GiaoVien.php";
-        ?>
+    <?php
+    require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_GiaoVien.php";
+    ?>
         <div id="page-wrapper">
             <div class="container-fluid">
                 <div class="page-header">

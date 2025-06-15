@@ -48,6 +48,10 @@ $dsDotThucTap = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <body>
     <div id="wrapper">
         <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/admin/template/slidebar.php"; ?>
+<<<<<<< HEAD
+=======
+
+>>>>>>> 4fd8ce05db2488642b901eba16148a94e291076e
         <div id="page-wrapper">
             <div class="container-fluid">
                 <div class="row mt-5">
@@ -78,6 +82,27 @@ $dsDotThucTap = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             </div>
                             <div class="form-group col-sm-1">
                                 <button type="submit" class="btn btn-danger">Xóa</button>
+=======
+                <div class="row">
+                    <form method="post" id="FormQuanLy">
+                        <div class="row">
+                            <div class="form-group col-sm-2">
+                                <select name="loc" class="form-control" required>
+                                    <option value="Cán bộ Khoa/Bộ môn">Cán bộ Khoa/Bộ môn</option>
+                                    <option value="Giáo viên">Giáo viên</option>
+                                    <option value="Sinh viên">Sinh viên</option>
+                                    <option value="Admin">Admin</option>
+                                </select>
+                            </div>
+                            <div class="form-group col-sm-1">
+                                <button class="btn btn-primary">Thêm</button>
+                            </div>
+                            <div class="form-group col-sm-1">
+                                <button class="btn btn-warning">Chỉnh sửa</button>
+                            </div>
+                            <div class="form-group col-sm-1">
+                                <button class="btn btn-secondary">Xóa</button>
+>>>>>>> 4fd8ce05db2488642b901eba16148a94e291076e
                             </div>
                         </div>
                         <?php
@@ -103,13 +128,19 @@ $dsDotThucTap = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                             <thead>
                                                 <tr>
                                                     <th></th>
+<<<<<<< HEAD
                                                     <th>Tài Khoản</th>
                                                     <th>Họ Tên</th>
                                                     <th>Vai trò</th>
+=======
+                                                    <th>MSSV</th>
+                                                    <th>Họ Tên</th>
+>>>>>>> 4fd8ce05db2488642b901eba16148a94e291076e
                                                     <th>Trạng Thái</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
+<<<<<<< HEAD
                                                 <?php foreach ($danhSachThanhVien as $tv): ?>
                                                     <tr>
                                                         <td><input type="checkbox" name="chon[]"
@@ -132,10 +163,15 @@ $dsDotThucTap = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                                         </td>
                                                     </tr>
                                                 <?php endforeach; ?>
+=======
+                                                
+                                            </tbody>
+>>>>>>> 4fd8ce05db2488642b901eba16148a94e291076e
                                         </table>
                                     </div>
                                 </div>
                             </div>
+<<<<<<< HEAD
                     </form>
                 </div>
             </div>
@@ -323,3 +359,32 @@ $dsDotThucTap = $stmt->fetchAll(PDO::FETCH_ASSOC);
         </form>
     </div>
 </div>
+=======
+                            <div class="row">
+                                <div class="text-center">
+                                    <button type="submit" class="btn btn-primary btn-lg mt-3">Xác nhận</button>
+                                    <a href="/datn/pages/canbo/chitietdot?id=<?= urlencode($id) ?>"
+                                        class="btn btn-default btn-lg">Thoát</a>
+                                </div>
+                            </div>
+                    </form>
+                </div>
+            </div>
+</body>
+
+</html>
+
+<script>
+    $(document).ready(function () {
+        var table = $('#tableThanhVien').DataTable({
+            responsive: true,
+            pageLength: 20,
+            language: {
+                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json'
+            }
+        });
+
+    });
+    
+</script>
+>>>>>>> 4fd8ce05db2488642b901eba16148a94e291076e

@@ -107,28 +107,28 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/ThongBao_funtions.php";
       </div>
     </div>
   </div>
-  <?php
-  require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
-    ?>
-  <script>
-    const thongbaos = <?= json_encode($thongbaos) ?>;
-    const pageSize = 5;
-    let currentPage = 0;
+</body>
 
-    function renderNotifications() {
-      const container = document.getElementById('notification-list');
+</html>
+<script>
+  const thongbaos = <?= json_encode($thongbaos) ?>;
+  const pageSize = 5;
+  let currentPage = 0;
 
-      container.classList.add('fade-out');
+  function renderNotifications() {
+    const container = document.getElementById('notification-list');
 
-      setTimeout(() => {
-        const start = currentPage * pageSize;
-        const end = start + pageSize;
-        const list = thongbaos.slice(start, end);
+    container.classList.add('fade-out');
 
-        container.innerHTML = '';
+    setTimeout(() => {
+      const start = currentPage * pageSize;
+      const end = start + pageSize;
+      const list = thongbaos.slice(start, end);
 
-        list.forEach(tb => {
-          const html = `
+      container.innerHTML = '';
+
+      list.forEach(tb => {
+        const html = `
                 <div class="row" style="margin-bottom: 15px; border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
                     <div class="col-md-2 text-center">
                         <a href="pages/giaovien/chitietthongbao.php?id=${tb.ID}">
@@ -149,38 +149,36 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/ThongBao_funtions.php";
                     </div>
                 </div>
             `;
-          container.insertAdjacentHTML('beforeend', html);
-        });
+        container.insertAdjacentHTML('beforeend', html);
+      });
 
-        document.getElementById('prevBtn').disabled = currentPage === 0;
-        document.getElementById('nextBtn').disabled = end >= thongbaos.length;
+      document.getElementById('prevBtn').disabled = currentPage === 0;
+      document.getElementById('nextBtn').disabled = end >= thongbaos.length;
 
-        container.classList.remove('fade-out');
-        container.classList.add('fade-in');
+      container.classList.remove('fade-out');
+      container.classList.add('fade-in');
 
-        setTimeout(() => container.classList.remove('fade-in'), 500);
-      }, 300);
+      setTimeout(() => container.classList.remove('fade-in'), 500);
+    }, 300);
+  }
+
+  document.getElementById('prevBtn').addEventListener('click', () => {
+    if (currentPage > 0) {
+      currentPage--;
+      renderNotifications();
     }
+  });
 
-    document.getElementById('prevBtn').addEventListener('click', () => {
-      if (currentPage > 0) {
-        currentPage--;
-        renderNotifications();
-      }
-    });
+  document.getElementById('nextBtn').addEventListener('click', () => {
+    if ((currentPage + 1) * pageSize < thongbaos.length) {
+      currentPage++;
+      renderNotifications();
+    }
+  });
 
-    document.getElementById('nextBtn').addEventListener('click', () => {
-      if ((currentPage + 1) * pageSize < thongbaos.length) {
-        currentPage++;
-        renderNotifications();
-      }
-    });
+  renderNotifications();
+</script>
 
-    renderNotifications();
-  </script>
-</body>
-
-</html>
 <style>
   .panel-row {
     display: flex;

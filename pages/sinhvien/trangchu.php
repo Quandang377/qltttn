@@ -110,6 +110,7 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['VaiTro'] !== 'Sinh viên') {
       </div>
     </div>
   </div>
+</body>
 
 <?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 
@@ -183,8 +184,6 @@ require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
 
   renderNotifications();
 </script>
-</body>
-</html>
 <style>
   .panel-row {
     display: flex;

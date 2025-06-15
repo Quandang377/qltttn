@@ -1,7 +1,38 @@
+<<<<<<< HEAD
 CREATE DATABASE IF NOT EXISTS ThucTapDB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 USE ThucTapDB;
 
+=======
+
+CREATE DATABASE IF NOT EXISTS ThucTapDB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE ThucTapDB;
+
+CREATE TABLE TaiKhoan (
+    ID_TaiKhoan VARCHAR(5) PRIMARY KEY,
+    TaiKhoan VARCHAR(20),
+    MatKhau VARCHAR(16),
+    VaiTro NVARCHAR(30),
+    TrangThai TINYINT
+);
+
+CREATE TABLE CanBoKhoa (
+    ID_TaiKhoan VARCHAR(5) PRIMARY KEY,
+    Ten NVARCHAR(50),
+    TrangThai TINYINT,
+    FOREIGN KEY (ID_TaiKhoan) REFERENCES TaiKhoan(ID_TaiKhoan)
+);
+
+CREATE TABLE GiaoVien (
+    ID_TaiKhoan VARCHAR(5) PRIMARY KEY,
+    Ten NVARCHAR(50),
+    Sdt VARCHAR(12),
+    Email VARCHAR(250),
+    TrangThai TINYINT,
+    FOREIGN KEY (ID_TaiKhoan) REFERENCES TaiKhoan(ID_TaiKhoan)
+);
+
+>>>>>>> 4fd8ce05db2488642b901eba16148a94e291076e
 CREATE TABLE DotThucTap (
     ID INT AUTO_INCREMENT PRIMARY KEY,
     TenDot VARCHAR(50),
@@ -15,6 +46,24 @@ CREATE TABLE DotThucTap (
     TrangThai TINYINT
 );
 
+<<<<<<< HEAD
+=======
+CREATE TABLE SinhVien (
+    ID_TaiKhoan VARCHAR(5) PRIMARY KEY,
+    ID_Dot INT,
+    Ten NVARCHAR(50),
+    Lop NVARCHAR(50),
+    Diem INT,
+    XepLoai NVARCHAR(50),
+    MSSV VARCHAR(12),
+    ID_GVHD VARCHAR(5),
+    TrangThai TINYINT,
+    FOREIGN KEY (ID_TaiKhoan) REFERENCES TaiKhoan(ID_TaiKhoan),
+    FOREIGN KEY (ID_Dot) REFERENCES DotThucTap(ID),
+    FOREIGN KEY (ID_GVHD) REFERENCES GiaoVien(ID_TaiKhoan)
+);
+
+>>>>>>> 4fd8ce05db2488642b901eba16148a94e291076e
 CREATE TABLE TaiNguyenThucTap (
     ID INT AUTO_INCREMENT PRIMARY KEY,
     Ten VARCHAR(255),
@@ -70,13 +119,17 @@ CREATE TABLE ThongBao (
     TrangThai TINYINT,
     FOREIGN KEY (ID_TaiKhoan) REFERENCES TaiKhoan(ID_TaiKhoan)
 );
+<<<<<<< HEAD
 
+=======
+>>>>>>> 4fd8ce05db2488642b901eba16148a94e291076e
 CREATE TABLE TEPDINHKEM (
     ID INT PRIMARY KEY AUTO_INCREMENT,
     TENFILE VARCHAR(255),
     ID_THONGBAO INT,
     FOREIGN KEY (ID_THONGBAO) REFERENCES THONGBAO(ID)
 );
+<<<<<<< HEAD
 
 CREATE TABLE TaiKhoan (
     ID INT AUTO_INCREMENT PRIMARY KEY,
@@ -122,11 +175,16 @@ CREATE TABLE SinhVien (
     FOREIGN KEY (ID_GVHD) REFERENCES GiaoVien(ID_TaiKhoan)
 );
 
+=======
+>>>>>>> 4fd8ce05db2488642b901eba16148a94e291076e
 CREATE TABLE KhaoSat (
     ID INT AUTO_INCREMENT PRIMARY KEY,
     TieuDe NVARCHAR(255),
     MoTa TEXT,
+<<<<<<< HEAD
     NguoiNhan VARCHAR(50),
+=======
+>>>>>>> 4fd8ce05db2488642b901eba16148a94e291076e
     NguoiTao VARCHAR(5),
     ThoiGianTao DATETIME,
     TrangThai TINYINT,
@@ -137,6 +195,10 @@ CREATE TABLE CauHoiKhaoSat (
     ID INT AUTO_INCREMENT PRIMARY KEY,
     ID_KhaoSat INT,
     NoiDung TEXT,
+<<<<<<< HEAD
+=======
+    LoaiCauHoi VARCHAR(20),
+>>>>>>> 4fd8ce05db2488642b901eba16148a94e291076e
     TrangThai TINYINT,
     FOREIGN KEY (ID_KhaoSat) REFERENCES KhaoSat(ID)
 );
@@ -146,10 +208,16 @@ CREATE TABLE PhanHoiKhaoSat (
     ID_KhaoSat INT,
     ID_TaiKhoan VARCHAR(5),
     ThoiGianTraLoi DATETIME,
+<<<<<<< HEAD
     TrangThai TINYINT DEFAULT 1,
     FOREIGN KEY (ID_KhaoSat) REFERENCES KhaoSat(ID),
     FOREIGN KEY (ID_TaiKhoan) REFERENCES TaiKhoan(ID_TaiKhoan),
     UNIQUE (ID_KhaoSat, ID_TaiKhoan)
+=======
+    TrangThai TINYINT,
+    FOREIGN KEY (ID_KhaoSat) REFERENCES KhaoSat(ID),
+    FOREIGN KEY (ID_TaiKhoan) REFERENCES TaiKhoan(ID_TaiKhoan)
+>>>>>>> 4fd8ce05db2488642b901eba16148a94e291076e
 );
 
 CREATE TABLE CauTraLoi (
@@ -175,11 +243,16 @@ CREATE TABLE File (
 
 CREATE TABLE TongKet (
     ID INT AUTO_INCREMENT PRIMARY KEY,
+<<<<<<< HEAD
     ID_SV VARCHAR(5),
+=======
+    IDSV VARCHAR(5),
+>>>>>>> 4fd8ce05db2488642b901eba16148a94e291076e
     ID_GVHD VARCHAR(5),
     Diem FLOAT,
     DanhGia TEXT,
     TrangThai TINYINT,
+<<<<<<< HEAD
     FOREIGN KEY (ID_SV) REFERENCES SinhVien(ID_TaiKhoan),
     FOREIGN KEY (ID_GVHD) REFERENCES GiaoVien(ID_TaiKhoan)
 );
@@ -190,3 +263,8 @@ CREATE TABLE TuanBaoCao (
     TrangThai BOOLEAN NOT NULL,
     FOREIGN KEY (ID_GVHD) REFERENCES GiaoVien(ID_TaiKhoan)
 );
+=======
+    FOREIGN KEY (IDSV) REFERENCES SinhVien(ID_TaiKhoan),
+    FOREIGN KEY (ID_GVHD) REFERENCES GiaoVien(ID_TaiKhoan)
+);
+>>>>>>> 4fd8ce05db2488642b901eba16148a94e291076e

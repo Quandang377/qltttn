@@ -42,117 +42,126 @@ foreach ($phanHoi as $ph) {
 ?>
 <!DOCTYPE html>
 <html lang="vi">
-
 <head>
-  <meta charset="UTF-8">
-  <title>Chi tiết khảo sát</title>
-  <?php
-  require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php";
-  ?>
+    <meta charset="UTF-8">
+    <title>Tạo khảo sát</title>
+    <?php
+    require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php";
+    ?>
 </head>
-
 <body>
-  <div id="wrapper">
+    <div id="wrapper">
     <?php
     require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_CanBo.php";
     ?>
-    <div id="page-wrapper">
-      <div class="container-fluid">
-        <div class="page-header">
-          <h1>
-            <?= htmlspecialchars($khaoSat['TieuDe']) ?>
-          </h1>
-          <h4>
-            <?= htmlspecialchars($khaoSat['MoTa']) ?>
-          </h4>
-        </div>
+        <div id="page-wrapper">
+            <div class="container-fluid">
+                <div class="page-header">
+                    <h1>
+                        Khảo Sát Thực Tập
+                    </h1>
+                </div>
         <div id="containerKhaoSat" class="mt-3">
-          <div id="listKhaoSat" class="row">
-          </div>
-          <div class="row">
-            <div class="col-lg-12">
-              <div class="panel panel-default">
+            <div id="listKhaoSat" class="row">
+        </div>
+        <div class="row">
+        <div class="col-lg-12">
+            <div class="panel panel-default">
                 <div class="panel-heading">
-                  Danh sách người phản hồi
+                    Danh sách người phản hồi
                 </div>
                 <div class="panel-body">
-                  <div class="table-responsive">
-                    <table class="table" id="quanlykhaosat">
-                      <thead>
-                        <tr>
-                          <th>#</th>
-                          <th>Người phản hồi</th>
-                          <th>Vai trò</th>
-                          <th>Thời gian phản hồi</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <?php foreach ($phanHoi as $index => $ph): ?>
-                          <tr onclick="hienPhanHoi(<?= $ph['ID'] ?>)" style="cursor: pointer;">
-                            <td><?= $index + 1 ?></td>
-                            <td><?= htmlspecialchars($ph['TenNguoiPhanHoi']) ?></td>
-                            <td><?= htmlspecialchars($ph['VaiTro']) ?></td>
-                            <td><?= date("H:i d/m/Y", strtotime($ph['ThoiGianTraLoi'])) ?></td>
-                          </tr>
-                        <?php endforeach; ?>
-                      </tbody>
-                    </table>
-                  </div>
-                  <!-- /.table-responsive -->
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Người phản hồi</th>
+                                    <th>Thời gian phản hồi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="cursor: pointer;" onclick="hienPhanHoi('Đặng Minh Quân')">
+                                <td>1</td>
+                                <td>Đặng Minh Quân</td>
+                                <td>12:30 1/1/2025</td>
+                                </tr>
+                                <tr style="cursor: pointer;" onclick="hienPhanHoi('Đặng Minh Quân')">
+                                <td>1</td>
+                                <td>Đặng Minh Quân</td>
+                                <td>12:30 1/1/2025</td>
+                                </tr>
+                                <tr style="cursor: pointer;" onclick="hienPhanHoi('Đặng Minh Quân')">
+                                <td>2</td>
+                                <td>Đặng Minh Quân</td>
+                                <td>12:30 1/1/2025</td>
+                                </tr>
+                                <tr style="cursor: pointer;" onclick="hienPhanHoi('Đặng Minh Quân')">
+                                <td>3</td>
+                                <td>Đặng Minh Quân</td>
+                                <td>12:30 1/1/2025</td>
+                                </tr>
+                                <tr style="cursor: pointer;" onclick="hienPhanHoi('Đặng Minh Quân')">
+                                <td>4</td>
+                                <td>Đặng Minh Quân</td>
+                                <td>12:30 1/1/2025</td>
+                                </tr>
+                                <tr style="cursor: pointer;" onclick="hienPhanHoi('Đặng Minh Quân')">
+                                <td>5</td>
+                                <td>Đặng Minh Quân</td>
+                                <td>12:30 1/1/2025</td>
+                                </tr>
+                                <tr style="cursor: pointer;" onclick="hienPhanHoi('Đặng Minh Quân')">
+                                <td>6</td>
+                                <td>Đặng Minh Quân</td>
+                                <td>12:30 1/1/2025</td>
+                                </tr>
+
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- /.table-responsive -->
                 </div>
                 <!-- /.panel-body -->
-              </div>
-              <!-- /.panel -->
             </div>
-            <!-- /.col-lg-6 -->
-          </div>
-
-          <?php foreach ($phanHoi as $ph): ?>
-            <div class="modal fade" id="modalPhanHoi<?= $ph['ID'] ?>" tabindex="-1" role="dialog"
-              aria-labelledby="modalPhanHoiLabel<?= $ph['ID'] ?>">
-              <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                  <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal"
-                      aria-label="Đóng"><span>&times;</span></button>
-                    <h4 class="modal-title" id="modalPhanHoiLabel<?= $ph['ID'] ?>">
-                      <?= htmlspecialchars($ph['TenNguoiPhanHoi']) ?>
-                    </h4>
-                  </div>
-                  <div class="modal-body">
-                    <?php foreach ($cauTraLoiTheoPhanHoi[$ph['ID']] as $index => $ctl): ?>
-                      <div class="form-group">
-                        <label>Câu <?= $index + 1 ?>: <?= htmlspecialchars($ctl['NoiDung']) ?></label>
-                        <input type="text" class="form-control" value="<?= htmlspecialchars($ctl['TraLoi']) ?>" readonly>
-                      </div>
-                    <?php endforeach; ?>
-                  </div>
-                  <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-dismiss="modal">Đóng</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          <?php endforeach; ?>
-        </div><?php
-  require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
-    ?>
-        <script>
-          function hienPhanHoi(idPhanHoi) {
-            $('#modalPhanHoi' + idPhanHoi).modal('show');
-          }
-          $(document).ready(function () {
-            $('#quanlykhaosat').DataTable({
-              searching: false, info: false,
-              lengthChange: false
-            });
-
-          });
-        </script>
+            <!-- /.panel -->
+        </div>
+                        <!-- /.col-lg-6 -->
+        </div>
+        <!-- Modal hiển thị phản hồi -->
+<div class="modal fade" id="modalPhanHoi" tabindex="-1" role="dialog" aria-labelledby="modalPhanHoiLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Đóng"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="modalPhanHoiLabel">Đặng Minh Quân</h4>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Câu hỏi số 1</label>
+          <input type="text" class="form-control" value="Câu trả lời" readonly>
+        </div>
+        <div class="form-group">
+          <label>Câu hỏi số 2</label>
+          <input type="text" class="form-control" value="Câu trả lời" readonly>
+        </div>
+        <div class="form-group">
+          <label>Câu hỏi số 3</label>
+          <input type="text" class="form-control" value="Câu trả lời" readonly>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-dismiss="modal">Đóng</button>
       </div>
     </div>
   </div>
-  
-</body>
+</div>
+</div>  
+<script>
+function hienPhanHoi(ten) {
+    document.getElementById('modalPhanHoiLabel').textContent = ten;
+    $('#modalPhanHoi').modal('show');
+}
+</script>
+</div
 
-</html>
