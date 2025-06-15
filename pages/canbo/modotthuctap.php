@@ -1,15 +1,9 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
-<<<<<<< HEAD
-function getAllInternships($conn)
-{
-    $stmt = $conn->prepare("SELECT ID,TenDot,Nam,Loai,NguoiQuanLy,ThoiGianBatDau,ThoiGianKetThuc,TenNguoiMoDot,TrangThai FROM DOTTHUCTAP where TrangThai !=-1 ORDER BY ID DESC");
-=======
 function getAllInternships($pdo)
 {
     $stmt = $pdo->prepare("SELECT ID,TenDot,Nam,Loai,NguoiQuanLy,ThoiGianBatDau,ThoiGianKetThuc,TenNguoiMoDot,TrangThai FROM DOTTHUCTAP where TrangThai !=-1 ORDER BY ID DESC");
->>>>>>> 4fd8ce05db2488642b901eba16148a94e291076e
     $stmt->execute();
     return $stmt->fetchAll();
 }
@@ -200,76 +194,6 @@ $canbokhoa = $conn->query("SELECT ID_TaiKhoan,Ten FROM canbokhoa where TrangThai
             </div>
         </div>
     </div>
-<<<<<<< HEAD
-    <?php
-    require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
-        ?>
-    <script>
-
-        $(document).ready(function () {
-            var table = $('#TableDotTT').DataTable({
-                responsive: true,
-                pageLength: 20,
-                language: {
-                    url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json"
-                }
-            });
-
-        });
-        document.addEventListener('DOMContentLoaded', function () {
-            const startInput = document.getElementById('thoigianbatdau');
-            const endInput = document.getElementById('thoigianketthuc');
-            const form = document.getElementById('FormMoDot');
-
-            const today = new Date();
-            today.setDate(today.getDate() + 1);
-            const minStartDate = today.toISOString().split('T')[0];
-            startInput.min = minStartDate;
-
-            startInput.addEventListener('change', function () {
-                const startDate = new Date(this.value);
-                if (!isNaN(startDate)) {
-                    startDate.setDate(startDate.getDate() + 28);
-                    const minEndDate = startDate.toISOString().split('T')[0];
-                    endInput.min = minEndDate;
-                }
-            });
-
-            <?php if (!empty($notification)): ?>
-                Swal.fire({
-                    title: 'Thất bại!',
-                    text: '<?= addslashes($notification) ?>',
-                    confirmButtonText: 'OK',
-                    confirmButtonColor: '#dc3545'
-                });
-            <?php endif ?>
-
-            form.addEventListener('submit', function (e) {
-                e.preventDefault();
-
-                const loai = document.getElementById('loai').value;
-                const nam = document.getElementById('namhoc').value;
-                const nguoiquanly = document.getElementById('nguoiquanly').value;
-                const batdau = new Date(startInput.value);
-                const ketthuc = new Date(endInput.value);
-
-                if (!startInput.value || !endInput.value || isNaN(batdau) || isNaN(ketthuc)) {
-                    Swal.fire("Lỗi", "Vui lòng chọn đầy đủ thời gian hợp lệ");
-                    return;
-                }
-
-                const minKetThuc = new Date(batdau);
-                minKetThuc.setDate(minKetThuc.getDate() + 28);
-
-                if (ketthuc < minKetThuc) {
-                    Swal.fire("Lỗi", "Thời gian kết thúc phải sau thời gian bắt đầu ít nhất 4 tuần");
-                    return;
-                }
-
-                Swal.fire({
-                    title: 'Xác nhận mở đợt?',
-                    html: `
-=======
 </body>
 
 </html>
@@ -338,7 +262,6 @@ $canbokhoa = $conn->query("SELECT ID_TaiKhoan,Ten FROM canbokhoa where TrangThai
             Swal.fire({
                 title: 'Xác nhận mở đợt?',
                 html: `
->>>>>>> 4fd8ce05db2488642b901eba16148a94e291076e
                 <p><strong>Loại:</strong> ${loai}</p>
                 <p><strong>Năm học:</strong> ${nam}</p>
                 <p><strong>Thời gian bắt đầu:</strong> ${startInput.value}</p>

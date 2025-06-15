@@ -15,7 +15,7 @@ $thongbao = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$thongbao) {
   die("Không tìm thấy thông báo.");
 }
-$stmt_khac = $conn->prepare("SELECT ID, TIEUDE, NOIDUNG ,ID_TAIKHOAN,NGAYDANG,TRANGTHAI FROM THONGBAO WHERE ID != ? and TRANGTHAI=1 ORDER BY NGAYDANG DESC LIMIT 4");
+$stmt_khac = $conn->prepare("SELECT ID, TIEUDE, NOIDUNG ,ID_TAIKHOAN,NGAYDANG,TRANGTHAI FROM THONGBAO WHERE ID != ? ORDER BY NGAYDANG DESC LIMIT 4");
 $stmt_khac->execute([$id]);
 $thongbao_khac = $stmt_khac->fetchAll(PDO::FETCH_ASSOC);
 ?>
@@ -62,28 +62,28 @@ $thongbao_khac = $stmt_khac->fetchAll(PDO::FETCH_ASSOC);
       </div>
     </div>
   </div>
-  <?php
-  require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
-    ?>
-  <script>
-    const thongbao_khac = <?= json_encode($thongbao_khac) ?>;
-    const pageSize = 5;
-    let currentPage = 0;
+</body>
 
-    function renderNotifications() {
-      const container = document.getElementById('notification-list');
+</html>
+<script>
+  const thongbao_khac = <?= json_encode($thongbao_khac) ?>;
+  const pageSize = 5;
+  let currentPage = 0;
 
-      container.classList.add('fade-out');
+  function renderNotifications() {
+    const container = document.getElementById('notification-list');
 
-      setTimeout(() => {
-        const start = currentPage * pageSize;
-        const end = start + pageSize;
-        const list = thongbao_khac.slice(start, end);
+    container.classList.add('fade-out');
 
-        container.innerHTML = '';
+    setTimeout(() => {
+      const start = currentPage * pageSize;
+      const end = start + pageSize;
+      const list = thongbao_khac.slice(start, end);
 
-        list.forEach(tb => {
-          const html = `
+      container.innerHTML = '';
+
+      list.forEach(tb => {
+        const html = `
                 <div class="row" style="margin-bottom: 15px; border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
                     <div class="col-md-2 text-center">
                         <a href="pages/giaovien/chitietthongbao.php?id=${tb.ID}">
@@ -104,38 +104,35 @@ $thongbao_khac = $stmt_khac->fetchAll(PDO::FETCH_ASSOC);
                     </div>
                 </div>
             `;
-          container.insertAdjacentHTML('beforeend', html);
-        });
+        container.insertAdjacentHTML('beforeend', html);
+      });
 
-        document.getElementById('prevBtn').disabled = currentPage === 0;
-        document.getElementById('nextBtn').disabled = end >= thongbao_khac.length;
+      document.getElementById('prevBtn').disabled = currentPage === 0;
+      document.getElementById('nextBtn').disabled = end >= thongbao_khac.length;
 
-        container.classList.remove('fade-out');
-        container.classList.add('fade-in');
+      container.classList.remove('fade-out');
+      container.classList.add('fade-in');
 
-        setTimeout(() => container.classList.remove('fade-in'), 500);
-      }, 300);
+      setTimeout(() => container.classList.remove('fade-in'), 500);
+    }, 300);
+  }
+
+  document.getElementById('prevBtn').addEventListener('click', () => {
+    if (currentPage > 0) {
+      currentPage--;
+      renderNotifications();
     }
+  });
 
-    document.getElementById('prevBtn').addEventListener('click', () => {
-      if (currentPage > 0) {
-        currentPage--;
-        renderNotifications();
-      }
-    });
+  document.getElementById('nextBtn').addEventListener('click', () => {
+    if ((currentPage + 1) * pageSize < thongbao_khac.length) {
+      currentPage++;
+      renderNotifications();
+    }
+  });
 
-    document.getElementById('nextBtn').addEventListener('click', () => {
-      if ((currentPage + 1) * pageSize < thongbao_khac.length) {
-        currentPage++;
-        renderNotifications();
-      }
-    });
-
-    renderNotifications();
-  </script>
-</body>
-
-</html>
+  renderNotifications();
+</script>
 <style>
   .news-content p,
   .news-content ul,

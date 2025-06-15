@@ -107,31 +107,6 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/ThongBao_funtions.php";
       </div>
     </div>
   </div>
-<<<<<<< HEAD
-  <?php
-  require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
-    ?>
-
-  <script>
-    const thongbaos = <?= json_encode($thongbaos) ?>;
-    const pageSize = 5;
-    let currentPage = 0;
-
-    function renderNotifications() {
-      const container = document.getElementById('notification-list');
-
-      container.classList.add('fade-out');
-
-      setTimeout(() => {
-        const start = currentPage * pageSize;
-        const end = start + pageSize;
-        const list = thongbaos.slice(start, end);
-
-        container.innerHTML = '';
-
-        list.forEach(tb => {
-          const html = `
-=======
 </body>
 
 </html>
@@ -154,7 +129,6 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/ThongBao_funtions.php";
 
       list.forEach(tb => {
         const html = `
->>>>>>> 4fd8ce05db2488642b901eba16148a94e291076e
                 <div class="row" style="margin-bottom: 15px; border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
                     <div class="col-md-2 text-center">
                         <a href="pages/canbo/chitietthongbao.php?id=${tb.ID}">
@@ -175,40 +149,6 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/ThongBao_funtions.php";
                     </div>
                 </div>
             `;
-<<<<<<< HEAD
-          container.insertAdjacentHTML('beforeend', html);
-        });
-
-        document.getElementById('prevBtn').disabled = currentPage === 0;
-        document.getElementById('nextBtn').disabled = end >= thongbaos.length;
-
-        container.classList.remove('fade-out');
-        container.classList.add('fade-in');
-
-        setTimeout(() => container.classList.remove('fade-in'), 500);
-      }, 300);
-    }
-
-    document.getElementById('prevBtn').addEventListener('click', () => {
-      if (currentPage > 0) {
-        currentPage--;
-        renderNotifications();
-      }
-    });
-
-    document.getElementById('nextBtn').addEventListener('click', () => {
-      if ((currentPage + 1) * pageSize < thongbaos.length) {
-        currentPage++;
-        renderNotifications();
-      }
-    });
-
-    renderNotifications();
-  </script>
-</body>
-
-</html>
-=======
         container.insertAdjacentHTML('beforeend', html);
       });
 
@@ -239,7 +179,6 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/ThongBao_funtions.php";
   renderNotifications();
 </script>
 
->>>>>>> 4fd8ce05db2488642b901eba16148a94e291076e
 <style>
   .panel-row {
     display: flex;

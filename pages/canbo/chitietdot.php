@@ -107,12 +107,6 @@ $danhSachSinhVien = getSinhVienTrongDot($conn, $id);
                             <?php else: ?>
                                 <button class="btn btn-danger btn-lg" style="min-width: 120px;" disabled>Xóa</button>
                             <?php endif; ?>
-<<<<<<< HEAD
-                            <button onclick="window.location='pages/canbo/thongke?id=<?= $id ?>';"
-                                class="btn btn-primary btn-lg" style="min-width: 120px;">Thống kê</button>
-
-=======
->>>>>>> 4fd8ce05db2488642b901eba16148a94e291076e
                         </div>
                     </div>
                 </div>
@@ -151,37 +145,6 @@ $danhSachSinhVien = getSinhVienTrongDot($conn, $id);
                 </div>
             </div>
 
-<<<<<<< HEAD
-            <?php
-            require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
-                ?>
-            <script>
-                $(document).ready(function () {
-                    var table = $('#table-dssv').DataTable({
-                        responsive: true,
-                        pageLength: 20,
-                        language: {
-                            url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json'
-                        }
-                    });
-
-                });
-
-                window.addEventListener('DOMContentLoaded', () => {
-                    const alertBox = document.getElementById('successAlert');
-                    if (alertBox) {
-                        setTimeout(() => {
-                            alertBox.style.transition = 'opacity 0.5s ease';
-                            alertBox.style.opacity = '0';
-                            setTimeout(() => alertBox.remove(), 500);
-                        }, 2000);
-                    }
-                });
-            </script>
-</body>
-
-</html>
-=======
 </body>
 
 </html>
@@ -208,4 +171,3 @@ $danhSachSinhVien = getSinhVienTrongDot($conn, $id);
         }
     });
 </script>
->>>>>>> 4fd8ce05db2488642b901eba16148a94e291076e

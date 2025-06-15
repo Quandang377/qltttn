@@ -5,8 +5,6 @@
     <title>Quản lý giấy giới thiệu</title>
    <?php
     require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php";
-<<<<<<< HEAD
-=======
     require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
     function shortAddress($address, $max = 50) {
@@ -16,7 +14,6 @@
         }
         return $address;
     }   
->>>>>>> 4fd8ce05db2488642b901eba16148a94e291076e
     ?>
     <style>
     #page-wrapper {
@@ -25,19 +22,11 @@
         box-sizing: border-box;
         max-height: 100%;
     }
-<<<<<<< HEAD
-</style>
-=======
     </style>
->>>>>>> 4fd8ce05db2488642b901eba16148a94e291076e
 </head>
 <body>
     <div id="wrapper">
         <?php
-<<<<<<< HEAD
-    require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_Giaovien.php";
-    ?>
-=======
             require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_Giaovien.php";
 
             // Lấy danh sách giấy giới thiệu đã duyệt kèm tên sinh viên và MSSV
@@ -62,7 +51,6 @@
             $stmtPending->execute();
             $pendingList = $stmtPending->fetchAll(PDO::FETCH_ASSOC);
         ?>
->>>>>>> 4fd8ce05db2488642b901eba16148a94e291076e
         
         <div id="page-wrapper">
             <div class="container-fluid">
@@ -81,11 +69,7 @@
                         </label>
                     </div>
                     <div class="col-md-4">
-<<<<<<< HEAD
-                        <input type="text" class="form-control col-md-8" id="name" placeholder="Tìm kiếm theo tên">
-=======
                         <input type="text" class="form-control col-md-8" id="name" placeholder="Tìm kiếm theo MSSV">
->>>>>>> 4fd8ce05db2488642b901eba16148a94e291076e
                     </div>
                     <div class="col-md-4">
                         <div class="btn btn-success">
@@ -95,44 +79,6 @@
                 </div>
                 
                 <div id="panel-approved">
-<<<<<<< HEAD
-                    <div class="col-md-4">
-                        <div class="panel panel-default" style="margin-top: 15px;">
-                            <div class="panel-heading">
-                            Đặng Minh Quân
-                            </div>
-                            <div class="pannel-body" style="padding: 15px;">
-                            Công ty VNG
-                            </div>
-                        
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="panel panel-default" style="margin-top: 15px;">
-                            <div class="panel-heading">
-                            Đặng Minh Quân
-                            </div>
-                            <div class="pannel-body" style="padding: 15px;">
-                            Công ty VNG
-                            </div>
-                        
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="panel panel-default" style="margin-top: 15px;">
-                            <div class="panel-heading">
-                            Đặng Minh Quân
-                            </div>
-                            <div class="pannel-body" style="padding: 15px;">
-                            Công ty VNG
-                            </div>
-                        
-                        </div>
-                    </div>
-                    
-                <div id="panel-pending" style="display: none;">
-
-=======
                     <div class="row">
                     <?php if (count($approvedList) > 0): ?>
                         <?php foreach ($approvedList as $row): ?>
@@ -193,7 +139,6 @@
                         <div class="col-md-12 text-center" style="padding:20px;">Không có giấy giới thiệu chưa duyệt</div>
                     <?php endif; ?>
                     </div>
->>>>>>> 4fd8ce05db2488642b901eba16148a94e291076e
                 </div>
             </div>
             
@@ -201,24 +146,6 @@
     </div>
 
     <!-- Scripts -->
-<<<<<<< HEAD
-     <script>
-    document.getElementById('approved').addEventListener('change', function () {
-    document.getElementById('panel-approved').style.display = 'block';
-    document.getElementById('panel-pending').style.display = 'none';
-    document.getElementById('btnapp').classList.add('active');
-    document.getElementById('btnpen').classList.remove('active');
-});
-
-document.getElementById('pending').addEventListener('change', function () {
-    document.getElementById('panel-approved').style.display = 'none';
-    document.getElementById('panel-pending').style.display = 'block';
-    document.getElementById('btnpen').classList.add('active');
-    document.getElementById('btnapp').classList.remove('active');
-});
-
-</script>
-=======
     <script>
     document.getElementById('btnapp').addEventListener('click', function () {
         document.getElementById('panel-approved').style.display = 'block';
@@ -250,7 +177,6 @@ document.getElementById('pending').addEventListener('change', function () {
     });
 });
     </script>
->>>>>>> 4fd8ce05db2488642b901eba16148a94e291076e
     <script src="js/jquery.min.js"></script>
     <script src="js/bootstrap.min.js"></script>
     <script src="js/metisMenu.min.js"></script>

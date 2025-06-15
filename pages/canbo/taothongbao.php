@@ -65,18 +65,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               </div>
             </div>
           </div>
-<<<<<<< HEAD
         </div>
-
-      </div>
-    </div>
-  </div>
-  <?php
-  require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
-    ?>
-</body>
-
-</html>
-=======
-        </div>
->>>>>>> 4fd8ce05db2488642b901eba16148a94e291076e

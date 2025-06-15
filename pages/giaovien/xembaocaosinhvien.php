@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-Đây là trang xem báo cáo sinh viên
-=======
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
@@ -186,4 +183,3 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     </script>
 </body>
 </html>
->>>>>>> 4fd8ce05db2488642b901eba16148a94e291076e
