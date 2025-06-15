@@ -3,118 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <title>Quản lý công ty</title>
-    <?php
-    require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php";
-    ?>
+    <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php"; ?>
     <style>
-    #page-wrapper {
-        padding: 30px;
-        min-height: 100vh;
-        box-sizing: border-box;
-        max-height: 100%;
-    }
-    tr.selected {
-    background-color: #007bff !important;
-    color: white;
-}
+        #page-wrapper {
+            padding: 30px;
+            min-height: 100vh;
+            box-sizing: border-box;
+            max-height: 100%;
+        }
+        tr.selected {
+            background-color: #007bff !important;
+            color: white;
+        }
     </style>
 </head>
 <body>
-    <div id="wrapper">
-        <?php
-        require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_CanBo.php";
-        ?>
+<div id="wrapper">
+    <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_CanBo.php"; ?>
+    <div id="page-wrapper">
+        <div class="container-fluid">
+            <h1 class="page-header">Quản lý công ty</h1>
+            <?php
+            // Xử lý thêm, sửa, xóa công ty
+            $msg = '';
+            require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
-        <div id="page-wrapper">
-            <div class="container-fluid">
-                <h1 class="page-header">Quản lý công ty</h1>
-                <?php
-                // Xử lý thêm công ty
-                $msg = '';
-                if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['them_congty'])) {
-                    $ten = trim($_POST['ten_cong_ty'] ?? '');
-                    $sdt = trim($_POST['sdt'] ?? '');
-                    $email = trim($_POST['email_cong_ty' ?? '']);
-                    $masothue = trim($_POST['ma_so_thue'] ?? '');
-                    $diachi = trim($_POST['dia_chi' ?? '']);
+            // Thêm công ty
+            if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['them_congty'])) {
+                $ten = trim($_POST['ten_cong_ty'] ?? '');
+                $sdt = trim($_POST['sdt'] ?? '');
+                $email = trim($_POST['email_cong_ty'] ?? '');
+                $masothue = trim($_POST['ma_so_thue'] ?? '');
+                $diachi = trim($_POST['dia_chi'] ?? '');
 
-                    // Kiểm tra dữ liệu
-                    if ($ten === '' || $sdt === '' || $email === '' || $masothue === '' || $diachi === '') {
-                        $msg = '<div class="alert alert-danger">Vui lòng nhập đầy đủ thông tin!</div>';
-                    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                        $msg = '<div class="alert alert-danger">Email không hợp lệ!</div>';
-                    } elseif (!preg_match('/^[0-9]{10,15}$/', $sdt)) {
-                        $msg = '<div class="alert alert-danger">Số điện thoại không hợp lệ!</div>';
+                if ($ten === '' || $sdt === '' || $email === '' || $masothue === '' || $diachi === '') {
+                    $msg = '<div class="alert alert-danger">Vui lòng nhập đầy đủ thông tin!</div>';
+                } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    $msg = '<div class="alert alert-danger">Email không hợp lệ!</div>';
+                } elseif (!preg_match('/^[0-9]{10,15}$/', $sdt)) {
+                    $msg = '<div class="alert alert-danger">Số điện thoại không hợp lệ!</div>';
+                } else {
+                    $stmt = $conn->prepare("SELECT COUNT(*) FROM congty WHERE MaSoThue = ?");
+                    $stmt->execute([$masothue]);
+                    if ($stmt->fetchColumn() > 0) {
+                        $msg = '<div class="alert alert-danger">Mã số thuế đã tồn tại!</div>';
                     } else {
-                        require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
-                        // Kiểm tra trùng mã số thuế
-                        $stmt = $conn->prepare("SELECT COUNT(*) FROM congty WHERE MaSoThue = ?");
-                        $stmt->execute([$masothue]);
-                        if ($stmt->fetchColumn() > 0) {
-                            $msg = '<div class="alert alert-danger">Mã số thuế đã tồn tại!</div>';
+                        $stmt = $conn->prepare("INSERT INTO congty (TenCty, MaSoThue, DiaChi, Sdt, Email, TrangThai) VALUES (?, ?, ?, ?, ?, 1)");
+                        if ($stmt->execute([$ten, $masothue, $diachi, $sdt, $email])) {
+                            $msg = '<div class="alert alert-success">Thêm công ty thành công!</div>';
+                            echo '<script>document.addEventListener("DOMContentLoaded",function(){resetCongTyForm();});</script>';
                         } else {
-                            // Thực hiện thêm công ty
-                            $stmt = $conn->prepare("INSERT INTO congty (TenCty, MaSoThue, DiaChi, Sdt, Email, TrangThai) VALUES (?, ?, ?, ?, ?, 1)");
-                            if ($stmt->execute([$ten, $masothue, $diachi, $sdt, $email])) {
-                                $msg = '<div class="alert alert-success">Thêm công ty thành công!</div>';
-                            } else {
-                                $msg = '<div class="alert alert-danger">Thêm công ty thất bại!</div>';
-                            }
+                            $msg = '<div class="alert alert-danger">Thêm công ty thất bại!</div>';
                         }
                     }
                 }
-                if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sua_congty'])) {
-                    $id = intval($_POST['id_cong_ty']);
-                    $ten = trim($_POST['ten_cong_ty'] ?? '');
-                    $sdt = trim($_POST['sdt'] ?? '');
-                    $email = trim($_POST['email_cong_ty' ?? '']);
-                    $masothue = trim($_POST['ma_so_thue'] ?? '');
-                    $diachi = trim($_POST['dia_chi' ?? '']);
+            }
 
-                    // Kiểm tra dữ liệu
-                    if ($ten === '' || $sdt === '' || $email === '' || $masothue === '' || $diachi === '') {
-                        $msg = '<div class="alert alert-danger">Vui lòng nhập đầy đủ thông tin!</div>';
-                    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                        $msg = '<div class="alert alert-danger">Email không hợp lệ!</div>';
-                    } elseif (!preg_match('/^[0-9]{10,15}$/', $sdt)) {
-                        $msg = '<div class="alert alert-danger">Số điện thoại không hợp lệ!</div>';
+            // Sửa công ty
+            if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sua_congty'])) {
+                $id = intval($_POST['id_cong_ty'] ?? 0);
+                $ten = trim($_POST['ten_cong_ty'] ?? '');
+                $sdt = trim($_POST['sdt'] ?? '');
+                $email = trim($_POST['email_cong_ty'] ?? '');
+                $masothue = trim($_POST['ma_so_thue'] ?? '');
+                $diachi = trim($_POST['dia_chi'] ?? '');
+
+                if ($ten === '' || $sdt === '' || $email === '' || $masothue === '' || $diachi === '') {
+                    $msg = '<div class="alert alert-danger">Vui lòng nhập đầy đủ thông tin!</div>';
+                } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    $msg = '<div class="alert alert-danger">Email không hợp lệ!</div>';
+                } elseif (!preg_match('/^[0-9]{10,15}$/', $sdt)) {
+                    $msg = '<div class="alert alert-danger">Số điện thoại không hợp lệ!</div>';
+                } else {
+                    $stmt = $conn->prepare("SELECT COUNT(*) FROM congty WHERE MaSoThue = ? AND ID != ?");
+                    $stmt->execute([$masothue, $id]);
+                    if ($stmt->fetchColumn() > 0) {
+                        $msg = '<div class="alert alert-danger">Mã số thuế đã tồn tại!</div>';
                     } else {
-                        require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
-                        // Kiểm tra trùng mã số thuế (trừ chính nó)
-                        $stmt = $conn->prepare("SELECT COUNT(*) FROM congty WHERE MaSoThue = ? AND ID != ?");
-                        $stmt->execute([$masothue, $id]);
-                        if ($stmt->fetchColumn() > 0) {
-                            $msg = '<div class="alert alert-danger">Mã số thuế đã tồn tại!</div>';
+                        $stmt = $conn->prepare("UPDATE congty SET TenCty = ?, MaSoThue = ?, DiaChi = ?, Sdt = ?, Email = ? WHERE ID = ?");
+                        if ($stmt->execute([$ten, $masothue, $diachi, $sdt, $email, $id])) {
+                            $msg = '<div class="alert alert-success">Cập nhật công ty thành công!</div>';
                         } else {
-                            // Thực hiện cập nhật
-                            $stmt = $conn->prepare("UPDATE congty SET TenCty = ?, MaSoThue = ?, DiaChi = ?, Sdt = ?, Email = ? WHERE ID = ?");
-                            if ($stmt->execute([$ten, $masothue, $diachi, $sdt, $email, $id])) {
-                                $msg = '<div class="alert alert-success">Cập nhật công ty thành công!</div>';
-                            } else {
-                                $msg = '<div class="alert alert-danger">Cập nhật công ty thất bại!</div>';
-                            }
+                            $msg = '<div class="alert alert-danger">Cập nhật công ty thất bại!</div>';
                         }
                     }
                 }
-                if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_congty'])) {
-                    require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
-                    
-                    $id = intval($_POST['id_cong_ty'] ?? 0);
-                    if ($id > 0) {
-                        $stmt = $conn->prepare("UPDATE congty SET TrangThai = 0 WHERE ID = ?");
-                        if ($stmt->execute([$id])) {
-                            $msg = '<div class="alert alert-success">Đã xóa công ty thành công!</div>';
-                        } else {
-                            $msg = '<div class="alert alert-danger">Xóa công ty thất bại!</div>';
-                        }
-                    } else {
-                        $msg = '<div class="alert alert-danger">Vui lòng chọn công ty để xóa!</div>';
-                    }
-                }
+            }
 
-                if ($msg) echo $msg;
-                ?>
-                <form method="post">
+            // Xóa công ty (ẩn)
+            if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_congty'])) {
+                $id = intval($_POST['id_cong_ty'] ?? 0);
+                if ($id > 0) {
+                    $stmt = $conn->prepare("UPDATE congty SET TrangThai = 0 WHERE ID = ?");
+                    if ($stmt->execute([$id])) {
+                        $msg = '<div class="alert alert-success">Đã xóa công ty thành công!</div>';
+                    } else {
+                        $msg = '<div class="alert alert-danger">Xóa công ty thất bại!</div>';
+                    }
+                } else {
+                    $msg = '<div class="alert alert-danger">Vui lòng chọn công ty để xóa!</div>';
+                }
+            }
+
+            if ($msg) echo $msg;
+            ?>
+            <form method="post" autocomplete="off">
                 <div class="row">
                     <div class="form-group col-md-12">
                         <div class="row">
@@ -134,14 +127,14 @@
                     </div>
                 </div>
                 <div class="row">
-                        <div class="col-md-4">
-                            <label for="ma-so-thue">Mã số thuế</label>
-                            <input type="text" class="form-control" id="ma-so-thue" name="ma_so_thue" placeholder="Mã số thuế" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="dia-chi">Địa chỉ</label>
-                            <textarea class="form-control" maxlength="200" id="dia-chi" name="dia_chi" rows="4" style="resize: none;" placeholder="Địa chỉ" required></textarea>
-                        </div>
+                    <div class="col-md-4">
+                        <label for="ma-so-thue">Mã số thuế</label>
+                        <input type="text" class="form-control" id="ma-so-thue" name="ma_so_thue" placeholder="Mã số thuế" required maxlength="15" minlength="10" pattern="[0-9]{10,15}">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="dia-chi">Địa chỉ</label>
+                        <textarea class="form-control" maxlength="200" id="dia-chi" name="dia_chi" rows="4" style="resize: none;" placeholder="Địa chỉ" required></textarea>
+                    </div>
                 </div>
                 <div class="row" style="margin-top: 15px;">
                     <div class="col-md-2">
@@ -164,82 +157,80 @@
                     </div>
                 </div>
                 <input type="hidden" id="id_cong_ty" name="id_cong_ty" value="">
-                </form>
-                <br>
-                <div class="panel panel-default">
-                    <div class="panel-heading">
-                        Danh sách phiếu giới thiệu thực tập
-                    </div>
-                    <div class="panel-body">
-                        <div class="table-responsive">
-                            <table class="table table-striped table-bordered" id="table-dscongty">
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th>Tên công ty</th>
-                                        <th>Mã số thuế</th>
-                                        <th>Địa chỉ</th>
-                                        <th>SĐT</th>
-                                        <th>Email</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-<?php
-require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
-$stmt = $conn->prepare("SELECT ID, TenCty, MaSoThue, DiaChi, Sdt, Email FROM congty WHERE TrangThai = 1");
-$stmt->execute();
-$stt = 1;
-while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-    echo '<tr>';
-    echo '<td data-id="' . $row['ID'] . '">' . $stt++ . '</td>';
-    echo '<td>' . htmlspecialchars($row['TenCty']) . '</td>';
-    echo '<td>' . htmlspecialchars($row['MaSoThue']) . '</td>';
-    echo '<td>' . htmlspecialchars($row['DiaChi']) . '</td>';
-    echo '<td>' . htmlspecialchars($row['Sdt']) . '</td>';
-    echo '<td>' . htmlspecialchars($row['Email']) . '</td>';
-    echo '</tr>';
-}
-?>
-                                </tbody>
-                            </table>
-                        </div>
+            </form>
+            <br>
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    Danh sách phiếu giới thiệu thực tập
+                </div>
+                <div class="panel-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-bordered" id="table-dscongty">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Tên công ty</th>
+                                    <th>Mã số thuế</th>
+                                    <th>Địa chỉ</th>
+                                    <th>SĐT</th>
+                                    <th>Email</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            <?php
+                            $stmt = $conn->prepare("SELECT ID, TenCty, MaSoThue, DiaChi, Sdt, Email FROM congty WHERE TrangThai = 1");
+                            $stmt->execute();
+                            $stt = 1;
+                            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                                echo '<tr>';
+                                echo '<td data-id="' . $row['ID'] . '">' . $stt++ . '</td>';
+                                echo '<td>' . htmlspecialchars($row['TenCty']) . '</td>';
+                                echo '<td>' . htmlspecialchars($row['MaSoThue']) . '</td>';
+                                echo '<td>' . htmlspecialchars($row['DiaChi']) . '</td>';
+                                echo '<td>' . htmlspecialchars($row['Sdt']) . '</td>';
+                                echo '<td>' . htmlspecialchars($row['Email']) . '</td>';
+                                echo '</tr>';
+                            }
+                            ?>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    <script>
-    $(document).ready(function () {
-        var table = $('#table-dscongty').DataTable({
-            responsive: true,
-            language: {
-                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json'
-            }
-        });
+</div>
+<script>
+function resetCongTyForm() {
+    $('#id_cong_ty').val('');
+    $('#ten-cong-ty').val('');
+    $('#ma-so-thue').val('');
+    $('#dia-chi').val('');
+    $('#sdt').val('');
+    $('#email-cong-ty').val('');
+}
 
-        $('#table-dscongty tbody').on('click', 'tr', function () {
-            table.$('tr.selected').removeClass('selected');
-            $(this).addClass('selected');
-            var data = table.row(this).data();
-            var id = $(this).find('td').eq(0).attr('data-id');
-            $('#id_cong_ty').val(id || '');
-            $('#ten-cong-ty').val(data[1]);
-            $('#ma-so-thue').val(data[2]);
-            $('#dia-chi').val(data[3]);
-            $('#sdt').val(data[4]);
-            $('#email-cong-ty').val(data[5]);
-        });
-        // Khi nhấn nút Thêm, reset form và bỏ nổi bật dòng
-        $('button[name="them_congty"]').on('click', function() {
-            $('#id_cong_ty').val('');
-            $('#ten-cong-ty').val('');
-            $('#ma-so-thue').val('');
-            $('#dia-chi').val('');
-            $('#sdt').val('');
-            $('#email-cong-ty').val('');
-            table.$('tr.selected').removeClass('selected');
-        });
+$(document).ready(function () {
+    var table = $('#table-dscongty').DataTable({
+        responsive: true,
+        language: {
+            url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json'
+        }
     });
-    </script>
+
+    $('#table-dscongty tbody').on('click', 'tr', function () {
+        table.$('tr.selected').removeClass('selected');
+        $(this).addClass('selected');
+        var data = table.row(this).data();
+        var id = $(this).find('td').eq(0).attr('data-id');
+        $('#id_cong_ty').val(id || '');
+        $('#ten-cong-ty').val(data[1]);
+        $('#ma-so-thue').val(data[2]);
+        $('#dia-chi').val(data[3]);
+        $('#sdt').val(data[4]);
+        $('#email-cong-ty').val(data[5]);
+    });
+});
+</script>
 </body>
 </html>
