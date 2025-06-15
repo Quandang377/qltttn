@@ -65,6 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               </div>
             </div>
           </div>
+<<<<<<< HEAD
         </div>
 
       </div>
@@ -76,3 +77,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </body>
 
 </html>
+=======
+        </div>
+>>>>>>> 4fd8ce05db2488642b901eba16148a94e291076e

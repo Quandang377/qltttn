@@ -156,9 +156,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
     </div>
+<<<<<<< HEAD
 <?php
         require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
     ?>
+=======
+</body>
+
+</html>
+>>>>>>> 4fd8ce05db2488642b901eba16148a94e291076e
 <script>
     window.addEventListener('DOMContentLoaded', () => {
         const alertBox = document.getElementById('successAlert');
@@ -180,7 +186,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }, 2000);
         }
     });
+<<<<<<< HEAD
 </script>
 </body>
 
 </html>
+=======
+</script>
+>>>>>>> 4fd8ce05db2488642b901eba16148a94e291076e
