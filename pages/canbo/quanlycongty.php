@@ -50,8 +50,8 @@
                     } else {
                         $stmt = $conn->prepare("INSERT INTO congty (TenCty, MaSoThue, DiaChi, Sdt, Email, TrangThai) VALUES (?, ?, ?, ?, ?, 1)");
                         if ($stmt->execute([$ten, $masothue, $diachi, $sdt, $email])) {
-                            $msg = '<div class="alert alert-success">Thêm công ty thành công!</div>';
-                            echo '<script>document.addEventListener("DOMContentLoaded",function(){resetCongTyForm();});</script>';
+                            header("Location: " . $_SERVER['REQUEST_URI']);
+                            exit;
                         } else {
                             $msg = '<div class="alert alert-danger">Thêm công ty thất bại!</div>';
                         }
@@ -82,7 +82,8 @@
                     } else {
                         $stmt = $conn->prepare("UPDATE congty SET TenCty = ?, MaSoThue = ?, DiaChi = ?, Sdt = ?, Email = ? WHERE ID = ?");
                         if ($stmt->execute([$ten, $masothue, $diachi, $sdt, $email, $id])) {
-                            $msg = '<div class="alert alert-success">Cập nhật công ty thành công!</div>';
+                            header("Location: " . $_SERVER['REQUEST_URI']);
+                            exit;
                         } else {
                             $msg = '<div class="alert alert-danger">Cập nhật công ty thất bại!</div>';
                         }
@@ -96,7 +97,8 @@
                 if ($id > 0) {
                     $stmt = $conn->prepare("UPDATE congty SET TrangThai = 0 WHERE ID = ?");
                     if ($stmt->execute([$id])) {
-                        $msg = '<div class="alert alert-success">Đã xóa công ty thành công!</div>';
+                        header("Location: " . $_SERVER['REQUEST_URI']);
+                        exit;
                     } else {
                         $msg = '<div class="alert alert-danger">Xóa công ty thất bại!</div>';
                     }

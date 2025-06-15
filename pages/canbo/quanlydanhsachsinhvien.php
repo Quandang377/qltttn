@@ -33,6 +33,13 @@
         <div id="page-wrapper">
             <div class="container-fluid">
                 <h1 class="page-header">Quản lý danh sách sinh viên</h1>
+
+                <!-- Nút import bằng excel -->
+                <div class="text-right" style="margin-bottom: 20px;">
+                    <a href="/datn/pages/canbo/importexcel.php" class="btn btn-success">
+                        <i class="fa fa-upload"></i> Import bằng Excel
+                    </a>
+                </div>
                 
                 <?php
                 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['them_sinh_vien'])) {
@@ -99,7 +106,8 @@
                                 ':id_gvhd' => $id_gvhd
                             ]);
                             
-                            echo '<div class="alert alert-success">Thêm sinh viên thành công!</div>';
+                            header("Location: " . $_SERVER['REQUEST_URI']);
+                            exit;
                         } catch(PDOException $e) {
                             echo '<div class="alert alert-danger">Lỗi: ' . $e->getMessage() . '</div>';
                         }
@@ -143,8 +151,8 @@
                                     ':id_gvhd' => $id_gvhd,
                                     ':mssv' => $mssv
                                 ]);
-                                echo '<script>document.addEventListener("DOMContentLoaded", function() { clearForm(); });</script>';
-                                echo '<div class="alert alert-success">Cập nhật sinh viên thành công!</div>';
+                                header("Location: " . $_SERVER['REQUEST_URI']);
+                                exit;
                             } catch (PDOException $e) {
                                 echo '<div class="alert alert-danger">Lỗi: ' . $e->getMessage() . '</div>';
                             }
@@ -165,8 +173,8 @@
                                     $stmt = $conn->prepare($sql);
                                     $stmt->execute([':mssv' => $mssv]);
 
-                                    echo '<div class="alert alert-success">Xóa sinh viên thành công!</div>';
-                                    echo '<script>document.addEventListener("DOMContentLoaded", function() { clearForm(); });</script>';
+                                    header("Location: " . $_SERVER['REQUEST_URI']);
+                                    exit;
                                 } catch (PDOException $e) {
                                     echo '<div class="alert alert-danger">Lỗi: ' . $e->getMessage() . '</div>';
                                 }

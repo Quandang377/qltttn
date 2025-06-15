@@ -48,6 +48,9 @@
                         $linhVuc = '';
                         $sdt = '';
                         $email = '';
+                        // Chuyển hướng để tránh gửi lại form khi reload
+                        header("Location: " . $_SERVER['REQUEST_URI']);
+                        exit;
                     } else {
                         $message = "Gửi yêu cầu thất bại!";
                     }
