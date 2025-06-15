@@ -1,6 +1,8 @@
-<?php
+<?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_login.php';
+
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
-$ID_TaiKhoan = "6";
+$ID_TaiKhoan =$_SESSION['user_id'];
 $stmt = $conn->prepare("SELECT VaiTro FROM TaiKhoan WHERE ID_TaiKhoan = ?");
 $stmt->execute([$ID_TaiKhoan]);
 $vaiTro = $stmt->fetchColumn();
@@ -69,14 +71,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_khaosat_id'])) {
                     </h1>
                 </div>
                 <?php
-
                 if (
                     $_SERVER['REQUEST_METHOD'] === 'POST'
                     && isset($_POST['id_khaosat'], $_POST['id_cauhoi'], $_POST['traloi'])
                 ) {
 
                     $idKhaoSat = $_POST['id_khaosat'];
-                    $idTaiKhoan = $_SESSION['ID_TaiKhoan'] ?? "6";
+                    $idTaiKhoan = $ID_TaiKhoan;
                     $dsIDCauHoi = $_POST['id_cauhoi'];
                     $dsTraLoi = $_POST['traloi'];
 
@@ -128,7 +129,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_khaosat_id'])) {
                     $nguoiTao = $_SESSION['ID_TaiKhoan'] ?? "6";
 
                     if (!$tieude || !$mota || !$nguoiNhan || !$nguoiTao || empty($cauHoiList)) {
-                        echo "<div class='alert alert-danger'>Thiếu thông tin bắt buộc.</div>";
+                        echo "<div class='alert alert-danger'id='noti'>Thiếu thông tin bắt buộc.</div>";
                         exit;
                     }
 
@@ -150,10 +151,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_khaosat_id'])) {
                         }
 
                         $conn->commit();
-                        echo "<div class='alert alert-success'>Tạo khảo sát thành công!</div>";
+                        echo "<div class='alert alert-success' id='noti'>Tạo khảo sát thành công!</div>";
                     } catch (Exception $e) {
                         $conn->rollBack();
-                        echo "<div class='alert alert-danger'>Lỗi khi tạo khảo sát: " . htmlspecialchars($e->getMessage()) . "</div>";
+                        echo "<div class='alert alert-danger'id='noti'>Lỗi khi tạo khảo sát: " . htmlspecialchars($e->getMessage()) . "</div>";
                     }
                 }
                 ?>
@@ -437,6 +438,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_khaosat_id'])) {
                     alert("Mở modal phản hồi khảo sát ID " + id + " - " + ten);
                 });
             });
+            window.addEventListener('DOMContentLoaded', () => {
+                    const alertBox = document.getElementById('noti');
+                    if (alertBox) {
+                        setTimeout(() => {
+                            alertBox.style.transition = 'opacity 0.5s ease';
+                            alertBox.style.opacity = '0';
+                            setTimeout(() => alertBox.remove(), 500);
+                        }, 2000);
+                    }
+                });
         </script>
 </body>
 

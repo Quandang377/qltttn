@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_thongbao_id'])) {
   <div id="wrapper">
 
     <?php
-    require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_CanBo.php";
+    require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/admin/template/slidebar.php";
     ?>
     <div id="page-wrapper">
       <div class="container-fluid">
@@ -67,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_thongbao_id'])) {
                     <tbody>
                       <?php $i = 1;
                       foreach ($thongbaos as $thongbao): ?>
-                        <?php $link = 'pages/canbo/chitietthongbao?id=' . urlencode($thongbao['ID']); ?>
+                        <?php $link = 'admin/pages/chitietthongbao?id='. urlencode($thongbao['ID']); ?>
                         <tr>
                           <td onclick="window.location='<?= $link ?>';" style="cursor: pointer;"><?= $i++ ?></td>
                           <td onclick="window.location='<?= $link ?>';" style="cursor: pointer;">
@@ -96,7 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_thongbao_id'])) {
           <!-- /.col-lg-6 -->
         </div>
         <div style="position: fixed; bottom: 5%; right: 5%;">
-          <a href="pages/canbo/taothongbao" class="fixed-button btn btn-primary btn-lg">
+          <a href="admin/pages/taothongbao" class="fixed-button btn btn-primary btn-lg">
             Tạo thông báo
           </a>
         </div>

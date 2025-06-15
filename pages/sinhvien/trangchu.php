@@ -1,6 +1,11 @@
-<?php
+<?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
+
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/ThongBao_funtions.php";
+if (!isset($_SESSION['user']) || $_SESSION['user']['VaiTro'] !== 'Sinh viên') {
+    header("Location: /login.php");
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -106,7 +111,8 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/ThongBao_funtions.php";
     </div>
   </div>
 
-<?php
+<?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
+
 require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
   ?>
 <script>

@@ -46,7 +46,7 @@ $giaoviens = $conn->query("SELECT ID_TaiKhoan,Ten FROM giaovien where TrangThai=
 
 <body>
     <div id="wrapper">
-        <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_CanBo.php"; ?>
+        <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/admin/template/slidebar.php"; ?>
 
         <div id="page-wrapper">
             <div class="container-fluid">
@@ -117,7 +117,7 @@ $giaoviens = $conn->query("SELECT ID_TaiKhoan,Ten FROM giaovien where TrangThai=
                             <div class="row">
                                 <div class="text-center">
                                     <button type="submit" class="btn btn-primary btn-lg mt-3">Xác nhận</button>
-                                    <a href="/datn/pages/canbo/chitietdot?id=<?= urlencode($id) ?>"
+                                    <a href="/datn/admin/pages/chitietdot?id=<?= urlencode($id) ?>"
                                         class="btn btn-default btn-lg">Thoát</a>
                                 </div>
                             </div>

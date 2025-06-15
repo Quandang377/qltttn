@@ -1,6 +1,8 @@
-<?php
+<?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_login.php';
+
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
-$ID_TaiKhoan = "3";
+$ID_TaiKhoan = $_SESSION['user_id'];
 
 $stmt = $conn->prepare("SELECT VaiTro FROM TaiKhoan WHERE ID_TaiKhoan = ?");
 $stmt->execute([$ID_TaiKhoan]);
@@ -58,7 +60,7 @@ if (
 ) {
 
     $idKhaoSat = $_POST['id_khaosat'];
-    $idTaiKhoan = $_SESSION['ID_TaiKhoan'] ?? "3";
+    $idTaiKhoan = $ID_TaiKhoan;
     $dsIDCauHoi = $_POST['id_cauhoi'];
     $dsTraLoi = $_POST['traloi'];
 

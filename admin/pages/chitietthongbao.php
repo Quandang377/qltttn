@@ -33,7 +33,7 @@ $thongbao_khac = $stmt_khac->fetchAll(PDO::FETCH_ASSOC);
 
 <body>
   <div id="wrapper">
-    <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_CanBo.php"; ?>
+    <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/admin/template/slidebar.php"; ?>
 
     <div id="page-wrapper">
       <div class="container-fluid">
@@ -87,13 +87,13 @@ $thongbao_khac = $stmt_khac->fetchAll(PDO::FETCH_ASSOC);
           const html = `
                 <div class="row" style="margin-bottom: 15px; border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
                     <div class="col-md-2 text-center">
-                        <a href="pages/canbo/chitietthongbao.php?id=${tb.ID}">
+                        <a href="admin/pages/chitietthongbao?id=${tb.ID}">
                             <img src="/datn/uploads/Images/ThongBao.jpg" alt="${tb.TIEUDE}" style="width: 100px; height: 70px; object-fit: cover;">
                         </a>
                     </div>
                     <div class="col-lg-10">
                         <p style="margin-bottom: 5px;">
-                            <a href="pages/canbo/chitietthongbao.php?id=${tb.ID}" style="font-weight: bold; text-decoration: none;">
+                            <a href="admin/pages/chitietthongbao?id=${tb.ID}" style="font-weight: bold; text-decoration: none;">
                                 ${tb.TIEUDE}
                             </a>
                         </p>

@@ -1,9 +1,11 @@
-<?php
+<?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
+
 $successMessage = "";
 if (isset($_SESSION['success'])) {
     $successMessage = $_SESSION['success'];
     unset($_SESSION['success']);
 }
+require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
 $id = $_GET['id'] ?? null;
@@ -83,19 +85,19 @@ $danhSachSinhVien = getSinhVienTrongDot($conn, $id);
                         </div>
                         <div class="row">
                             <?php if ($dot['TrangThai'] == 1): ?>
-                                <button onclick="window.location='pages/canbo/phanconghuongdan?id=<?= $id ?>';"
+                                <button onclick="window.location='admin/pages/phanconghuongdan?id=<?= $id ?>';"
                                     class="btn btn-primary btn-lg">Phân công</button>
                             <?php else: ?>
                                 <button class="btn btn-primary btn-lg" disabled>Phân công</button>
                             <?php endif; ?>
                             <?php if ($dot['TrangThai'] == 1): ?>
-                                <button onclick="window.location='pages/canbo/importexcel?id=<?= $id ?>';"
+                                <button onclick="window.location='admin/pages/importexcel?id=<?= $id ?>';"
                                     class="btn btn-primary btn-lg">Import</button>
                             <?php else: ?>
                                 <button class="btn btn-primary btn-lg" disabled>Import</button>
                             <?php endif; ?>
                             <?php if ($dot['TrangThai'] == 1): ?>
-                                <button onclick="window.location='pages/canbo/chinhsuadot?id=<?= $id ?>';"
+                                <button onclick="window.location='admin/pages/chinhsuadot?id=<?= $id ?>';"
                                     class="btn btn-warning btn-lg" style="min-width: 120px;">Chỉnh sửa</button>
                             <?php else: ?>
                                 <button class="btn btn-warning btn-lg" style="min-width: 120px;" disabled>Chỉnh sửa</button>
@@ -107,7 +109,7 @@ $danhSachSinhVien = getSinhVienTrongDot($conn, $id);
                             <?php else: ?>
                                 <button class="btn btn-danger btn-lg" style="min-width: 120px;" disabled>Xóa</button>
                             <?php endif; ?>
-                            <button onclick="window.location='pages/canbo/thongke?id=<?= $id ?>';"
+                            <button onclick="window.location='admin/pages/thongke?id=<?= $id ?>';"
                                 class="btn btn-primary btn-lg" style="min-width: 120px;">Thống kê</button>
 
                         </div>

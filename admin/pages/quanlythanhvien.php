@@ -1,4 +1,4 @@
-<?php
+<?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/template/config.php';
 $vaiTroDaChon = $_POST['loc'] ?? 'Tất cả';
 $dsThanhVien = [];
@@ -8,14 +8,16 @@ $sql = "SELECT
             tk.MatKhau, 
             tk.VaiTro, 
             tk.TrangThai,
-            COALESCE(sv.Ten, gv.Ten, cbk.Ten) AS HoTen,
+            COALESCE(sv.Ten, gv.Ten, cbk.Ten,ad.Ten) AS HoTen,
             sv.MSSV, 
             sv.Lop, 
             sv.ID_Dot
         FROM TaiKhoan tk 
         LEFT JOIN SinhVien sv ON sv.ID_TaiKhoan = tk.ID_TaiKhoan
         LEFT JOIN GiaoVien gv ON gv.ID_TaiKhoan = tk.ID_TaiKhoan
-        LEFT JOIN CanBoKhoa cbk ON cbk.ID_TaiKhoan = tk.ID_TaiKhoan";
+        LEFT JOIN CanBoKhoa cbk ON cbk.ID_TaiKhoan = tk.ID_TaiKhoan
+        LEFT JOIN Admin ad ON ad.ID_TaiKhoan = tk.ID_TaiKhoan"
+;
 
 $params = [];
 
@@ -31,7 +33,9 @@ $danhSachThanhVien = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $stmt = $conn->prepare("SELECT ID,TenDot,TrangThai FROM DOTTHUCTAP where TrangThai =1 ORDER BY ID DESC");
 $stmt->execute();
 $dsDotThucTap = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
 ?>
+
 <!DOCTYPE html>
 <html lang="vi">
 
@@ -47,15 +51,12 @@ $dsDotThucTap = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <div id="page-wrapper">
             <div class="container-fluid">
                 <div class="row mt-5">
+
                     <div class="col-lg-12">
                         <h1 class="page-header">Quản Lý Thành Viên</h1>
                     </div>
                 </div>
-                <?php if (isset($_GET['msg']) && $_GET['msg'] === 'deleted'): ?>
-                    <script>alert("Đã xóa các tài khoản đã chọn.");</script>
-                <?php elseif (isset($_GET['msg']) && $_GET['msg'] === 'empty'): ?>
-                    <script>alert("Bạn chưa chọn tài khoản nào để xóa.");</script>
-                <?php endif; ?>
+
                 <div class="row">
                     <form id="formXoa" method="POST" action="admin/pages/xoathanhvien" onsubmit="return xacNhanXoa();">
                         <div class="row">
@@ -79,6 +80,18 @@ $dsDotThucTap = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <button type="submit" class="btn btn-danger">Xóa</button>
                             </div>
                         </div>
+                        <?php
+                        if (isset($_GET['error']) && $_GET['error'] === 'duplicated'): ?>
+                            <div id="noti" class="alert alert-danger text-center">
+                                Tài khoản đã tồn tại. Vui lòng nhập lại tài khoản khác.
+                            </div>
+                        <?php endif;
+                        if (isset($_GET['msg']) && $_GET['msg'] === 'deleted'): ?>
+                            <div id="noti" class="alert alert-danger text-center">Đã xóa các tài khoản đã chọn.</div>
+                        <?php elseif (isset($_GET['msg']) && $_GET['msg'] === 'empty'): ?>
+                            <div id="noti" class="alert alert-danger text-center">Bạn chưa chọn tài khoản nào để xóa.</div>
+                        <?php endif;
+                        ?>
                         <div class="row">
                             <h3>Danh sách thành viên</h3>
                             <div class="panel panel-default">
@@ -234,9 +247,19 @@ $dsDotThucTap = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                     $('#modalThanhVien').modal('show');
                 }
-                
+                window.addEventListener('DOMContentLoaded', () => {
+                    const alertBox = document.getElementById('noti');
+                    if (alertBox) {
+                        setTimeout(() => {
+                            alertBox.style.transition = 'opacity 0.5s ease';
+                            alertBox.style.opacity = '0';
+                            setTimeout(() => alertBox.remove(), 500);
+                        }, 2000);
+                    }
+                });
             </script>
 </body>
+
 </html>
 <div class="modal fade" id="modalThanhVien" data-backdrop="static" data-keyboard="false">
     <div class="modal-dialog" role="document">
@@ -293,7 +316,7 @@ $dsDotThucTap = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 </div>
                 <div class="modal-footer">
                     <button type="submit" class="btn btn-primary" id="btnLuu">Lưu</button>
-                    <button type="button" class="btn btn-default"data-dismiss="modal">Đóng</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Đóng</button>
 
                 </div>
             </div>

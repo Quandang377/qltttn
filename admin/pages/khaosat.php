@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_khaosat_id'])) {
 <body>
     <div id="wrapper">
         <?php
-        require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_CanBo.php";
+        require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/admin/template/slidebar.php";
         ?>
         <div id="page-wrapper">
             <div class="container-fluid">
@@ -159,19 +159,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_khaosat_id'])) {
                                     <tbody>
                                         <?php foreach ($dsKhaoSatTao as $index => $ks): ?>
                                             <tr>
-                                                <td onclick="window.location='pages/canbo/chitietkhaosat?id=<?= $ks['ID'] ?>';"
+                                                <td onclick="window.location='admin/pages/chitietkhaosat?id=<?= $ks['ID'] ?>';"
                                                     style="cursor: pointer;">
                                                     <?= $index + 1 ?>
                                                 </td>
-                                                <td onclick="window.location='pages/canbo/chitietkhaosat?id=<?= $ks['ID'] ?>';"
+                                                <td onclick="window.location='admin/pages/chitietkhaosat?id=<?= $ks['ID'] ?>';"
                                                     style="cursor: pointer;">
                                                     <?= htmlspecialchars($ks['TieuDe']) ?>
                                                 </td>
-                                                <td onclick="window.location='pages/canbo/chitietkhaosat?id=<?= $ks['ID'] ?>';"
+                                                <td onclick="window.location='admin/pages/chitietkhaosat?id=<?= $ks['ID'] ?>';"
                                                     style="cursor: pointer;">
                                                     <?= date('d/m/Y', strtotime($ks['ThoiGianTao'])) ?>
                                                 </td>
-                                                <td onclick="window.location='pages/canbo/chitietkhaosat?id=<?= $ks['ID'] ?>';"
+                                                <td onclick="window.location='admin/pages/chitietkhaosat?id=<?= $ks['ID'] ?>';"
                                                     style="cursor: pointer;">
                                                     <?= $ks['SoLuongPhanHoi'] ?>
                                                 </td>

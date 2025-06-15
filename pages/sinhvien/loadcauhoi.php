@@ -1,4 +1,5 @@
-<?php
+<?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
+
 require_once 'datn/template/config.php';
 
 $id_khaosat = $_GET['id_khaosat'];

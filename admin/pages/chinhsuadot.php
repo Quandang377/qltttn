@@ -75,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <body>
     <div id="wrapper">
-        <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_CanBo.php"; ?>
+        <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/admin/template/slidebar.php"; ?>
 
         <div id="page-wrapper">
             <div class="container-fluid">
@@ -150,7 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     <div class="form-group text-center">
                         <button type="submit" class="btn btn-success btn-lg">Lưu thay đổi</button>
-                        <a href="/datn/pages/canbo/chitietdot?id=<?= urlencode($id) ?>"
+                        <a href="/datn/admin/pages/chitietdot?id=<?= urlencode($id) ?>"
                             class="btn btn-default btn-lg">Thoát</a>
 
                     </div>
