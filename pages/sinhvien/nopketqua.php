@@ -109,8 +109,8 @@
                 }
                 if (move_uploaded_file($_FILES['baocao_file']['tmp_name'], $targetFile)) {
                     $dirForDB = realpath($targetFile);
-                    $stmt = $conn->prepare("INSERT INTO file (TenFile, Dir, ID_SV, TrangThai, Loai) VALUES (?, ?, ?, 1, 'Baocao')");
-                    if ($stmt->execute([$tenFile, $dirForDB, $id_taikhoan])) {
+                    $stmt = $conn->prepare("INSERT INTO file (TenFile, Dir, ID_SV, TrangThai, Loai,NgayNop) VALUES (?, ?, ?, 1, 'Baocao',?)");
+                    if ($stmt->execute([$tenFile, $dirForDB, $id_taikhoan, date('Y-m-d H:i:s')])) {
                         header("Location: " . $_SERVER['REQUEST_URI']);
                         exit;
                     } else {
@@ -147,7 +147,7 @@
             <div class="row">
                 <!-- Hiển thị báo cáo (panel) -->
                 <?php if ($baocao_trangthai): ?>
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <div class="panel panel-default" style="padding: 20px;background-color: #7ae98c;">
                             <div style="display: flex; align-items: center;">
                                 <i class="fa fa-file-o fa-fw" style="margin-right: 12px; font-size: 28px; color: white"></i>
