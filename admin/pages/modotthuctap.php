@@ -1,4 +1,4 @@
-<?php
+<?php 
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_login.php';
 
@@ -6,9 +6,9 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
 $idTaiKhoan = $_SESSION['user_id'];
 $role = $_SESSION['user_role'];
-($role == "Cán bộ Khoa/Bộ môn") ?
-    $stmt = $conn->prepare("SELECT Ten FROM CanBoKhoa WHERE ID_TaiKhoan = ?") :
-    $stmt = $conn->prepare("SELECT Ten FROM Admin WHERE ID_TaiKhoan = ?");
+($role=="Cán bộ Khoa/Bộ môn")?
+$stmt = $conn->prepare("SELECT Ten FROM CanBoKhoa WHERE ID_TaiKhoan = ?"):
+$stmt = $conn->prepare("SELECT Ten FROM Admin WHERE ID_TaiKhoan = ?");
 
 $stmt->execute([$idTaiKhoan]);
 $hoTen = $stmt->fetchColumn();
@@ -64,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         if ($idDot) {
             session_start();
             $_SESSION['success'] = "Đợt thực tập $tendot được mở thành công!";
-            header("Location: /datn/pages/canbo/chitietdot?id=" . urlencode($idDot));
+            header("Location: /datn/admin/pages/chitietdot?id=" . urlencode($idDot));
             exit;
         } else {
             $notification = "Mở đợt thực tập thất bại!";
@@ -95,17 +95,18 @@ $canbokhoa = $conn->query("SELECT ID_TaiKhoan,Ten FROM canbokhoa where TrangThai
 <body>
     <div id="wrapper">
         <?php
-        require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_CanBo.php";
+        require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/admin/template/slidebar.php";
         ?>
         <div id="page-wrapper">
             <div class="container-fluid">
                 <div class="page-header">
                     <h1>
-                        Mở Đợt Thực Tập</h1>
+                        Mở Đợt Thực Tập
+                    </h1>
                     <? if (isset($_GET['msg']) && $_GET['msg'] === 'deleted'): ?>
-                        <div id="noti" class="alert alert-danger text-center">Đã xóa đợt thực tập thành công.</div>
-                    <?php endif;
-                    ?>
+                            <div id="noti" class="alert alert-danger text-center">Đã xóa đợt thực tập thành công.</div>
+                            <?php endif;
+                        ?>
                 </div>
                 <div class="row">
                     <div class="form-container">
@@ -149,7 +150,7 @@ $canbokhoa = $conn->query("SELECT ID_TaiKhoan,Ten FROM canbokhoa where TrangThai
                                         </select>
                                     </div>
                                 </div>
-                            </div>
+                                </div>
                             <div class="row">
                                 <div class="col-md-offset text-center">
                                     <button type="submit" class="btn btn-primary btn-lg mt-3">Xác nhận</button>
@@ -182,7 +183,7 @@ $canbokhoa = $conn->query("SELECT ID_TaiKhoan,Ten FROM canbokhoa where TrangThai
                                             <tbody>
                                                 <?php $i = 1;
                                                 foreach ($danhSachDotThucTap as $dot): ?>
-                                                    <?php $link = 'pages/canbo/chitietdot?id=' . urlencode($dot['ID']); ?>
+                                                    <?php $link = '/datn/admin/pages/chitietdot?id=' . urlencode($dot['ID']); ?>
                                                     <tr onclick="window.location='<?= $link ?>';" style="cursor: pointer;">
                                                         <td><?= $i++ ?></td>
                                                         <td><?= htmlspecialchars($dot['TenDot']) ?></td>
@@ -292,15 +293,15 @@ $canbokhoa = $conn->query("SELECT ID_TaiKhoan,Ten FROM canbokhoa where TrangThai
             });
         });
         window.addEventListener('DOMContentLoaded', () => {
-            const alertBox = document.getElementById('noti');
-            if (alertBox) {
-                setTimeout(() => {
-                    alertBox.style.transition = 'opacity 0.5s ease';
-                    alertBox.style.opacity = '0';
-                    setTimeout(() => alertBox.remove(), 500);
-                }, 2000);
-            }
-        });
+                    const alertBox = document.getElementById('noti');
+                    if (alertBox) {
+                        setTimeout(() => {
+                            alertBox.style.transition = 'opacity 0.5s ease';
+                            alertBox.style.opacity = '0';
+                            setTimeout(() => alertBox.remove(), 500);
+                        }, 2000);
+                    }
+                });
     </script>
 </body>
 

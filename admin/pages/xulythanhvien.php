@@ -1,4 +1,4 @@
-<?php
+<?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/template/config.php';
 
 $cheDo = $_POST['che_do'];
@@ -6,11 +6,18 @@ $taiKhoan = $_POST['tai_khoan'];
 $matKhau = $_POST['matkhau'] ?? null;
 $vaiTro = $_POST['vai_tro'];
 $hoTen = $_POST['ten'];
-$email = $_POST['email'] ?? null;
 $idTaiKhoan = $_POST['id_tai_khoan'] ?? substr(uniqid(), -5);
 $trangThai = 1;
 
 if ($cheDo === 'them') {
+    $stmt = $conn->prepare("SELECT COUNT(*) FROM TaiKhoan WHERE TaiKhoan = ?");
+    $stmt->execute([$taiKhoan]);
+    $soLuong = $stmt->fetchColumn();
+
+    if ($soLuong > 0) {
+        header("Location: quanlythanhvien?error=duplicated");
+        exit;
+    }
     $matKhauMaHoa = password_hash($matKhau, PASSWORD_BCRYPT);
 
     $stmt = $conn->prepare("INSERT INTO TaiKhoan (TaiKhoan, MatKhau, VaiTro, TrangThai) VALUES ( ?, ?, ?, ?)");
@@ -25,13 +32,25 @@ if ($cheDo === 'them') {
                                 VALUES (?, ?, ?, ?, NULL, ?, NULL, ?)");
         $stmt->execute([$idTaiKhoan, $idDot, $hoTen, $lop, $mssv, $trangThai]);
     } elseif ($vaiTro == 'Giáo viên') {
-        $stmt = $conn->prepare("INSERT INTO GiaoVien (ID_TaiKhoan, Ten, Email, TrangThai) VALUES (?, ?, ?, ?)");
-        $stmt->execute([$idTaiKhoan, $hoTen, $email, $trangThai]);
+        $stmt = $conn->prepare("INSERT INTO GiaoVien (ID_TaiKhoan, Ten, TrangThai) VALUES (?, ?, ?)");
+        $stmt->execute([$idTaiKhoan, $hoTen, $trangThai]);
     } elseif ($vaiTro == 'Cán bộ Khoa/Bộ môn') {
-        $stmt = $conn->prepare("INSERT INTO CanBoKhoa (ID_TaiKhoan, Ten, Email, TrangThai) VALUES (?, ?, ?, ?)");
-        $stmt->execute([$idTaiKhoan, $hoTen, $email, $trangThai]);
+        $stmt = $conn->prepare("INSERT INTO CanBoKhoa (ID_TaiKhoan, Ten, TrangThai) VALUES (?, ?, ?)");
+        $stmt->execute([$idTaiKhoan, $hoTen, $trangThai]);
+    }else
+    {
+        $stmt = $conn->prepare("INSERT INTO admin (ID_TaiKhoan, Ten, TrangThai) VALUES (?,?, ?)");
+        $stmt->execute([$idTaiKhoan, $hoTen, $trangThai]);
     }
 } elseif ($cheDo === 'sua') {
+    $stmt = $conn->prepare("SELECT COUNT(*) FROM TaiKhoan WHERE TaiKhoan = ? AND ID_TaiKhoan != ?");
+    $stmt->execute([$taiKhoan, $idTaiKhoan]);
+    $soLuong = $stmt->fetchColumn();
+
+    if ($soLuong > 0) {
+        header("Location: quanlythanhvien?error=duplicated");
+        exit;
+    }
     if (!empty($matKhau)) {
         $matKhauMaHoa = password_hash($matKhau, PASSWORD_BCRYPT);
         $stmt = $conn->prepare("UPDATE TaiKhoan SET TaiKhoan = ?, MatKhau = ?, VaiTro = ? WHERE ID_TaiKhoan = ?");
@@ -44,14 +63,14 @@ if ($cheDo === 'them') {
     if ($vaiTro == 'Sinh viên') {
         $mssv = $_POST['mssv'];
         $lop = $_POST['lop'];
-        $stmt = $conn->prepare("UPDATE SinhVien SET Ten = ?, Lop = ?, MSSV = ? WHERE ID_TaiKhoan = ?");
-        $stmt->execute([$hoTen, $lop, $mssv, $idTaiKhoan]);
+        $stmt = $conn->prepare("UPDATE SinhVien SET Ten = ?, Lop = ? , MSSV = ? WHERE ID_TaiKhoan = ?");
+        $stmt->execute([$hoTen, $lop,$mssv, $idTaiKhoan]);
     } elseif ($vaiTro == 'Giáo viên') {
-        $stmt = $conn->prepare("UPDATE GiaoVien SET Ten = ?, Email = ? WHERE ID_TaiKhoan = ?");
-        $stmt->execute([$hoTen, $email, $idTaiKhoan]);
+        $stmt = $conn->prepare("UPDATE GiaoVien SET Ten = ? WHERE ID_TaiKhoan = ?");
+        $stmt->execute([$hoTen, $idTaiKhoan]);
     } elseif ($vaiTro == 'Cán bộ Khoa/Bộ môn') {
-        $stmt = $conn->prepare("UPDATE CanBoKhoa SET Ten = ?, Email = ? WHERE ID_TaiKhoan = ?");
-        $stmt->execute([$hoTen, $email, $idTaiKhoan]);
+        $stmt = $conn->prepare("UPDATE CanBoKhoa SET Ten = ? WHERE ID_TaiKhoan = ?");
+        $stmt->execute([$hoTen, $idTaiKhoan]);
     }
 }
 

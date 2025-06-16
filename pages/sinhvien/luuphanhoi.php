@@ -1,9 +1,11 @@
-<?php
+<?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_login.php';
+
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
 
 $idKhaoSat = $_POST['idKhaoSat'];
-$idTaiKhoan = 3;
+$idTaiKhoan =$_SESSION['user_id'];
 $traloi = $_POST['traloi'];
 
 $conn->beginTransaction();
@@ -18,7 +20,7 @@ try {
     }
 
     $conn->commit();
-    header("Location: /datn/pages/sinhvien/khaosat.php?success=1");
+    header("Location: /datn/pages/sinhvien/khaosat?success=1");
 } catch (Exception $e) {
     $conn->rollBack();
     die("Lỗi: " . $e->getMessage());

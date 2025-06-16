@@ -13,30 +13,24 @@
                 </div>
                 <!-- /input-group -->
                 <li>
-                <a href="index.php?action=dashboard"><i class="fa fa-dashboard fa-fw"></i> Trang Chủ</a>
+                <a href="admin/pages/trangchu"><i class="fa fa-dashboard fa-fw"></i> Trang Chủ</a>
             </li>
             
             <li>
-                <a href="index.php?action=intership_management"><i class="fa fa-table fa-fw"></i> Quản lí đợt thực tập</a>
-            </li>
-         
-                <!-- /.nav-second-level -->
+                <a href="admin/pages/modotthuctap"><i class="fa fa-table fa-fw"></i> Quản lí đợt thực tập</a>
             </li>
             <li>
-                <a href="#"><i class="fa fa-files-o fa-fw"></i> Quản lí tài khoản<span class="fa arrow"></span></a>
-                <ul class="nav nav-second-level">
-                    <li>
-                        <a href="index.php?action=officials_management" class="active">Cán bộ</a>
-                    </li>
-                    <li>
-                        <a href="index.php?action=teachers_management" class="active">Giáo viên</a>
-                    </li>
-                    <li>
-                        <a href="index.php?action=students_management" class="active">Sinh viên</a>
-                    </li>
-                </ul>
+                <a href="admin/pages/quanlythongbao"><i class="fa fa-table fa-fw"></i> Quản lí thông báo</a>
+            </li>
+               <li>
+                <a href="admin/pages/khaosat"><i class="fa fa-table fa-fw"></i> Khảo sát</a>
+            </li>
+            </li>
+            <li>
+                <a href="admin/pages/quanlythanhvien"><i class="fa fa-files-o fa-fw"></i> Quản lí thành viên</a>
                 <!-- /.nav-second-level -->
             </li>
+            <li><a href="/datn/logout"><i class="fa fa-sign-out"></i> Đăng xuất</a></li>
         </ul>
     </div>
 </aside>

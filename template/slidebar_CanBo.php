@@ -34,6 +34,7 @@
                         <li>
                             <a href="pages/canbo/quanlycongty" class="active"><i class="fa fa-building fa-fw"></i> Quản lý công ty</a>
                         </li>
+                        <li><a href="/datn/logout"class="active"><i class="fa fa-sign-out"></i> Đăng xuất</a></li>
                     </ul>
                 </div>
             </aside>

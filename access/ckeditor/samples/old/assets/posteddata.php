@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<?php
+<?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
+
 /*
 Copyright (c) 2003-2025, CKSource Holding sp. z o.o. All rights reserved.
 CKEditor 4 LTS ("Long Term Support") is available under the terms of the Extended Support Model.
@@ -24,7 +25,8 @@ CKEditor 4 LTS ("Long Term Support") is available under the terms of the Extende
 				<th>Value</th>
 			</tr>
 		</thead>
-<?php
+<?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
+
 
 if (!empty($_POST))
 {

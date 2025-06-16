@@ -1,8 +1,11 @@
-<?php
+<?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
+
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/ThongBao_funtions.php";
-
-
+if (!isset($_SESSION['user']) || $_SESSION['user']['VaiTro'] !== 'Sinh viên') {
+    header("Location: /login.php");
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -107,9 +110,11 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/ThongBao_funtions.php";
       </div>
     </div>
   </div>
-</body>
 
-</html>
+<?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
+
+require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
+  ?>
 <script>
   const thongbaos = <?= json_encode($thongbaos) ?>;
   const pageSize = 5;
@@ -178,6 +183,8 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/ThongBao_funtions.php";
 
   renderNotifications();
 </script>
+</body>
+</html>
 <style>
   .panel-row {
     display: flex;

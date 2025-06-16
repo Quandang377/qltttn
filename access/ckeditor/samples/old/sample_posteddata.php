@@ -1,4 +1,5 @@
-<?php /* <body><pre>
+<?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
+ /* <body><pre>
 
 -------------------------------------------------------------------------------------------
   CKEditor - Posted Data

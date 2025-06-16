@@ -1,6 +1,8 @@
-<?php
+<?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
+
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/ThongBao_funtions.php";
+require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 
 
 ?>
@@ -29,7 +31,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/ThongBao_funtions.php";
         </div>
         <div class="row panel-row">
           <div class="col-md-3 panel-container">
-            <a href="pages/canbo/xemdanhsachcongty" style="text-decoration: none; color: inherit;">
+            <a href="pages/canbo/quanlycongty" style="text-decoration: none; color: inherit;">
               <div class="panel panel-default" style="min-height: 170px;">
                 <div class="panel-heading">Tìm công ty thực tập</div>
                 <div class="panel-body">
@@ -40,7 +42,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/ThongBao_funtions.php";
             </a>
           </div>
           <div class="col-md-3 panel-container">
-            <a href="pages/canbo/dangkygiaygioithieu" style="text-decoration: none; color: inherit;">
+            <a style="text-decoration: none; color: inherit;">
               <div class="panel panel-default" style="min-height: 170px;">
                 <div class="panel-heading">Xin giấy giới thiệu thực tập</div>
                 <div class="panel-body">
@@ -50,7 +52,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/ThongBao_funtions.php";
             </a>
           </div>
           <div class="col-md-3 panel-container">
-            <a href="pages/canbo/baocaotuan" style="text-decoration: none; color: inherit;">
+            <a style="text-decoration: none; color: inherit;">
               <div class="panel panel-default" style="min-height: 170px;">
                 <div class="panel-heading">Thực tập, báo cáo tuần</div>
                 <div class="panel-body">

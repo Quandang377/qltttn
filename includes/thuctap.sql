@@ -38,7 +38,6 @@ CREATE TABLE DotThucTap (
     TenDot VARCHAR(50),
     Nam VARCHAR(5),
     Loai VARCHAR(25),
-    Nganh TEXT,
     NguoiQuanLy VARCHAR(255),
     ThoiGianBatDau DATE,
     ThoiGianKetThuc DATE,
@@ -100,8 +99,8 @@ CREATE TABLE GiayGioiThieu (
 
 CREATE TABLE BaoCao (
     ID INT AUTO_INCREMENT PRIMARY KEY,
-    IDSV VARCHAR(5),
-    IdGVHD VARCHAR(5),
+    ID_SV INT,
+    IdGVHD INT,
     Tuan VARCHAR(10),
     CongviecThucHien TEXT,
     DanhGia TEXT,
@@ -115,7 +114,7 @@ CREATE TABLE ThongBao (
     TieuDe NVARCHAR(250),
     NoiDung TEXT,
     NgayDang DATETIME,
-    ID_TaiKhoan VARCHAR(5),
+    ID_TaiKhoan INT,
     TrangThai TINYINT,
     FOREIGN KEY (ID_TaiKhoan) REFERENCES TaiKhoan(ID_TaiKhoan)
 );
@@ -134,11 +133,17 @@ CREATE TABLE TEPDINHKEM (
 CREATE TABLE TaiKhoan (
     ID INT AUTO_INCREMENT PRIMARY KEY,
     TaiKhoan VARCHAR(20),
-    MatKhau VARCHAR(16),
+    MatKhau VARCHAR(250),
     VaiTro NVARCHAR(30),
     TrangThai TINYINT
 );
-
+CREATE TABLE Admin (
+    ID_TaiKhoan INT AUTO_INCREMENT PRIMARY KEY,
+    Ten NVARCHAR(50),
+    Email VARCHAR(250),
+    TrangThai TINYINT,
+    FOREIGN KEY (ID_TaiKhoan) REFERENCES TaiKhoan(ID_TaiKhoan)
+);
 CREATE TABLE CanBoKhoa (
     ID_TaiKhoan INT AUTO_INCREMENT PRIMARY KEY,
     Ten NVARCHAR(50),

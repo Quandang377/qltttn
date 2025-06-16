@@ -7,20 +7,18 @@ if (!$idKhaoSat) {
   die("Không tìm thấy khảo sát.");
 }
 
-// Lấy thông tin khảo sát
-$stmt = $conn->prepare("SELECT * FROM KhaoSat WHERE ID = ?");
+$stmt = $conn->prepare("SELECT ID,TieuDe,MoTa,NguoiNhan,NguoiTao,ThoiGianTao,TrangThai FROM KhaoSat WHERE ID = ?");
 $stmt->execute([$idKhaoSat]);
 $khaoSat = $stmt->fetch(PDO::FETCH_ASSOC);
 
-// Lấy danh sách câu hỏi
 $stmt = $conn->prepare("SELECT * FROM CauHoiKhaoSat WHERE ID_KhaoSat = ?");
 $stmt->execute([$idKhaoSat]);
 $cauHoi = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Lấy danh sách phản hồi
 $stmt = $conn->prepare("
     SELECT phks.ID, phks.ID_TaiKhoan, phks.ThoiGianTraLoi, 
-        COALESCE(sv.Ten, gv.Ten, tk.TaiKhoan) AS TenNguoiPhanHoi
+        COALESCE(sv.Ten, gv.Ten, tk.TaiKhoan) AS TenNguoiPhanHoi,
+        tk.VaiTro
     FROM PhanHoiKhaoSat phks
     JOIN TaiKhoan tk ON tk.ID_TaiKhoan = phks.ID_TaiKhoan
     LEFT JOIN SinhVien sv ON sv.ID_TaiKhoan = tk.ID_TaiKhoan
@@ -30,7 +28,6 @@ $stmt = $conn->prepare("
 $stmt->execute([$idKhaoSat]);
 $phanHoi = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Lấy câu trả lời của từng phản hồi
 $cauTraLoiTheoPhanHoi = [];
 foreach ($phanHoi as $ph) {
   $stmt = $conn->prepare("
@@ -48,7 +45,7 @@ foreach ($phanHoi as $ph) {
 
 <head>
   <meta charset="UTF-8">
-  <title>Xem phản hồi</title>
+  <title>Chi tiết khảo sát</title>
   <?php
   require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php";
   ?>
@@ -57,7 +54,7 @@ foreach ($phanHoi as $ph) {
 <body>
   <div id="wrapper">
     <?php
-    require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_GiaoVien.php";
+    require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/admin/template/slidebar.php";
     ?>
     <div id="page-wrapper">
       <div class="container-fluid">
@@ -68,7 +65,6 @@ foreach ($phanHoi as $ph) {
           <h4>
             <?= htmlspecialchars($khaoSat['MoTa']) ?>
           </h4>
-
         </div>
         <div id="containerKhaoSat" class="mt-3">
           <div id="listKhaoSat" class="row">
@@ -81,11 +77,12 @@ foreach ($phanHoi as $ph) {
                 </div>
                 <div class="panel-body">
                   <div class="table-responsive">
-                    <table class="table" id="bangphanhoi">
+                    <table class="table" id="quanlykhaosat">
                       <thead>
                         <tr>
                           <th>#</th>
                           <th>Người phản hồi</th>
+                          <th>Vai trò</th>
                           <th>Thời gian phản hồi</th>
                         </tr>
                       </thead>
@@ -94,6 +91,7 @@ foreach ($phanHoi as $ph) {
                           <tr onclick="hienPhanHoi(<?= $ph['ID'] ?>)" style="cursor: pointer;">
                             <td><?= $index + 1 ?></td>
                             <td><?= htmlspecialchars($ph['TenNguoiPhanHoi']) ?></td>
+                            <td><?= htmlspecialchars($ph['VaiTro']) ?></td>
                             <td><?= date("H:i d/m/Y", strtotime($ph['ThoiGianTraLoi'])) ?></td>
                           </tr>
                         <?php endforeach; ?>
@@ -108,9 +106,10 @@ foreach ($phanHoi as $ph) {
             </div>
             <!-- /.col-lg-6 -->
           </div>
+
           <?php foreach ($phanHoi as $ph): ?>
             <div class="modal fade" id="modalPhanHoi<?= $ph['ID'] ?>" tabindex="-1" role="dialog"
-              aria-labelledby="modalPhanHoiLabel<?= $ph['ID'] ?>" data-backdrop="static" data-keyboard="false">
+              aria-labelledby="modalPhanHoiLabel<?= $ph['ID'] ?>">
               <div class="modal-dialog" role="document">
                 <div class="modal-content">
                   <div class="modal-header">
@@ -135,23 +134,25 @@ foreach ($phanHoi as $ph) {
               </div>
             </div>
           <?php endforeach; ?>
-        </div>
-        <?php
-        require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
-          ?>
+        </div><?php
+  require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
+    ?>
         <script>
           function hienPhanHoi(idPhanHoi) {
             $('#modalPhanHoi' + idPhanHoi).modal('show');
           }
           $(document).ready(function () {
-            $('#bangphanhoi').DataTable({
+            $('#quanlykhaosat').DataTable({
               searching: false, info: false,
               lengthChange: false
             });
+
           });
         </script>
       </div>
     </div>
   </div>
+  
 </body>
+
 </html>

@@ -1,1 +1,0 @@
-Đây là trang quên mật khẩu của cán bộ
