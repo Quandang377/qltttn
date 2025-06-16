@@ -2,7 +2,7 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/template/config.php';
-$vaiTroDaChon = $_POST['loc'] ?? 'Tất cả';
+$vaiTroDaChon = $_POST['selectVaiTro'] ?? 'Tất cả';
 $dsThanhVien = [];
 $sql = "SELECT 
             tk.ID_TaiKhoan, 
@@ -76,7 +76,7 @@ $dsDotThucTap = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     <div class="col-lg-12">
                         <form method="POST" id="formLocThanhVien">
                                 <div class="form-group col-sm-3">
-                                    <select name="loc" id="loc" class="form-control" onchange="this.form.submit()">
+                                    <select name="selectVaiTro" id="selectVaiTro" class="form-control" onchange="this.form.submit()">
                                         <option value="Tất cả" <?= ($vaiTroDaChon == 'Tất cả') ? 'selected' : '' ?>>Tất cả</option>
                                         <option value="Cán bộ Khoa/Bộ môn" <?= ($vaiTroDaChon == 'Cán bộ Khoa/Bộ môn') ? 'selected' : '' ?>>Cán bộ Khoa/Bộ môn</option>
                                         <option value="Giáo viên" <?= ($vaiTroDaChon == 'Giáo viên') ? 'selected' : '' ?>>Giáo viên</option>
@@ -138,7 +138,7 @@ $dsDotThucTap = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                 ?>
             <script>
-                document.querySelector("select[name='loc']").addEventListener('change', function () {
+                document.querySelector("select[name='selectVaiTro']").addEventListener('change', function () {
                     document.getElementById('FormQuanLy').submit();
                 });
                 $(document).ready(function () {
