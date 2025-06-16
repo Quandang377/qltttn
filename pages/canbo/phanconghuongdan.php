@@ -58,7 +58,7 @@ $giaoviens = $conn->query("SELECT ID_TaiKhoan,Ten FROM giaovien where TrangThai=
                 <div class="row">
                     <div class="col-md-offset">
                         <?php if (!empty($successMessage)): ?>
-                            <div id="notificationAlert" class="alert alert-success">
+                            <div id="successAlert" class="alert alert-success">
                                 <?= $successMessage ?>
                             </div>
                         <?php endif; ?>
@@ -124,79 +124,88 @@ $giaoviens = $conn->query("SELECT ID_TaiKhoan,Ten FROM giaovien where TrangThai=
                     </form>
                 </div>
             </div>
-            <?php
-            require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
-                ?>
-            <script>
-                $(document).ready(function () {
-                    var table = $('#tableSinhVien').DataTable({
-                        responsive: true,
-                        pageLength: 20,
-                        language: {
-                            url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json'
-                        }
-                    });
-
-                });
-                function toggleCheckbox(row) {
-                    if (event.target.type === 'checkbox') return;
-                    const checkbox = row.querySelector('input[type="checkbox"]');
-                    checkbox.checked = !checkbox.checked;
-                }
-                function toggleCheckbox(row) {
-                    if (event.target.type === 'checkbox') return;
-                    const checkbox = row.querySelector('input[type="checkbox"]');
-                    checkbox.checked = !checkbox.checked;
-                }
-
-                document.getElementById("FormPhanCong").addEventListener("submit", function (e) {
-                    e.preventDefault();
-
-                    const checkboxes = document.querySelectorAll('input[name="chon[]"]:checked');
-                    const selectGV = document.querySelector('select[name="GiaoVien"]');
-                    const gvTen = selectGV.options[selectGV.selectedIndex].text;
-
-                    if (checkboxes.length === 0) {
-                        Swal.fire({
-                            title: 'Chưa chọn sinh viên!',
-                            text: 'Bạn phải chọn ít nhất một sinh viên để phân công.',
-                            confirmButtonColor: '#3085d6'
-                        });
-                        return;
-                    }
-
-                    let svInfo = "";
-                    checkboxes.forEach(cb => {
-                        const row = cb.closest("tr");
-                        const mssv = row.children[1].textContent.trim();
-                        const ten = row.children[2].textContent.trim();
-                        const lop = row.children[3].textContent.trim();
-                        svInfo += `• ${ten} ${mssv} ${lop}\n`;
-                    });
-
-                    Swal.fire({
-                        title: 'Xác nhận phân công?',
-                        html: `<b>Giáo viên:</b> ${gvTen}<br><b>Sinh viên:</b><pre style="text-align:left;">${svInfo}</pre>`,
-                        showCancelButton: true,
-                        confirmButtonText: 'Xác nhận',
-                        cancelButtonText: 'Huỷ',
-                        confirmButtonColor: '#3085d6',
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            e.target.submit();
-                        }
-                    });
-                });
-                window.addEventListener('DOMContentLoaded', () => {
-                    const alertBox = document.getElementById('notificationAlert');
-                    if (alertBox) {
-                        setTimeout(() => {
-                            alertBox.style.transition = 'opacity 0.5s ease';
-                            alertBox.style.opacity = '0';
-                            setTimeout(() => alertBox.remove(), 500);
-                        }, 2000);
-                    }
-                });
-            </script>
 </body>
+
 </html>
+
+<script>
+    $(document).ready(function () {
+        var table = $('#tableSinhVien').DataTable({
+            responsive: true,
+            pageLength: 20,
+            language: {
+                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json'
+            }
+        });
+
+    });
+    function toggleCheckbox(row) {
+        if (event.target.type === 'checkbox') return;
+        const checkbox = row.querySelector('input[type="checkbox"]');
+        checkbox.checked = !checkbox.checked;
+    }
+    function toggleCheckbox(row) {
+        if (event.target.type === 'checkbox') return;
+        const checkbox = row.querySelector('input[type="checkbox"]');
+        checkbox.checked = !checkbox.checked;
+    }
+
+    document.getElementById("FormPhanCong").addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        const checkboxes = document.querySelectorAll('input[name="chon[]"]:checked');
+        const selectGV = document.querySelector('select[name="GiaoVien"]');
+        const gvTen = selectGV.options[selectGV.selectedIndex].text;
+
+        if (checkboxes.length === 0) {
+            Swal.fire({
+                title: 'Chưa chọn sinh viên!',
+                text: 'Bạn phải chọn ít nhất một sinh viên để phân công.',
+                confirmButtonColor: '#3085d6'
+            });
+            return;
+        }
+
+        let svInfo = "";
+        checkboxes.forEach(cb => {
+            const row = cb.closest("tr");
+            const mssv = row.children[1].textContent.trim();
+            const ten = row.children[2].textContent.trim();
+            const lop = row.children[3].textContent.trim();
+            svInfo += `• ${ten} ${mssv} ${lop}\n`;
+        });
+
+        Swal.fire({
+            title: 'Xác nhận phân công?',
+            html: `<b>Giáo viên:</b> ${gvTen}<br><b>Sinh viên:</b><pre style="text-align:left;">${svInfo}</pre>`,
+            showCancelButton: true,
+            confirmButtonText: 'Xác nhận',
+            cancelButtonText: 'Huỷ',
+            confirmButtonColor: '#3085d6',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                e.target.submit();
+            }
+        });
+    });
+    window.addEventListener('DOMContentLoaded', () => {
+        const alertBox = document.getElementById('successAlert');
+        if (alertBox) {
+            setTimeout(() => {
+                alertBox.style.transition = 'opacity 0.5s ease';
+                alertBox.style.opacity = '0';
+                setTimeout(() => alertBox.remove(), 500);
+            }, 2000);
+        }
+    });
+    window.addEventListener('DOMContentLoaded', () => {
+        const alertBox = document.getElementById('notificationAlert');
+        if (alertBox) {
+            setTimeout(() => {
+                alertBox.style.transition = 'opacity 0.5s ease';
+                alertBox.style.opacity = '0';
+                setTimeout(() => alertBox.remove(), 500);
+            }, 2000);
+        }
+    });
+</script>
