@@ -97,7 +97,7 @@
                             // Gọi hàm lấy thông tin doanh nghiệp từ getapi.js
                             const info = await getBusinessInfoByTaxCode(taxCode);
                             if (info) {
-                                $('#ten-cong-ty').val(info.shortName || '');
+                                $('#ten-cong-ty').val(info.shortname || '');
                                 $('#dia-chi').val(info.address || '');
                                 $('#linh-vuc').val(info.field || '');
                                 $('#sdt').val(info.phone || '');
