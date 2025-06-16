@@ -36,6 +36,7 @@ $stmt = $conn->prepare("SELECT ID,TenDot,TrangThai FROM DOTTHUCTAP where TrangTh
 $stmt->execute();
 $dsDotThucTap = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+
 ?>
 
 <!DOCTYPE html>
