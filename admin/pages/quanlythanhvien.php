@@ -1,4 +1,6 @@
-<?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
+
+<?php
+require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/template/config.php';
 $vaiTroDaChon = $_POST['loc'] ?? 'Tất cả';
 $dsThanhVien = [];
@@ -24,7 +26,7 @@ $params = [];
 if ($vaiTroDaChon != 'Tất cả') {
     $sql .= " WHERE tk.VaiTro = ?";
     $params[] = $vaiTroDaChon;
-}
+}   
 
 $stmt = $conn->prepare($sql);
 $stmt->execute($params);
@@ -56,48 +58,41 @@ $dsDotThucTap = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <h1 class="page-header">Quản Lý Thành Viên</h1>
                     </div>
                 </div>
-
-                <div class="row">
-                    <form id="formXoa" method="POST" action="admin/pages/xoathanhvien" onsubmit="return xacNhanXoa();">
                         <div class="row">
-                            <div class="form-group col-sm-2">
-                                <select name="loc" class="form-control" required onchange="this.form.submit()">
-                                    <option value="Tất cả" <?= ($vaiTroDaChon == 'Tất cả') ? 'selected' : '' ?>>Tất cả
-                                    </option>
-                                    <option value="Cán bộ Khoa/Bộ môn" <?= ($vaiTroDaChon == 'Cán bộ Khoa/Bộ môn') ? 'selected' : '' ?>>Cán bộ Khoa/Bộ môn</option>
-                                    <option value="Giáo viên" <?= ($vaiTroDaChon == 'Giáo viên') ? 'selected' : '' ?>>Giáo
-                                        viên</option>
-                                    <option value="Sinh viên" <?= ($vaiTroDaChon == 'Sinh viên') ? 'selected' : '' ?>>Sinh
-                                        viên</option>
-                                    <option value="Admin" <?= ($vaiTroDaChon == 'Admin') ? 'selected' : '' ?>>Admin
-                                    </option>
-                                </select>
-                            </div>
-                            <div class="form-group col-sm-1">
-                                <button type="button" class="btn btn-primary" onclick="moModalThem()">Thêm</button>
-                            </div>
-                            <div class="form-group col-sm-1">
-                                <button type="submit" class="btn btn-danger">Xóa</button>
-                            </div>
+                            <?php
+                                if (isset($_GET['error']) && $_GET['error'] === 'duplicated'): ?>
+                                    <div id="noti" class="alert alert-danger text-center">
+                                        Tài khoản đã tồn tại. Vui lòng nhập lại tài khoản khác.
+                                    </div>
+                                <?php endif;
+                                if (isset($_GET['msg']) && $_GET['msg'] === 'deleted'): ?>
+                                    <div id="noti" class="alert alert-success text-center">Đã xóa các tài khoản đã chọn.</div>
+                                <?php elseif (isset($_GET['msg']) && $_GET['msg'] === 'empty'): ?>
+                                    <div id="noti" class="alert alert-danger text-center">Bạn chưa chọn tài khoản nào để xóa.</div>
+                                <?php endif;
+                            ?>
                         </div>
-                        <?php
-                        if (isset($_GET['error']) && $_GET['error'] === 'duplicated'): ?>
-                            <div id="noti" class="alert alert-danger text-center">
-                                Tài khoản đã tồn tại. Vui lòng nhập lại tài khoản khác.
-                            </div>
-                        <?php endif;
-                        if (isset($_GET['msg']) && $_GET['msg'] === 'deleted'): ?>
-                            <div id="noti" class="alert alert-danger text-center">Đã xóa các tài khoản đã chọn.</div>
-                        <?php elseif (isset($_GET['msg']) && $_GET['msg'] === 'empty'): ?>
-                            <div id="noti" class="alert alert-danger text-center">Bạn chưa chọn tài khoản nào để xóa.</div>
-                        <?php endif;
-                        ?>
-                        <div class="row">
-                            <h3>Danh sách thành viên</h3>
-                            <div class="panel panel-default">
-                                <div class="panel-heading">
+                <div class="row">
+                    <div class="col-lg-12">
+                        <form method="POST" id="formLocThanhVien">
+                                <div class="form-group col-sm-3">
+                                    <select name="loc" id="loc" class="form-control" onchange="this.form.submit()">
+                                        <option value="Tất cả" <?= ($vaiTroDaChon == 'Tất cả') ? 'selected' : '' ?>>Tất cả</option>
+                                        <option value="Cán bộ Khoa/Bộ môn" <?= ($vaiTroDaChon == 'Cán bộ Khoa/Bộ môn') ? 'selected' : '' ?>>Cán bộ Khoa/Bộ môn</option>
+                                        <option value="Giáo viên" <?= ($vaiTroDaChon == 'Giáo viên') ? 'selected' : '' ?>>Giáo viên</option>
+                                        <option value="Sinh viên" <?= ($vaiTroDaChon == 'Sinh viên') ? 'selected' : '' ?>>Sinh viên</option>
+                                        <option value="Admin" <?= ($vaiTroDaChon == 'Admin') ? 'selected' : '' ?>>Admin</option>
+                                    </select>
                                 </div>
-                                <div class="panel-body">
+                            </form>
+                        <form id="formXoa" method="POST" action="admin/pages/xoathanhvien" onsubmit="return xacNhanXoa();">
+                            <div class="form-group col-sm-1">
+                                <button type="button" class="btn btn-primary" style="min-width:70px" onclick="moModalThem()">Thêm</button>
+                            </div>
+                            <div class="form-group col-sm-1">
+                                <button type="submit" class="btn btn-danger" style="min-width:70px">Xóa</button>
+                            </div>
+                            <div class="col-lg-12">
                                     <div class="table-responsive">
                                         <table class="table" id="tableThanhVien">
                                             <thead>
@@ -133,10 +128,9 @@ $dsDotThucTap = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                                     </tr>
                                                 <?php endforeach; ?>
                                         </table>
-                                    </div>
-                                </div>
                             </div>
                     </form>
+                    </div>
                 </div>
             </div>
             <?php
@@ -179,28 +173,41 @@ $dsDotThucTap = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     return confirm(message);
                 }
 
-                document.querySelector('select[name="loc"]').addEventListener("change", function () {
+                document.addEventListener("DOMContentLoaded", function () {
+                document.querySelector("#selectVaiTro").addEventListener("change", function () {
                     const vaiTro = this.value;
 
-                    fetch("loadthanhvien.php?vaiTro=" + encodeURIComponent(vaiTro))
-                        .then(res => res.json())
+                    fetch("loadthanhvien?vaiTro=" + encodeURIComponent(vaiTro))
+                        .then(res => {
+                                console.log("RESPONSE: ", res);
+                                return res.json();
+                            })
                         .then(data => {
                             const tbody = document.querySelector("#tableThanhVien tbody");
                             tbody.innerHTML = "";
 
+                            if (data.length === 0) {
+                                tbody.innerHTML = `<tr><td colspan="6" class="text-center">Không có dữ liệu</td></tr>`;
+                                return;
+                            }
+
                             data.forEach(tv => {
                                 tbody.innerHTML += `
-                        <tr>
-                            <td><input type="checkbox" name="thanhvien[]" value="${tv.ID_TaiKhoan}"></td>
-                            <td>${tv.MSSV ?? ''}</td>
-                            <td>${tv.ID_Dot ?? ''}</td>
-                            <td>${tv.Lop ?? ''}</td>
-                            <td>${tv.HoTen}</td>
-                            <td>${tv.TrangThai == 1 ? 'Hoạt động' : 'Ngừng hoạt động'}</td>
-                        </tr>`;
+                                    <tr>
+                                        <td><input type="checkbox" name="thanhvien[]" value="${tv.ID_TaiKhoan}"></td>
+                                        <td>${tv.MSSV ?? ''}</td>
+                                        <td>${tv.ID_Dot ?? ''}</td>
+                                        <td>${tv.Lop ?? ''}</td>
+                                        <td>${tv.HoTen}</td>
+                                        <td>${tv.TrangThai == 1 ? 'Hoạt động' : 'Ngừng hoạt động'}</td>
+                                    </tr>`;
                             });
+                        })
+                        .catch(err => {
+                            console.error("LỖI JSON hoặc fetch: ", error);
                         });
                 });
+            });
                 function moModalThem() {
                     $('#formThanhVien')[0].reset();
                     $('#modalTitle').text('Thêm thành viên');

@@ -1,28 +1,36 @@
-<?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
-
-require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
-header('Content-Type: application/json');
+<?php
+require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/template/config.php';
 
 $vaiTro = $_GET['vaiTro'] ?? '';
 
 switch ($vaiTro) {
-    case 'Giáo viên':
-        $stmt = $conn->query("SELECT gv.ID_TaiKhoan, gv.Ten, gv.TrangThai, '' AS MSSV FROM GiaoVien gv");
-        break;
     case 'Sinh viên':
-        $stmt = $conn->query("SELECT sv.ID_TaiKhoan, sv.Ten, sv.TrangThai, sv.MSSV FROM SinhVien sv");
+        $sql = "SELECT ID_TaiKhoan, MSSV, ID_Dot, Lop, Ten as HoTen, TrangThai FROM SinhVien INNER JOIN TaiKhoan ON SinhVien.ID_TaiKhoan = TaiKhoan.ID_TaiKhoan";
+        break;
+    case 'Giáo viên':
+        $sql = "SELECT ID_TaiKhoan, '' as MSSV, '' as ID_Dot, '' as Lop, Ten as HoTen, TrangThai FROM GiaoVien INNER JOIN TaiKhoan ON GiaoVien.ID_TaiKhoan = TaiKhoan.ID_TaiKhoan";
         break;
     case 'Cán bộ Khoa/Bộ môn':
-        $stmt = $conn->query("SELECT cb.ID_TaiKhoan, cb.Ten, cb.TrangThai, '' AS MSSV FROM CanBoKhoa cb");
+        $sql = "SELECT ID_TaiKhoan, '' as MSSV, '' as ID_Dot, '' as Lop, Ten as HoTen, TrangThai FROM CanBoKhoa INNER JOIN TaiKhoan ON CanBoKhoa.ID_TaiKhoan = TaiKhoan.ID_TaiKhoan";
         break;
     case 'Admin':
-        $stmt = $conn->prepare("SELECT tk.ID_TaiKhoan, tk.TaiKhoan AS Ten, tk.TrangThai, '' AS MSSV FROM TaiKhoan tk WHERE VaiTro = ?");
-        $stmt->execute(['Admin']);
+        $sql = "SELECT ID_TaiKhoan, '' as MSSV, '' as ID_Dot, '' as Lop, Ten as HoTen, TrangThai FROM Admin INNER JOIN TaiKhoan ON Admin.ID_TaiKhoan = TaiKhoan.ID_TaiKhoan";
         break;
+    case 'Tất cả':
     default:
-        echo json_encode([]);
-        exit;
+        $sql = "SELECT ID_TaiKhoan, MSSV, ID_Dot, Lop, Ten as HoTen, TrangThai FROM SinhVien
+                UNION
+                SELECT ID_TaiKhoan, '', '', '', Ten, TrangThai FROM GiaoVien
+                UNION
+                SELECT ID_TaiKhoan, '', '', '', Ten, TrangThai FROM CanBoKhoa
+                UNION
+                SELECT ID_TaiKhoan, '', '', '', Ten, TrangThai FROM Admin";
 }
 
+$stmt = $conn->prepare($sql);
+$stmt->execute();
 $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+header('Content-Type: application/json');
 echo json_encode($data);
+exit;

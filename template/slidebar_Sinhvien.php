@@ -32,7 +32,10 @@
                         </li>
                          <li>
                             <a href="pages/sinhvien/khaosat" class="active"><i class="fa fa-dashboard fa-fw"></i> Khảo sát</a>
-                        </li><li><a href="/datn/logout"><i class="fa fa-sign-out"></i> Đăng xuất</a></li>
+                        </li>
+                        <li>
+                            <a href="pages/sinhvien/thongtincanhan" class="active"><i class="fa fa-dashboard fa-fw"></i> Thông tin cá nhân</a>
+                        </li>
                     </ul>
                 </div>
             </aside>

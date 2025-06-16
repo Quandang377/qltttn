@@ -430,6 +430,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_khaosat_id'])) {
                 $('#quanlykhaosat').DataTable({
                     info: false,
                     lengthChange: false
+                    language: {
+                            url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json'
+                        }
                 });
 
                 $('.btnPhanHoi').click(function () {

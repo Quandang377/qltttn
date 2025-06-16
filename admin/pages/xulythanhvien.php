@@ -63,14 +63,14 @@ if ($cheDo === 'them') {
     if ($vaiTro == 'Sinh viên') {
         $mssv = $_POST['mssv'];
         $lop = $_POST['lop'];
-        $stmt = $conn->prepare("UPDATE SinhVien SET Ten = ?, Lop = ?, Email = ?, MSSV = ? WHERE ID_TaiKhoan = ?");
-        $stmt->execute([$hoTen, $lop, $taiKhoan,$mssv, $idTaiKhoan]);
+        $stmt = $conn->prepare("UPDATE SinhVien SET Ten = ?, Lop = ? , MSSV = ? WHERE ID_TaiKhoan = ?");
+        $stmt->execute([$hoTen, $lop,$mssv, $idTaiKhoan]);
     } elseif ($vaiTro == 'Giáo viên') {
-        $stmt = $conn->prepare("UPDATE GiaoVien SET Ten = ?, Email = ? WHERE ID_TaiKhoan = ?");
-        $stmt->execute([$hoTen, $taiKhoan, $idTaiKhoan]);
+        $stmt = $conn->prepare("UPDATE GiaoVien SET Ten = ? WHERE ID_TaiKhoan = ?");
+        $stmt->execute([$hoTen, $idTaiKhoan]);
     } elseif ($vaiTro == 'Cán bộ Khoa/Bộ môn') {
-        $stmt = $conn->prepare("UPDATE CanBoKhoa SET Ten = ?, Email = ? WHERE ID_TaiKhoan = ?");
-        $stmt->execute([$hoTen, $taiKhoan, $idTaiKhoan]);
+        $stmt = $conn->prepare("UPDATE CanBoKhoa SET Ten = ? WHERE ID_TaiKhoan = ?");
+        $stmt->execute([$hoTen, $idTaiKhoan]);
     }
 }
 
