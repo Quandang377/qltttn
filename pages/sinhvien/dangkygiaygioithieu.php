@@ -38,7 +38,8 @@
                 $email = $_POST['email'] ?? '';
 
                 if (isset($_POST['gui_yeu_cau'])) {
-                    $stmt = $conn->prepare("INSERT INTO GiayGioiThieu (TenCty, MaSoThue, DiaChi, LinhVuc, Sdt, Email, IdSinhVien, TrangThai) VALUES (?, ?, ?, ?, ?, ?, NULL, 0)");
+                    // Gán tạm thời IdSinhVien = 3
+                    $stmt = $conn->prepare("INSERT INTO GiayGioiThieu (TenCty, MaSoThue, DiaChi, LinhVuc, Sdt, Email, IdSinhVien, TrangThai) VALUES (?, ?, ?, ?, ?, ?, 3, 0)");
                     if ($stmt->execute([$companyName, $taxCode, $companyAddress, $linhVuc, $sdt, $email])) {
                         $message = "Gửi yêu cầu thành công!";
                         // Xóa input sau khi gửi thành công
