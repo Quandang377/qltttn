@@ -40,7 +40,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/ThongBao_funtions.php";
             </a>
           </div>
           <div class="col-md-3 panel-container">
-            <a>
+            <a style="text-decoration: none; color: inherit;">
               <div class="panel panel-default" style="min-height: 170px;">
                 <div class="panel-heading">Xin giấy giới thiệu thực tập</div>
                 <div class="panel-body">
@@ -50,7 +50,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/ThongBao_funtions.php";
             </a>
           </div>
           <div class="col-md-3 panel-container">
-            <a>
+            <a style="text-decoration: none; color: inherit;">
               <div class="panel panel-default" style="min-height: 170px;">
                 <div class="panel-heading">Thực tập, báo cáo tuần</div>
                 <div class="panel-body">
@@ -60,7 +60,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/ThongBao_funtions.php";
             </a>
           </div>
           <div class="col-md-3 ">
-            <a href="" data-toggle="modal" data-target="#detailModal" style="text-decoration: none; color: inherit;">
+            <a href=""style="text-decoration: none; color: inherit;" data-toggle="modal" data-target="#detailModal" style="text-decoration: none; color: inherit;">
               <div class="panel panel-default" style="min-height: 170px;">
                 <div class="panel-heading">Chấm điểm kết thúc</div>
                 <div class="panel-body">

@@ -7,7 +7,6 @@ CREATE TABLE DotThucTap (
     TenDot VARCHAR(50),
     Nam VARCHAR(5),
     Loai VARCHAR(25),
-    Nganh TEXT,
     NguoiQuanLy VARCHAR(255),
     ThoiGianBatDau DATE,
     ThoiGianKetThuc DATE,

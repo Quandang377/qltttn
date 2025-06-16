@@ -32,15 +32,15 @@ if ($cheDo === 'them') {
                                 VALUES (?, ?, ?, ?, NULL, ?, NULL, ?)");
         $stmt->execute([$idTaiKhoan, $idDot, $hoTen, $lop, $mssv, $trangThai]);
     } elseif ($vaiTro == 'Giáo viên') {
-        $stmt = $conn->prepare("INSERT INTO GiaoVien (ID_TaiKhoan, Ten, Email, TrangThai) VALUES (?, ?, ?, ?)");
-        $stmt->execute([$idTaiKhoan, $hoTen, $taiKhoan, $trangThai]);
+        $stmt = $conn->prepare("INSERT INTO GiaoVien (ID_TaiKhoan, Ten, TrangThai) VALUES (?, ?, ?)");
+        $stmt->execute([$idTaiKhoan, $hoTen, $trangThai]);
     } elseif ($vaiTro == 'Cán bộ Khoa/Bộ môn') {
-        $stmt = $conn->prepare("INSERT INTO CanBoKhoa (ID_TaiKhoan, Ten, Email, TrangThai) VALUES (?, ?, ?, ?)");
-        $stmt->execute([$idTaiKhoan, $hoTen, $taiKhoan, $trangThai]);
+        $stmt = $conn->prepare("INSERT INTO CanBoKhoa (ID_TaiKhoan, Ten, TrangThai) VALUES (?, ?, ?)");
+        $stmt->execute([$idTaiKhoan, $hoTen, $trangThai]);
     }else
     {
-        $stmt = $conn->prepare("INSERT INTO admin (ID_TaiKhoan, Ten, Email, TrangThai) VALUES (?, ?, ?, ?)");
-        $stmt->execute([$idTaiKhoan, $hoTen, $taiKhoan, $trangThai]);
+        $stmt = $conn->prepare("INSERT INTO admin (ID_TaiKhoan, Ten, TrangThai) VALUES (?,?, ?)");
+        $stmt->execute([$idTaiKhoan, $hoTen, $trangThai]);
     }
 } elseif ($cheDo === 'sua') {
     $stmt = $conn->prepare("SELECT COUNT(*) FROM TaiKhoan WHERE TaiKhoan = ? AND ID_TaiKhoan != ?");

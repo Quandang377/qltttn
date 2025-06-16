@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <div id="wrapper">
 
     <?php
-    require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_CanBo.php";
+    require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/admin/template/slidebar.php";
     ?>
     <div id="page-wrapper">
       <div class="container-fluid">
