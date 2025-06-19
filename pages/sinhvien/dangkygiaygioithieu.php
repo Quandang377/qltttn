@@ -38,7 +38,8 @@
                 $email = $_POST['email'] ?? '';
 
                 if (isset($_POST['gui_yeu_cau'])) {
-                    $stmt = $conn->prepare("INSERT INTO GiayGioiThieu (TenCty, MaSoThue, DiaChi, LinhVuc, Sdt, Email, IdSinhVien, TrangThai) VALUES (?, ?, ?, ?, ?, ?, NULL, 0)");
+                    // Gán tạm thời IdSinhVien = 3
+                    $stmt = $conn->prepare("INSERT INTO GiayGioiThieu (TenCty, MaSoThue, DiaChi, LinhVuc, Sdt, Email, IdSinhVien, TrangThai) VALUES (?, ?, ?, ?, ?, ?, 3, 0)");
                     if ($stmt->execute([$companyName, $taxCode, $companyAddress, $linhVuc, $sdt, $email])) {
                         $message = "Gửi yêu cầu thành công!";
                         // Xóa input sau khi gửi thành công
@@ -96,7 +97,7 @@
                             // Gọi hàm lấy thông tin doanh nghiệp từ getapi.js
                             const info = await getBusinessInfoByTaxCode(taxCode);
                             if (info) {
-                                $('#ten-cong-ty').val(info.shortName || '');
+                                $('#ten-cong-ty').val(info.shortname || '');
                                 $('#dia-chi').val(info.address || '');
                                 $('#linh-vuc').val(info.field || '');
                                 $('#sdt').val(info.phone || '');

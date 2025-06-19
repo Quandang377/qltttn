@@ -3,6 +3,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
 // Tạm thời lấy id tài khoản giáo viên là 6
 $id_gvhd = 6;
+$id_dot = 71;
 $errorMsg = '';
 
 // Đóng/mở cho phép nộp báo cáo tổng kết
@@ -27,28 +28,42 @@ $stmt->execute([$id_gvhd]);
 $trangthai_tongket = $stmt->fetchColumn();
 if ($trangthai_tongket === false) $trangthai_tongket = 0;
 
-// Lấy danh sách sinh viên thuộc giáo viên này
+// Lấy danh sách sinh viên thuộc giáo viên này và cùng đợt
 $stmt = $conn->prepare("
     SELECT sv.ID_TaiKhoan, sv.Ten, sv.MSSV
     FROM SinhVien sv
-    WHERE sv.ID_GVHD = ?
+    WHERE sv.ID_GVHD = ? AND sv.ID_Dot = ?
 ");
-$stmt->execute([$id_gvhd]);
+$stmt->execute([$id_gvhd, $id_dot]);
 $sinhviens = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Lấy trạng thái và đường dẫn báo cáo tổng kết của sinh viên
+// Lấy trạng thái, đường dẫn báo cáo tổng kết, ngày nộp và số lần nộp/xóa/sửa của sinh viên
 $baocao_tongket = [];
 foreach ($sinhviens as $sv) {
-    $stmt2 = $conn->prepare("SELECT TenFile, Dir FROM file WHERE ID_SV = ? AND Loai = 'Baocao' AND TrangThai = 1 ORDER BY ID DESC LIMIT 1");
+    // Lấy file báo cáo mới nhất
+    $stmt2 = $conn->prepare("SELECT TenFile, Dir, NgayNop FROM file WHERE ID_SV = ? AND Loai = 'Baocao' AND TrangThai = 1 ORDER BY ID DESC LIMIT 1");
     $stmt2->execute([$sv['ID_TaiKhoan']]);
     $row = $stmt2->fetch(PDO::FETCH_ASSOC);
+
+    // Đếm tổng số file báo cáo đã nộp (bao gồm cả đã xóa/sửa)
+    $stmt3 = $conn->prepare("SELECT COUNT(*) FROM file WHERE ID_SV = ? AND Loai = 'Baocao'");
+    $stmt3->execute([$sv['ID_TaiKhoan']]);
+    $solan = $stmt3->fetchColumn();
+
     if ($row) {
         $baocao_tongket[$sv['ID_TaiKhoan']] = [
             'TenFile' => $row['TenFile'],
             'Dir' => $row['Dir'],
+            'NgayNop' => $row['NgayNop'],
+            'SoLan' => $solan
         ];
     } else {
-        $baocao_tongket[$sv['ID_TaiKhoan']] = null;
+        $baocao_tongket[$sv['ID_TaiKhoan']] = [
+            'TenFile' => null,
+            'Dir' => null,
+            'NgayNop' => null,
+            'SoLan' => $solan
+        ];
     }
 }
 
@@ -136,6 +151,8 @@ if (isset($_GET['download_all']) && $_GET['download_all'] == 1) {
                                         <th>MSSV</th>
                                         <th>Họ tên</th>
                                         <th>Trạng thái báo cáo tổng kết</th>
+                                        <th>Ngày giờ tải lên</th>
+                                        <th>Số lần nộp/xóa/sửa</th>
                                         <th>Thao tác</th>
                                     </tr>
                                 </thead>
@@ -146,14 +163,23 @@ if (isset($_GET['download_all']) && $_GET['download_all'] == 1) {
                                             <td><?php echo htmlspecialchars($sv['MSSV']); ?></td>
                                             <td><?php echo htmlspecialchars($sv['Ten']); ?></td>
                                             <td>
-                                                <?php if ($baocao_tongket[$sv['ID_TaiKhoan']]): ?>
+                                                <?php if ($baocao_tongket[$sv['ID_TaiKhoan']]['TenFile']): ?>
                                                     <span class="text-success">Đã nộp</span>
                                                 <?php else: ?>
                                                     <span class="text-muted">Chưa nộp</span>
                                                 <?php endif; ?>
                                             </td>
                                             <td>
-                                                <?php if ($baocao_tongket[$sv['ID_TaiKhoan']]): ?>
+                                                <?php
+                                                $ngayNop = $baocao_tongket[$sv['ID_TaiKhoan']]['NgayNop'];
+                                                echo $ngayNop ? date('d/m/Y H:i', strtotime($ngayNop)) : '-';
+                                                ?>
+                                            </td>
+                                            <td>
+                                                <?php echo $baocao_tongket[$sv['ID_TaiKhoan']]['SoLan']; ?>
+                                            </td>
+                                            <td>
+                                                <?php if ($baocao_tongket[$sv['ID_TaiKhoan']]['TenFile']): ?>
                                                     <a href="/datn/download.php?file=<?php echo urlencode(basename($baocao_tongket[$sv['ID_TaiKhoan']]['Dir'])); ?>"
                                                        class="btn btn-success btn-xs" title="Tải xuống báo cáo">
                                                         <i class="fa fa-download"></i> Tải xuống
