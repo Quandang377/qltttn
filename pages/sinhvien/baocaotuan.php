@@ -2,7 +2,7 @@
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
 // Giả sử ID sinh viên hiện tại là 1
-$id_sv = '1';
+$id_sv = '3';
 
 // Lấy ID_GVHD của sinh viên này
 $stmt = $conn->prepare("SELECT ID_GVHD FROM SinhVien WHERE ID_TaiKhoan = ?");

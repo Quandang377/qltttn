@@ -28,6 +28,7 @@
     $baocao_trangthai = null;
     $ten_sv = '';
     $cho_phep_nop = false;
+    $errorMsg = ''; // Thêm biến này ở đầu file
 
     // Lấy tên sinh viên và id tài khoản giáo viên hướng dẫn
     $stmt = $conn->prepare("SELECT Ten, ID_GVHD FROM sinhvien WHERE ID_TaiKhoan = ?");
@@ -35,7 +36,7 @@
     $row_sv = $stmt->fetch(PDO::FETCH_ASSOC);
     $ten_sv = $row_sv['Ten'] ?? 'Không xác định';
     $id_gvhd = $row_sv['ID_GVHD'] ?? null;
-
+        
     // Kiểm tra trạng thái cho phép nộp báo cáo tổng kết của giáo viên hướng dẫn
     if ($id_gvhd) {
         $stmt = $conn->prepare("SELECT TrangThai FROM Baocaotongket WHERE ID_TaiKhoan = ?");
@@ -53,9 +54,7 @@
         $cho_phep_nop = ($trangthai_baocaotongket == 1);
 
         if (!$cho_phep_nop) {
-            echo "<script>alert('Giáo viên đã đóng, bạn không thể xóa báo cáo!');</script>";
-            header("Location: " . $_SERVER['REQUEST_URI']);
-            exit;
+            $errorMsg = "Giáo viên đã đóng chức năng, bạn không thể xóa báo cáo!";
         } else {
             $stmt = $conn->prepare("SELECT Dir FROM file WHERE ID_SV = ? AND TrangThai = 1 AND Loai = 'Baocao' ORDER BY ID DESC LIMIT 1");
             $stmt->execute([$id_taikhoan]);
@@ -89,7 +88,7 @@
     // Xử lý upload file
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_baocao'])) {
         if (!$cho_phep_nop) {
-            echo "<script>alert('Giáo viên chưa mở cho phép nộp báo cáo tổng kết!');</script>";
+            echo "<script>alert('Giáo viên đã khóa chức năng!');</script>";
         } else if ($baocao_trangthai) {
             echo "<script>alert('Bạn đã nộp báo cáo rồi, không thể nộp thêm!');</script>";
         } else if (isset($_FILES['baocao_file']) && $_FILES['baocao_file']['error'] === UPLOAD_ERR_OK) {
@@ -110,8 +109,8 @@
                 }
                 if (move_uploaded_file($_FILES['baocao_file']['tmp_name'], $targetFile)) {
                     $dirForDB = realpath($targetFile);
-                    $stmt = $conn->prepare("INSERT INTO file (TenFile, Dir, ID_SV, TrangThai, Loai) VALUES (?, ?, ?, 1, 'Baocao')");
-                    if ($stmt->execute([$tenFile, $dirForDB, $id_taikhoan])) {
+                    $stmt = $conn->prepare("INSERT INTO file (TenFile, Dir, ID_SV, TrangThai, Loai,NgayNop) VALUES (?, ?, ?, 1, 'Baocao',?)");
+                    if ($stmt->execute([$tenFile, $dirForDB, $id_taikhoan, date('Y-m-d H:i:s')])) {
                         header("Location: " . $_SERVER['REQUEST_URI']);
                         exit;
                     } else {
@@ -141,21 +140,27 @@
                 <i class="fa fa-upload"></i> Tải lên
             </button>
             <?php elseif (!$cho_phep_nop): ?>
-            <div class="alert alert-warning" style="margin-bottom: 10px">Giáo viên chưa mở cho phép nộp báo cáo tổng kết!</div>
+            <div class="alert alert-warning" style="margin-bottom: 10px">Giáo viên đã khóa chức năng!</div>
             <?php else: ?>
             <div class="alert alert-info" style="margin-bottom: 10px">Bạn đã nộp báo cáo, không thể nộp thêm!</div>
             <?php endif; ?>
             <div class="row">
                 <!-- Hiển thị báo cáo (panel) -->
                 <?php if ($baocao_trangthai): ?>
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <div class="panel panel-default" style="padding: 20px;background-color: #7ae98c;">
                             <div style="display: flex; align-items: center;">
                                 <i class="fa fa-file-o fa-fw" style="margin-right: 12px; font-size: 28px; color: white"></i>
                                 <div>
                                     <div style="font-size: 20px; font-weight: bold; display: flex; align-items: center;">
                                         <a href="<?php echo htmlspecialchars($baocao_dir); ?>" target="_blank" style="color: #222; margin-right: 10px;">
-                                            <?php echo htmlspecialchars($baocao); ?>
+    <?php
+        $maxLen = 10;
+        $tenHienThi = (mb_strlen($baocao) > $maxLen)
+            ? mb_substr($baocao, 0, $maxLen) . '...'
+            : $baocao;
+        echo htmlspecialchars($tenHienThi);
+    ?>
                                         </a>
                                         <?php if ($baocao_dir): ?>
     <a href="/datn/download.php?file=<?php echo urlencode(basename($baocao_dir)); ?>" download style="color: #222;" title="Tải xuống">
