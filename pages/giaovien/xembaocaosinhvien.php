@@ -49,10 +49,34 @@ $sinhviens = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Lấy các tuần đã mở
 $weeks = [];
-$stmt = $conn->prepare("SELECT Tuan FROM TuanBaoCao WHERE ID_GVHD = ? AND TrangThai = 1 ORDER BY Tuan ASC");
+$stmt = $conn->prepare("SELECT DISTINCT Tuan FROM TuanBaoCao WHERE ID_GVHD = ? ORDER BY Tuan ASC");
 $stmt->execute([$id_gvhd]);
 while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $weeks[] = $row['Tuan'];
+}
+$tuan_cao_nhat = !empty($weeks) ? max($weeks) : 0;
+// Thống kê theo tuần (giả định mỗi tuần có 1 báo cáo)
+$tuan_thongke = [];
+for ($tuan = 1; $tuan <= $tuan_cao_nhat; $tuan++) { // Giả sử có 4 tuần
+    $da_nop = 0;
+    $chua_nop = 0;
+    
+    foreach ($sinhviens as $sv) {
+        $stmt = $conn->prepare("SELECT COUNT(*) FROM baocao WHERE IDSV = ?  AND Tuan = ?");
+        $stmt->execute([$sv['ID_TaiKhoan'], $tuan]);
+        $count = $stmt->fetchColumn();
+        
+        if ($count > 0) {
+            $da_nop++;
+        } else {
+            $chua_nop++;
+        }
+    }
+    
+    $tuan_thongke[$tuan] = [
+        'da_nop' => $da_nop,
+        'chua_nop' => $chua_nop
+    ];
 }
 ?>
 <!DOCTYPE html>
@@ -68,6 +92,32 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         box-sizing: border-box;
         max-height: 100%;
     }
+    </style>
+    <style>
+    .stat-container {
+    margin-bottom: 30px;
+}
+.stat-card {
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 15px;
+    background-color: #f9f9f9;
+}
+.stat-header {
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #333;
+}
+.stat-value {
+    font-size: 18px;
+}
+.stat-success {
+    color: #28a745;
+}
+.stat-danger {
+    color: #dc3545;
+}
     </style>
 </head>
 <body>
@@ -105,6 +155,21 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                         </div>
                     </div>
                 </form>
+                <!-- Thống kê theo tuần -->
+                    <div class="stat-container">
+                        <h3>Thống kê nộp báo cáo theo tuần</h3>
+                        <div class="row">
+                            <?php foreach ($tuan_thongke as $tuan => $thongke): ?>
+                                <div class="col-md-3">
+                                    <div class="stat-card">
+                                        <div class="stat-header">Tuần <?php echo $tuan; ?></div>
+                                        <div class="stat-value stat-success">Đã nộp: <?php echo $thongke['da_nop']; ?></div>
+                                        <div class="stat-value stat-danger">Chưa nộp: <?php echo $thongke['chua_nop']; ?></div>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
                 <!-- Bảng sinh viên phía dưới -->
                 <div class="panel panel-default">
                     <div class="panel-heading">
@@ -112,6 +177,7 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                             <div class="col-md-4">
                                 Danh sách sinh viên thuộc quản lí 
                             </div>
+                          <div id="filter-container" class="col-md-4 col-md-offset-4"></div>
                         </div>
                     </div>
                     <div class="panel-body">
@@ -170,16 +236,47 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             </div>
         </div>
     </div>
+<?php
+require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php";
 
+    ?>
     <script>
-    $(document).ready(function () {
-        $('#table-dsbaocao').DataTable({
-            responsive: true,
-            language: {
-                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json'
-            }
-        });
+$(document).ready(function () {
+    // Kiểm tra và destroy nếu đã khởi tạo
+    if ($.fn.DataTable.isDataTable('#table-dsbaocao')) {
+        $('#table-dsbaocao').DataTable().destroy();
+    }
+
+    // Khởi tạo DataTable
+    var table = $('#table-dsbaocao').DataTable({
+        responsive: true,
+        language: {
+            url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json'
+        },
+        initComplete: function() {
+            // Thêm dropdown lọc tuần
+            var select = $('<select class="form-control"><option value="">Tất cả tuần</option></select>')
+                .appendTo('#filter-container')
+                .on('change', function() {
+                    var week = $(this).val();
+                    table.column(3).search(week ? '^Tuần ' + week + '$' : '', true, false).draw();
+                });
+
+            // Thêm các tuần từ biến PHP $weeks (đã sắp xếp giảm dần)
+            <?php 
+            rsort($weeks);
+            foreach ($weeks as $tuan): ?>
+                select.append('<option value="<?php echo $tuan; ?>" <?php echo ($tuan == $tuan_cao_nhat) ? 'selected' : ''; ?>>Tuần <?php echo $tuan; ?></option>');
+            <?php endforeach; ?>
+
+            // Tự động lọc theo tuần cao nhất khi trang tải
+            <?php if ($tuan_cao_nhat > 0): ?>
+                table.column(3).search('^Tuần <?php echo $tuan_cao_nhat; ?>$', true, false).draw();
+            <?php endif; ?>
+        }
     });
-    </script>
+});
+</script>
+    
 </body>
 </html>
