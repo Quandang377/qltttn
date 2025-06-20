@@ -23,13 +23,11 @@
                             <a href="pages/giaovien/quanlygiaygioithieu" class="active"><i class="fa fa-dashboard fa-fw"></i> Quản lý giấy giới thiệu</a>
                         </li>
                         <li>
-                            <a href="pages/giaovien/xemdanhsachsinhvien" class="active"><i class="fa fa-dashboard fa-fw"></i> Danh sách sinh viên</a>
                         </li>
                         <li>
                             <a href="pages/giaovien/khaosat" class="active"><i class="fa fa-dashboard fa-fw"></i> Khảo sát</a>
                         </li>
                         <li>
-                            <a href="pages/giaovien/xemdanhsachcongty" class="active"><i class="fa fa-dashboard fa-fw"></i> Danh sách công ty</a>
                         </li>
                         <li><a href="/datn/logout"><i class="fa fa-sign-out"></i> Đăng xuất</a></li>
                     </ul>

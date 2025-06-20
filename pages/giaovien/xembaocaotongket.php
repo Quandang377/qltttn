@@ -12,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['luu_trangthai_tongket
     $stmt = $conn->prepare("SELECT ID FROM Baocaotongket WHERE ID_TaiKhoan = ?");
     $stmt->execute([$id_gvhd]);
     if ($stmt->fetch()) {
-        $stmt = $conn->prepare("UPDATE Baocaotongket SET TrangThai = ?, NgayCapNhat = NOW() WHERE ID_TaiKhoan = ?");
+        $stmt = $conn->prepare("UPDATE Baocaotongket SET TrangThai = ? WHERE ID_TaiKhoan = ?");
         $stmt->execute([$trangthai_tongket, $id_gvhd]);
     } else {
         $stmt = $conn->prepare("INSERT INTO Baocaotongket (ID_TaiKhoan, TrangThai) VALUES (?, ?)");
@@ -198,7 +198,7 @@ if (isset($_GET['download_all']) && $_GET['download_all'] == 1) {
             </div>
         </div>
     </div>
-
+    <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"; ?>                                               
     <link href="https://cdn.jsdelivr.net/npm/bootstrap4-toggle@3.6.1/css/bootstrap4-toggle.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap4-toggle@3.6.1/js/bootstrap4-toggle.min.js"></script>
     <script>

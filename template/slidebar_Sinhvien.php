@@ -27,9 +27,6 @@
                         <li>
                             <a href="pages/sinhvien/tainguyen" class="active"><i class="fa fa-dashboard fa-fw"></i> Tài nguyên</a>
                         </li>
-                        <li>
-                            <a href="pages/sinhvien/xemdanhsachcongty" class="active"><i class="fa fa-dashboard fa-fw"></i> Danh sách công ty</a>
-                        </li>
                          <li>
                             <a href="pages/sinhvien/khaosat" class="active"><i class="fa fa-dashboard fa-fw"></i> Khảo sát</a>
                         </li>

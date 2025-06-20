@@ -141,13 +141,15 @@ if ($tuanDuocNhap) {
                         <?php for ($i = 2; $i <= 7; $i++): ?>
                             <div class="row" style="padding-top: 10px;">
                                 <label for="Thu-<?php echo $i; ?>">Thứ <?php echo $i; ?></label>
-                                <input type="text" class="form-control <?php if (!$tuanHienTaiMo) echo 'readonly-field'; ?>" 
-                                       id="Thu-<?php echo $i; ?>" name="Thu-<?php echo $i; ?>"
-                                       value="<?php echo isset($baoCaoDaNop[$i]) ? htmlspecialchars($baoCaoDaNop[$i]) : ''; ?>"
-                                       placeholder="Công việc thực hiện" maxlength="255"
-                                       pattern="^[a-zA-Z0-9À-ỹà-ỹ\s.,-]*$"
-                                       title="Không được nhập ký tự đặc biệt"
-                                       <?php if (!$tuanHienTaiMo) echo 'readonly'; ?>>
+                                <textarea class="form-control <?php if (!$tuanHienTaiMo) echo 'readonly-field'; ?>" 
+                                    id="Thu-<?php echo $i; ?>" 
+                                    name="Thu-<?php echo $i; ?>"
+                                    placeholder="Công việc thực hiện" 
+                                    maxlength="250"
+                                    rows="4"
+                                    style="resize: none;"
+                                    <?php if (!$tuanHienTaiMo) echo 'readonly'; ?>
+                            ><?php echo isset($baoCaoDaNop[$i]) ? htmlspecialchars($baoCaoDaNop[$i]) : ''; ?></textarea>
                             </div>
                         <?php endfor; ?>
                         

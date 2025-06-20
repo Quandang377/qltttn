@@ -49,8 +49,22 @@
                 $email = $_POST['email'] ?? '';
 
                 if (isset($_POST['gui_yeu_cau'])) {
-                    // Gán tạm thời IdSinhVien = 3
-                    $stmtCheck = $conn->prepare("SELECT COUNT(*) FROM congty WHERE MaSoThue = ? AND TrangThai = 1");
+                    // Kiểm tra xem mã số thuế có hợp lệ không
+                    if (empty($taxCode)) {
+                        $message = "Vui lòng nhập mã số thuế.";
+                    } elseif (empty($companyName)) {
+                        $message = "Vui lòng nhập tên công ty.";
+                    } elseif (empty($companyAddress)) {
+                        $message = "Vui lòng nhập địa chỉ công ty.";
+                    } elseif (empty($linhVuc)) {
+                        $message = "Vui lòng nhập lĩnh vực hoạt động.";
+                    } elseif (empty($sdt)) {
+                        $message = "Vui lòng nhập số điện thoại.";
+                    } elseif (empty($email)) {
+                        $message = "Vui lòng nhập email.";
+                    } else {
+                        // Kiểm tra xem công ty đã tồn tại trong hệ thống chưa
+                $stmtCheck = $conn->prepare("SELECT COUNT(*) FROM congty WHERE MaSoThue = ? AND TrangThai = 1");
                 $stmtCheck->execute([$taxCode]);
                 $companyExists = $stmtCheck->fetchColumn() > 0;
 
@@ -81,7 +95,7 @@
                     }
                 }
             }
-
+        }
             // Lấy danh sách giấy giới thiệu từ DB (không xét IdSinhVien)
             $stmt = $conn->prepare("SELECT TenCty, MaSoThue, DiaChi, LinhVuc, Sdt, Email, TrangThai FROM GiayGioiThieu ORDER BY ID DESC");
             $stmt->execute();
@@ -167,6 +181,7 @@
                                                     <?php
                                                         if ($row['TrangThai'] == 0) echo "Đang chờ duyệt";
                                                         elseif ($row['TrangThai'] == 1) echo "Đã duyệt";
+                                                        elseif ($row['TrangThai'] == 2) echo "Đã in";
                                                         else echo "Từ chối";
                                                     ?>
                                                 </td>
@@ -199,12 +214,13 @@
                                     <th>Mã số thuế</th>
                                     <th>Địa chỉ</th>
                                     <th>SĐT</th>
+                                    <th>Lĩnh Vực</th>
                                     <th>Email</th>
                                 </tr>
                             </thead>
                             <tbody>
                             <?php
-                            $stmt = $conn->prepare("SELECT ID, TenCty, MaSoThue, DiaChi, Sdt, Email FROM congty WHERE TrangThai = 1");
+                            $stmt = $conn->prepare("SELECT ID, TenCty, MaSoThue, DiaChi, Sdt, Email, Linhvuc FROM congty WHERE TrangThai = 1");
                             $stmt->execute();
                             $stt = 1;
                             while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
@@ -214,6 +230,7 @@
                                 echo '<td>' . htmlspecialchars($row['MaSoThue']) . '</td>';
                                 echo '<td>' . htmlspecialchars($row['DiaChi']) . '</td>';
                                 echo '<td>' . htmlspecialchars($row['Sdt']) . '</td>';
+                                echo '<td>' . htmlspecialchars($row['Linhvuc']) . '</td>';
                                 echo '<td>' . htmlspecialchars($row['Email']) . '</td>';
                                 echo '</tr>';
                             }
@@ -254,7 +271,8 @@
                 $('#ten-cong-ty').val(rowData[1]); // Tên công ty
                 $('#dia-chi').val(rowData[3]); // Địa chỉ
                 $('#sdt').val(rowData[4]); // SĐT
-                $('#email').val(rowData[5]); // Email
+                $('#email').val(rowData[6]); // Email
+                $('#linh-vuc').val(rowData[5]); // Lĩnh vực
                 
                 // Cuộn lên đầu form để người dùng thấy thông tin đã được điền
                 $('html, body').animate({

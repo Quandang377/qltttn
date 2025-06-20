@@ -210,6 +210,6 @@
       </div>
     </div>
     </div>  
-                    
+        <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"; ?>                                               
 </body>
 </html>
