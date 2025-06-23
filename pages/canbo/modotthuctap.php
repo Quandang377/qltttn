@@ -1,3 +1,4 @@
+
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_login.php';
@@ -12,10 +13,13 @@ $role = $_SESSION['user_role'];
 
 $stmt->execute([$idTaiKhoan]);
 $hoTen = $stmt->fetchColumn();
-function getAllInternships($conn)
+function getAllInternships($conn, $hoTen)
 {
-    $stmt = $conn->prepare("SELECT ID,TenDot,Nam,Loai,NguoiQuanLy,ThoiGianBatDau,ThoiGianKetThuc,TenNguoiMoDot,TrangThai FROM DOTTHUCTAP where TrangThai !=-1 ORDER BY ID DESC");
-    $stmt->execute();
+    $stmt = $conn->prepare("SELECT ID,TenDot,Nam,Loai,NguoiQuanLy,ThoiGianBatDau,ThoiGianKetThuc,TenNguoiMoDot,TrangThai 
+        FROM DOTTHUCTAP 
+        WHERE TrangThai != -1 AND NguoiQuanLy = :hoTen
+        ORDER BY ID DESC");
+    $stmt->execute(['hoTen' => $hoTen]);
     return $stmt->fetchAll();
 }
 function countSimilar($conn, $tendot)
@@ -78,7 +82,7 @@ $updateStmt = $conn->prepare("UPDATE DOTTHUCTAP SET TRANGTHAI = 0 WHERE THOIGIAN
 $updateStmt->execute(['today' => $today]);
 $updateStmt2 = $conn->prepare("UPDATE DOTTHUCTAP SET TRANGTHAI = 2 WHERE THOIGIANBATDAU <= :today AND TRANGTHAI = 1");
 $updateStmt2->execute(['today' => $today]);
-$danhSachDotThucTap = getAllInternships($conn);
+$danhSachDotThucTap = getAllInternships($conn, $hoTen);
 $canbokhoa = $conn->query("SELECT ID_TaiKhoan,Ten FROM canbokhoa where TrangThai=1")->fetchAll();
 ?>
 <!DOCTYPE html>
@@ -95,20 +99,22 @@ $canbokhoa = $conn->query("SELECT ID_TaiKhoan,Ten FROM canbokhoa where TrangThai
 <body>
     <div id="wrapper">
         <?php
-        require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_CanBo.php";
+        require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_canbo.php";
         ?>
         <div id="page-wrapper">
             <div class="container-fluid">
                 <div class="page-header">
                     <h1>
-                        Mở Đợt Thực Tập</h1>
+                        Quản lý Đợt Thực Tập
+                    </h1>
+                    <button id="btnShowFormMoDot" class="btn btn-primary btn-lg mt-3">Mở đợt thực tập mới</button>
                     <? if (isset($_GET['msg']) && $_GET['msg'] === 'deleted'): ?>
-                        <div id="noti" class="alert alert-danger text-center">Đã xóa đợt thực tập thành công.</div>
+                        <div id="noti" class="alert alert-success text-center">Đã xóa đợt thực tập thành công.</div>
                     <?php endif;
                     ?>
                 </div>
                 <div class="row">
-                    <div class="form-container">
+                    <div class="form-container" id="formMoDotContainer" style="display:none;">
                         <form id="FormMoDot" method="post">
                             <div class="row mb-3">
                                 <div class="col-lg-6">
@@ -151,75 +157,141 @@ $canbokhoa = $conn->query("SELECT ID_TaiKhoan,Ten FROM canbokhoa where TrangThai
                                 </div>
                             </div>
                             <div class="row">
-                                <div class="col-md-offset text-center">
+                                <div class="col-md-offset text-center" style="margin-bottom: 10px;">
                                     <button type="submit" class="btn btn-primary btn-lg mt-3">Xác nhận</button>
+                                    <button type="button" id="btnHideFormMoDot" class="btn btn-default btn-lg mt-3"
+                                        style="margin-left:10px;">Đóng</button>
                                 </div>
                             </div>
                     </div>
                     </form>
                 </div>
                 <div id="containerDotThucTap" class="mt-3">
-                    <h2>Danh sách các đợt thực tập</h2>
+
                     <div id="listDotThucTap" class="row">
                     </div>
                     <div class="row">
                         <div class="col-lg-12">
                             <div class="panel panel-default">
                                 <div class="panel-heading">
-                                </div>
-                                <div class="panel-body">
-                                    <div class="table-responsive">
-                                        <table class="table" id="TableDotTT">
-                                            <thead>
-                                                <tr>
-                                                    <th>#</th>
-                                                    <th>Tên đợt</th>
-                                                    <th>Năm</th>
-                                                    <th>Thời gian bắt đầu</th>
-                                                    <th>Người quản lý</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <?php $i = 1;
-                                                foreach ($danhSachDotThucTap as $dot): ?>
-                                                    <?php $link = 'pages/canbo/chitietdot?id=' . urlencode($dot['ID']); ?>
-                                                    <tr onclick="window.location='<?= $link ?>';" style="cursor: pointer;">
-                                                        <td><?= $i++ ?></td>
-                                                        <td><?= htmlspecialchars($dot['TenDot']) ?></td>
-                                                        <td><?= htmlspecialchars($dot['Nam']) ?></td>
-                                                        <td><?= htmlspecialchars($dot['ThoiGianBatDau']) ?></td>
-                                                        <td><?= htmlspecialchars($dot['NguoiQuanLy']) ?></td>
-                                                    </tr>
-                                                <?php endforeach; ?>
-                                            </tbody>
-                                        </table>
+                                    <div class="row" style="margin-bottom: 15px;">
+                                        <div class="col-md-9">
+                                            <h4>Danh sách các đợt thực tập</h4>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <select id="filterTrangThai" class="form-control">
+                                                <option value="">-- Tất cả trạng thái --</option>
+                                                <option value="Đang chuẩn bị">Đang chuẩn bị</option>
+                                                <option value="Hoàn tất phân công">Hoàn tất phân công</option>
+                                                <option value="Đã bắt đầu">Đã bắt đầu</option>
+                                                <option value="Đã kết thúc">Đã kết thúc</option>
+                                            </select>
+                                        </div>
                                     </div>
-                                    <!-- /.table-responsive -->
-                                </div>
-                                <!-- /.panel-body -->
                             </div>
-                            <!-- /.panel -->
+                            <div class="panel-body">
+                                <div class="table-responsive">
+
+                                    <table class="table" id="TableDotTT">
+                                        <thead>
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Tên đợt</th>
+                                                <th>Năm</th>
+                                                <th>Loại</th>
+                                                <th>Thời gian bắt đầu</th>
+                                                <th>Thời gian kết thúc</th>
+                                                <th>Người quản lý</th>
+                                                <th>Trạng thái</th>
+                                                <th>Xem</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php $i = 1;
+                                            foreach ($danhSachDotThucTap as $dot):
+                                                if ($dot['TrangThai'] == -1)
+                                                    continue;
+                                                $link = '/datn/pages/canbo/chitietdot?id=' . urlencode($dot['ID']);
+                                                switch ($dot['TrangThai']) {
+                                                    case 1:
+                                                        $trangthai = 'Đang chuẩn bị';
+                                                        break;
+                                                    case 2:
+                                                        $trangthai = 'Đã bắt đầu';
+                                                        break;
+                                                    case 3:
+                                                        $trangthai = 'Hoàn tất phân công';
+                                                        break;
+                                                    case 0:
+                                                        $trangthai = 'Đã kết thúc';
+                                                        break;
+                                                    default:
+                                                        $trangthai = 'Không xác định';
+                                                }
+                                                ?>
+                                                <tr>
+                                                    <td><?= $i++ ?></td>
+                                                    <td><?= htmlspecialchars($dot['TenDot']) ?></td>
+                                                    <td><?= htmlspecialchars($dot['Nam']) ?></td>
+                                                    <td><?= htmlspecialchars($dot['Loai']) ?></td>
+                                                    <td><?= htmlspecialchars($dot['ThoiGianBatDau']) ?></td>
+                                                    <td><?= htmlspecialchars($dot['ThoiGianKetThuc']) ?></td>
+                                                    <td><?= htmlspecialchars($dot['NguoiQuanLy']) ?></td>
+                                                    <td><?= $trangthai ?></td>
+                                                    <td>
+                                                        <a href="<?= $link ?>" class="btn btn-xs btn-primary">Xem chi
+                                                            tiết</a>
+                                                    </td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <!-- /.table-responsive -->
+                            </div>
+                            <!-- /.panel-body -->
                         </div>
-                        <!-- /.col-lg-6 -->
+                        <!-- /.panel -->
                     </div>
+                    <!-- /.col-lg-6 -->
                 </div>
             </div>
         </div>
+    </div>
     </div>
     <?php
     require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
         ?>
     <script>
-
+        document.getElementById('btnShowFormMoDot').addEventListener('click', function () {
+            var formDiv = document.getElementById('formMoDotContainer');
+            if (formDiv.style.display === 'none') {
+                formDiv.style.display = 'block';
+                this.style.display = 'none';
+            }
+        });
+        document.getElementById('btnHideFormMoDot').addEventListener('click', function () {
+            document.getElementById('formMoDotContainer').style.display = 'none';
+            document.getElementById('btnShowFormMoDot').style.display = 'inline-block';
+        });
+        var table; // Khai báo ngoài
         $(document).ready(function () {
-            var table = $('#TableDotTT').DataTable({
+            table = $('#TableDotTT').DataTable({
                 responsive: true,
-                pageLength: 20,
+                pageLength: 10,
+                ordering: true,
                 language: {
                     url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json"
                 }
             });
-
+        });
+        $('#filterTrangThai').on('change', function () {
+            var val = $(this).val();
+            if (val) {
+                table.column(7).search('^' + val + '$', true, false).draw();
+            } else {
+                table.column(7).search('').draw();
+            }
         });
         document.addEventListener('DOMContentLoaded', function () {
             const startInput = document.getElementById('thoigianbatdau');
@@ -290,7 +362,9 @@ $canbokhoa = $conn->query("SELECT ID_TaiKhoan,Ten FROM canbokhoa where TrangThai
                     }
                 });
             });
+
         });
+
         window.addEventListener('DOMContentLoaded', () => {
             const alertBox = document.getElementById('noti');
             if (alertBox) {

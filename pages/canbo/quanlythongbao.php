@@ -1,16 +1,48 @@
 <?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
-
+$idTaiKhoan = $_SESSION['user_id'] ?? null;
+$stmt = $conn->prepare("SELECT Ten FROM canbokhoa WHERE ID_TaiKhoan = ?");
+$stmt->execute([$idTaiKhoan]);
+$hoTen = $stmt->fetchColumn();
+$stmt = $conn->prepare("SELECT ID, TenDot FROM DotThucTap WHERE NguoiQuanLy = ? ORDER BY ID DESC");
+$stmt->execute([$hoTen]);
+$dsDot = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$hoTen = $stmt->fetchColumn();
 $order = "DESC";
-if (isset($_GET['loc'])) {
-  if ($_GET['loc'] === 'old')
-    $order = "ASC";
+$whereDot = "";
+$params = [$idTaiKhoan];
+if (!empty($_GET['dot_filter'])) {
+  $whereDot = " AND tb.ID_Dot = ? ";
+  $params[] = $_GET['dot_filter'];
+}
+$stmt = $conn->prepare("
+    SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.NGAYDANG, tb.ID_Dot,
+        COALESCE(ad.Ten, cbk.Ten, tk.TaiKhoan) AS NguoiTao,
+        dt.TenDot
+    FROM THONGBAO tb
+    LEFT JOIN admin ad ON tb.ID_TaiKhoan = ad.ID_TaiKhoan
+    LEFT JOIN canbokhoa cbk ON tb.ID_TaiKhoan = cbk.ID_TaiKhoan
+    LEFT JOIN TaiKhoan tk ON tb.ID_TaiKhoan = tk.ID_TaiKhoan
+    LEFT JOIN DotThucTap dt ON tb.ID_Dot = dt.ID
+    WHERE tb.TRANGTHAI=1 AND tb.ID_TaiKhoan = ? $whereDot
+    ORDER BY tb.NGAYDANG $order
+");
+$stmt->execute($params);
+$thongbaos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_thongbao_id'])) {
+  $idThongBao = $_POST['xoa_thongbao_id'];
+
+  $stmt = $conn->prepare("UPDATE ThongBao SET TrangThai = 0 WHERE ID = ?");
+  $stmt->execute([$idThongBao]);
+
+  $_SESSION['success'] = "Xoá thông báo thành công.";
+  header("Location: " . $_SERVER['REQUEST_URI']);
+  exit;
 }
 
-$stmt = $conn->prepare("SELECT ID, TIEUDE, NOIDUNG, NGAYDANG FROM THONGBAO ORDER BY NGAYDANG $order");
-$stmt->execute();
-$thongbaos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -38,9 +70,20 @@ $thongbaos = $stmt->fetchAll(PDO::FETCH_ASSOC);
         </div>
         <div class="row">
           <div class="col-lg-12">
+            <form method="get" class="form-inline" style="margin-bottom: 15px;">
+              <label for="dot_filter">Lọc theo đợt: </label>
+              <select name="dot_filter" id="dot_filter" class="form-control" onchange="this.form.submit()">
+                <option value="">-- Tất cả --</option>
+                <?php foreach ($dsDot as $dot): ?>
+                  <option value="<?= $dot['ID'] ?>" <?= (isset($_GET['dot_filter']) && $_GET['dot_filter'] == $dot['ID']) ? 'selected' : '' ?>>
+                    <?= htmlspecialchars($dot['TenDot']) ?>
+                  </option>
+                <?php endforeach; ?>
+              </select>
+            </form>
             <div class="panel panel-default">
               <div class="panel-heading">
-                Danh sách thông báo
+                Danh sách thông báo đã tạo
               </div>
               <div class="panel-body">
                 <div class="table-responsive">
@@ -49,17 +92,32 @@ $thongbaos = $stmt->fetchAll(PDO::FETCH_ASSOC);
                       <tr>
                         <th>#</th>
                         <th>Tiêu đề</th>
+                        <th>Đợt</th>
                         <th>Thời gian đăng</th>
+                        <th>Hành động</th>
                       </tr>
                     </thead>
                     <tbody>
                       <?php $i = 1;
                       foreach ($thongbaos as $thongbao): ?>
                         <?php $link = 'pages/canbo/chitietthongbao?id=' . urlencode($thongbao['ID']); ?>
-                        <tr onclick="window.location='<?= $link ?>';" style="cursor: pointer;">
-                          <td><?= $i++ ?></td>
-                          <td><?= htmlspecialchars($thongbao['TIEUDE']) ?></td>
-                          <td><?= htmlspecialchars($thongbao['NGAYDANG']) ?></td>
+                        <tr>
+                          <td onclick="window.location='<?= $link ?>';" style="cursor: pointer;"><?= $i++ ?></td>
+                          <td onclick="window.location='<?= $link ?>';" style="cursor: pointer;">
+                            <?= htmlspecialchars($thongbao['TIEUDE']) ?>
+                          </td>
+                          <td onclick="window.location='<?= $link ?>';" style="cursor: pointer;">
+                            <?= htmlspecialchars($thongbao['TenDot'] ?? '') ?>
+                          </td>
+                          <td onclick="window.location='<?= $link ?>';" style="cursor: pointer;">
+                            <?= htmlspecialchars($thongbao['NGAYDANG']) ?>
+                          </td>
+                          <td>
+                            <form method="post" onsubmit="return confirm('Bạn có chắc chắn muốn xóa thông báo này?');">
+                              <input type="hidden" name="xoa_thongbao_id" value="<?= $thongbao['ID'] ?>">
+                              <button type="submit" class="btn btn-danger btn-sm">Xoá</button>
+                            </form>
+                          </td>
                         </tr>
                       <?php endforeach; ?>
                     </tbody>
@@ -82,21 +140,24 @@ $thongbaos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     </div>
   </div>
+  <?php
+  require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
+    ?>
+  <script>
+    $(document).ready(function () {
+      var table = $('#TableDotTT').DataTable({
+        responsive: true,
+        pageLength: 20,
+        language: {
+          url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json"
+        }
+      });
+
+    });
+  </script>
 </body>
 
 </html>
-<script>
-  $(document).ready(function () {
-    var table = $('#TableDotTT').DataTable({
-      responsive: true,
-      pageLength: 20,
-      language: {
-        url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json"
-      }
-    });
-
-  });
-</script>
 <style>
   .noidung-rutgon {
     white-space: nowrap;

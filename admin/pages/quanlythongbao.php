@@ -3,14 +3,27 @@
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
 $order = "DESC";
-if (isset($_GET['loc'])) {
-  if ($_GET['loc'] === 'old')
-    $order = "ASC";
+$whereDot = "";
+$params = [];
+if (!empty($_GET['dot_filter'])) {
+  $whereDot = " AND ID_Dot = ? ";
+  $params[] = $_GET['dot_filter'];
 }
-
-$stmt = $conn->prepare("SELECT ID, TIEUDE, NOIDUNG, NGAYDANG FROM THONGBAO WHERE TRANGTHAI=1 ORDER BY NGAYDANG $order");
-$stmt->execute();
+$stmt = $conn->prepare("
+    SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.NGAYDANG, tb.ID_Dot,
+        COALESCE(ad.Ten, cbk.Ten, tk.TaiKhoan) AS NguoiTao,
+        dt.TenDot
+    FROM THONGBAO tb
+    LEFT JOIN admin ad ON tb.ID_TaiKhoan = ad.ID_TaiKhoan
+    LEFT JOIN canbokhoa cbk ON tb.ID_TaiKhoan = cbk.ID_TaiKhoan
+    LEFT JOIN TaiKhoan tk ON tb.ID_TaiKhoan = tk.ID_TaiKhoan
+    LEFT JOIN DotThucTap dt ON tb.ID_Dot = dt.ID
+    WHERE tb.TRANGTHAI=1 $whereDot
+    ORDER BY tb.NGAYDANG $order
+");
+$stmt->execute($params);
 $thongbaos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_thongbao_id'])) {
   $idThongBao = $_POST['xoa_thongbao_id'];
@@ -22,6 +35,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_thongbao_id'])) {
   header("Location: " . $_SERVER['REQUEST_URI']);
   exit;
 }
+$stmt = $conn->prepare("SELECT ID, TenDot FROM DotThucTap WHERE TrangThai >= 0 ORDER BY ID DESC");
+$stmt->execute();
+$dsDot = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -49,6 +65,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_thongbao_id'])) {
         </div>
         <div class="row">
           <div class="col-lg-12">
+            <form method="get" class="form-inline" style="margin-bottom: 15px;">
+              <label for="dot_filter">Lọc theo đợt: </label>
+              <select name="dot_filter" id="dot_filter" class="form-control" onchange="this.form.submit()">
+                <option value="">-- Tất cả --</option>
+                <?php foreach ($dsDot as $dot): ?>
+                  <option value="<?= $dot['ID'] ?>" <?= (isset($_GET['dot_filter']) && $_GET['dot_filter'] == $dot['ID']) ? 'selected' : '' ?>>
+                    <?= htmlspecialchars($dot['TenDot']) ?>
+                  </option>
+                <?php endforeach; ?>
+              </select>
+            </form>
             <div class="panel panel-default">
               <div class="panel-heading">
                 Danh sách thông báo
@@ -60,6 +87,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_thongbao_id'])) {
                       <tr>
                         <th>#</th>
                         <th>Tiêu đề</th>
+                        <th>Đợt</th>
+                        <th>Người tạo</th>
                         <th>Thời gian đăng</th>
                         <th>Hành động</th>
                       </tr>
@@ -67,12 +96,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_thongbao_id'])) {
                     <tbody>
                       <?php $i = 1;
                       foreach ($thongbaos as $thongbao): ?>
-                        <?php $link = 'admin/pages/chitietthongbao?id='. urlencode($thongbao['ID']); ?>
+                        <?php $link = 'admin/pages/chitietthongbao?id=' . urlencode($thongbao['ID']); ?>
                         <tr>
                           <td onclick="window.location='<?= $link ?>';" style="cursor: pointer;"><?= $i++ ?></td>
                           <td onclick="window.location='<?= $link ?>';" style="cursor: pointer;">
                             <?= htmlspecialchars($thongbao['TIEUDE']) ?>
                           </td>
+                          <td onclick="window.location='<?= $link ?>';" style="cursor: pointer;">
+                            <?= htmlspecialchars($thongbao['TenDot']) ?>
+                          <td onclick="window.location='<?= $link ?>';" style="cursor: pointer;">
+                            <?= htmlspecialchars($thongbao['NguoiTao']) ?>
                           <td onclick="window.location='<?= $link ?>';" style="cursor: pointer;">
                             <?= htmlspecialchars($thongbao['NGAYDANG']) ?>
                           </td>

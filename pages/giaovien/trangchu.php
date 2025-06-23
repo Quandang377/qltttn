@@ -1,7 +1,34 @@
 <?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
-require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/ThongBao_funtions.php";
+
+$idTaiKhoan = $_SESSION['user_id'] ?? null;
+
+// Lấy danh sách ID đợt mà giáo viên này hướng dẫn sinh viên
+$stmt = $conn->prepare("
+    SELECT DISTINCT sv.ID_Dot
+    FROM SinhVien sv
+    WHERE sv.ID_GVHD = ?
+");
+$stmt->execute([$idTaiKhoan]);
+$dsDot = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+// Lấy thông báo thuộc các đợt này
+$thongbaos = [];
+if (!empty($dsDot)) {
+    $placeholders = implode(',', array_fill(0, count($dsDot), '?'));
+    $stmt = $conn->prepare("
+        SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.NGAYDANG, tb.ID_Dot, dt.TenDot
+        FROM THONGBAO tb
+        LEFT JOIN DotThucTap dt ON tb.ID_Dot = dt.ID
+        WHERE tb.ID_Dot IN ($placeholders) AND tb.TRANGTHAI=1
+        ORDER BY tb.NGAYDANG DESC
+        LIMIT 50
+    ");
+    $stmt->execute($dsDot);
+    $thongbaos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+?>
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -145,7 +172,11 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/ThongBao_funtions.php";
                             <li>Thông báo</li>
                             <li>|</li>
                             <li>${new Date(tb.NGAYDANG).toLocaleDateString('vi-VN')}</li>
+                            ${tb.TenDot ? `<li>|</li><li>Đợt: ${tb.TenDot}</li>` : ''}
                         </ul>
+                        <p class="noidung-rutgon" style="margin-top: 5px;">
+                            ${tb.NOIDUNG.length > 100 ? tb.NOIDUNG.substring(0, 100) + '...' : tb.NOIDUNG}
+                        </p>
                     </div>
                 </div>
             `;

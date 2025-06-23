@@ -1,11 +1,48 @@
 <?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
-require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/ThongBao_funtions.php";
-if (!isset($_SESSION['user']) || $_SESSION['user']['VaiTro'] !== 'Sinh viên') {
-    header("Location: /login.php");
-    exit;
+
+
+
+$idTaiKhoan = $_SESSION['user']['ID_TaiKhoan'];
+$stmt = $conn->prepare("SELECT sv.ID_Dot, dt.TrangThai 
+    FROM SinhVien sv 
+    LEFT JOIN DotThucTap dt ON sv.ID_Dot = dt.ID 
+    WHERE sv.ID_TaiKhoan = ?");
+$stmt->execute([$idTaiKhoan]);
+$row = $stmt->fetch(PDO::FETCH_ASSOC);
+$idDot = $row['ID_Dot'] ?? null;
+$trangThaiDot = $row['TrangThai'] ?? null;
+
+$thongbaos = [];
+if ($idDot) {
+  $stmt = $conn->prepare("
+        SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.NGAYDANG, tb.ID_Dot, dt.TenDot
+        FROM THONGBAO tb
+        LEFT JOIN DotThucTap dt ON tb.ID_Dot = dt.ID
+        WHERE tb.ID_Dot = ? AND tb.TRANGTHAI=1
+        ORDER BY tb.NGAYDANG DESC
+        LIMIT 50
+    ");
+  $stmt->execute([$idDot]);
+  $thongbaos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
+$stmt = $conn->prepare("SELECT dt.TrangThai 
+    FROM SinhVien sv 
+    LEFT JOIN DotThucTap dt ON sv.ID_Dot = dt.ID 
+    WHERE sv.ID_TaiKhoan = ?");
+$stmt->execute([$idTaiKhoan]);
+$trangThaiDot = $stmt->fetchColumn();
+
+$panelActive = 0;
+if ($trangThaiDot == 1)
+  $panelActive = 0;
+elseif ($trangThaiDot == 3)
+  $panelActive = 1;
+elseif ($trangThaiDot == 2)
+  $panelActive = 2;
+elseif ($trangThaiDot == 0)
+  $panelActive = 3;
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -33,7 +70,7 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['VaiTro'] !== 'Sinh viên') {
         <div class="row panel-row">
           <div class="col-md-3 panel-container">
             <a href="pages/sinhvien/xemdanhsachcongty" style="text-decoration: none; color: inherit;">
-              <div class="panel panel-default" style="min-height: 170px;">
+              <div class="panel panel-default <?= $panelActive === 0 ? 'panel-success' : '' ?>" <?= $panelActive === 0 ? 'data-toggle="tooltip" title="Giai đoạn hiện tại"' : '' ?> style="min-height: 170px;">
                 <div class="panel-heading">Tìm công ty thực tập</div>
                 <div class="panel-body">
                   <p>&bull; Xem danh sách công ty từ các khóa trước</p>
@@ -44,7 +81,7 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['VaiTro'] !== 'Sinh viên') {
           </div>
           <div class="col-md-3 panel-container">
             <a href="pages/sinhvien/dangkygiaygioithieu" style="text-decoration: none; color: inherit;">
-              <div class="panel panel-default" style="min-height: 170px;">
+              <div class="panel panel-default <?= $panelActive === 1 ? 'panel-success' : '' ?>" <?= $panelActive === 1 ? 'data-toggle="tooltip" title="Giai đoạn hiện tại"' : '' ?> style="min-height: 170px;">
                 <div class="panel-heading">Xin giấy giới thiệu thực tập</div>
                 <div class="panel-body">
                   <p>&bull; Gửi thông tin đăng ký xin giấy giới thiệu thực tập</p>
@@ -54,7 +91,7 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['VaiTro'] !== 'Sinh viên') {
           </div>
           <div class="col-md-3 panel-container">
             <a href="pages/sinhvien/baocaotuan" style="text-decoration: none; color: inherit;">
-              <div class="panel panel-default" style="min-height: 170px;">
+              <div class="panel panel-default <?= $panelActive === 2 ? 'panel-success' : '' ?>" <?= $panelActive === 2 ? 'data-toggle="tooltip" title="Giai đoạn hiện tại"' : '' ?> style="min-height: 170px;">
                 <div class="panel-heading">Thực tập, báo cáo tuần</div>
                 <div class="panel-body">
                   <p>&bull; Bắt dầu thực tập, gửi báo cáo hằng tuần cho giáo viên hướng dẫn</p>
@@ -64,7 +101,7 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['VaiTro'] !== 'Sinh viên') {
           </div>
           <div class="col-md-3 ">
             <a href="#" data-toggle="modal" data-target="#detailModal" style="text-decoration: none; color: inherit;">
-              <div class="panel panel-default" style="min-height: 170px;">
+              <div class="panel panel-default <?= $panelActive === 3 ? 'panel-success' : '' ?>" <?= $panelActive === 3 ? 'data-toggle="tooltip" title="Giai đoạn hiện tại"' : '' ?> style="min-height: 170px;">
                 <div class="panel-heading">Chấm điểm kết thúc</div>
                 <div class="panel-body">
                   <p>&bull; Phiếu chấm điểm...</p>
@@ -91,6 +128,7 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['VaiTro'] !== 'Sinh viên') {
                 </div>
                 <div class="modal-footer">
                   <button class="btn btn-default" data-dismiss="modal">Đóng</button>
+                  <a href="pages/sinhvien/nopketqua" class="btn btn-primary">Đến nộp</a>
                 </div>
               </div>
             </div>
@@ -111,29 +149,29 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['VaiTro'] !== 'Sinh viên') {
     </div>
   </div>
 
-<?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
+  <?
 
-require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
-  ?>
-<script>
-  const thongbaos = <?= json_encode($thongbaos) ?>;
-  const pageSize = 5;
-  let currentPage = 0;
+  require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
+    ?>
+  <script>
+    const thongbaos = <?= json_encode($thongbaos) ?>;
+    const pageSize = 5;
+    let currentPage = 0;
 
-  function renderNotifications() {
-    const container = document.getElementById('notification-list');
+    function renderNotifications() {
+      const container = document.getElementById('notification-list');
 
-    container.classList.add('fade-out');
+      container.classList.add('fade-out');
 
-    setTimeout(() => {
-      const start = currentPage * pageSize;
-      const end = start + pageSize;
-      const list = thongbaos.slice(start, end);
+      setTimeout(() => {
+        const start = currentPage * pageSize;
+        const end = start + pageSize;
+        const list = thongbaos.slice(start, end);
 
-      container.innerHTML = '';
+        container.innerHTML = '';
 
-      list.forEach(tb => {
-        const html = `
+        list.forEach(tb => {
+          const html = `
                 <div class="row" style="margin-bottom: 15px; border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
                     <div class="col-md-2 text-center">
                         <a href="pages/sinhvien/chitietthongbao.php?id=${tb.ID}">
@@ -154,36 +192,40 @@ require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
                     </div>
                 </div>
             `;
-        container.insertAdjacentHTML('beforeend', html);
-      });
+          container.insertAdjacentHTML('beforeend', html);
+        });
 
-      document.getElementById('prevBtn').disabled = currentPage === 0;
-      document.getElementById('nextBtn').disabled = end >= thongbaos.length;
+        document.getElementById('prevBtn').disabled = currentPage === 0;
+        document.getElementById('nextBtn').disabled = end >= thongbaos.length;
 
-      container.classList.remove('fade-out');
-      container.classList.add('fade-in');
+        container.classList.remove('fade-out');
+        container.classList.add('fade-in');
 
-      setTimeout(() => container.classList.remove('fade-in'), 500);
-    }, 300);
-  }
-
-  document.getElementById('prevBtn').addEventListener('click', () => {
-    if (currentPage > 0) {
-      currentPage--;
-      renderNotifications();
+        setTimeout(() => container.classList.remove('fade-in'), 500);
+      }, 300);
     }
-  });
+    $(function () {
+      $('[data-toggle="tooltip"]').tooltip();
+    });
 
-  document.getElementById('nextBtn').addEventListener('click', () => {
-    if ((currentPage + 1) * pageSize < thongbaos.length) {
-      currentPage++;
-      renderNotifications();
-    }
-  });
+    document.getElementById('prevBtn').addEventListener('click', () => {
+      if (currentPage > 0) {
+        currentPage--;
+        renderNotifications();
+      }
+    });
 
-  renderNotifications();
-</script>
+    document.getElementById('nextBtn').addEventListener('click', () => {
+      if ((currentPage + 1) * pageSize < thongbaos.length) {
+        currentPage++;
+        renderNotifications();
+      }
+    });
+
+    renderNotifications();
+  </script>
 </body>
+
 </html>
 <style>
   .panel-row {

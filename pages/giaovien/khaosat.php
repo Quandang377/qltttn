@@ -2,16 +2,33 @@
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_login.php';
 
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
-$ID_TaiKhoan =$_SESSION['user_id'];
+$ID_TaiKhoan = $_SESSION['user_id'];
+
 $stmt = $conn->prepare("SELECT VaiTro FROM TaiKhoan WHERE ID_TaiKhoan = ?");
 $stmt->execute([$ID_TaiKhoan]);
 $vaiTro = $stmt->fetchColumn();
 
 $stmt = $conn->prepare("
-    SELECT ks.*
+    SELECT ks.*, 
+    COALESCE(gv.Ten, sv.Ten,cb.Ten, tk.TaiKhoan) AS TenNguoiTao
     FROM KhaoSat ks
+    JOIN TaiKhoan tk ON ks.NguoiTao = tk.ID_TaiKhoan
+    LEFT JOIN GiaoVien gv ON gv.ID_TaiKhoan = tk.ID_TaiKhoan
+    LEFT JOIN CanBoKhoa cb ON cb.ID_TaiKhoan = tk.ID_TaiKhoan
+    LEFT JOIN SinhVien sv ON sv.ID_TaiKhoan = tk.ID_TaiKhoan
     WHERE ks.TrangThai = 1
-    AND ks.NguoiNhan IN (?, ?)  -- truyền vào 'Tất cả' và vai trò
+    AND (
+        ks.NguoiNhan IN ('Tất cả', ?) -- Vai trò
+        OR (
+            ks.NguoiNhan = 'Sinh viên thuộc hướng dẫn'
+            AND EXISTS (
+                SELECT 1
+                FROM SinhVien sv2
+                WHERE sv2.ID_TaiKhoan = ?
+                AND sv2.ID_GVHD = ks.NguoiTao
+            )
+        )
+    )
     AND ks.ID NOT IN (
         SELECT ID_KhaoSat 
         FROM PhanHoiKhaoSat 
@@ -19,9 +36,10 @@ $stmt = $conn->prepare("
     )
     ORDER BY ks.ThoiGianTao DESC
 ");
-$stmt->execute(['Tất cả', $vaiTro, $ID_TaiKhoan]);
 
+$stmt->execute([$vaiTro, $ID_TaiKhoan, $ID_TaiKhoan]);
 $dsKhaoSat = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
 $dsID = array_column($dsKhaoSat, 'ID');
 $dsCauHoiTheoKhaoSat = [];
 if (!empty($dsID)) {
@@ -35,18 +53,145 @@ if (!empty($dsID)) {
         $dsCauHoiTheoKhaoSat[$ch['ID_KhaoSat']][] = $ch;
     }
 }
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_khaosat_id'])) {
-    $idKhaoSat = $_POST['xoa_khaosat_id'];
+// 3. Lấy các đợt thực tập mà GVHD sinh viên
+$stmt2 = $conn->prepare("
+    SELECT DISTINCT dt.ID, dt.TenDot
+    FROM DotThucTap dt
+    JOIN SinhVien sv ON sv.ID_Dot = dt.ID
+    WHERE sv.ID_GVHD = ?
+    ORDER BY dt.ID DESC
+");
+$stmt2->execute([$ID_TaiKhoan]);
+$dsDot = $stmt2->fetchAll(PDO::FETCH_ASSOC);
 
+// AJAX: Tạo khảo sát
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'tao') {
+    $tieude = trim($_POST['tieude'] ?? '');
+    $mota = trim($_POST['mota'] ?? '');
+    $nguoiNhan = $_POST['to'] ?? '';
+    $cauHoiList = $_POST['cauhoi'] ?? [];
+    $loaiList = $_POST['loaicauhoi'] ?? [];
+    $dapanList = $_POST['dapan'] ?? [];
+    $nguoiTao = $ID_TaiKhoan;
+    $idDot = $_POST['id_dot'] ?? null;
+
+    try {
+        $conn->beginTransaction();
+
+        // 1. Tạo khảo sát trước
+        $stmt = $conn->prepare("INSERT INTO KhaoSat (TieuDe, MoTa, NguoiNhan, NguoiTao, ThoiGianTao, TrangThai, ID_Dot) 
+            VALUES (?, ?, ?, ?, NOW(), 1, ?)");
+        $stmt->execute([$tieude, $mota, $nguoiNhan, $nguoiTao, $idDot]);
+        $idKhaoSat = $conn->lastInsertId();
+
+        // 2. Thêm câu hỏi (có loại và đáp án)
+        $stmtCauHoi = $conn->prepare("INSERT INTO CauHoiKhaoSat (ID_KhaoSat, NoiDung, Loai, DapAn, TrangThai) VALUES (?, ?, ?, ?, 1)");
+        foreach ($cauHoiList as $i => $cauhoi) {
+            $noiDung = trim($cauhoi);
+            $loai = $loaiList[$i] ?? 'text';
+            $dapan = ($loai === 'choice') ? trim($dapanList[$i] ?? '') : null;
+            // Xử lý đáp án: bỏ khoảng trắng và dấu ; ở cuối
+
+            if ($loai === 'choice' || $loai === 'multiple') {
+                $dapan = trim($dapanList[$i] ?? '');
+                $dapan = preg_replace('/\s*;\s*$/', '', $dapan); // Xóa dấu ; và khoảng trắng cuối
+            } else {
+                $dapan = null;
+            }
+            if ($noiDung !== '') {
+                $stmtCauHoi->execute([$idKhaoSat, $noiDung, $loai, $dapan]);
+            }
+        }
+
+        $conn->commit();
+        echo json_encode(['status' => 'OK']);
+    } catch (Exception $e) {
+        $conn->rollBack();
+        echo json_encode(['status' => 'ERROR', 'message' => $e->getMessage()]);
+    }
+    exit;
+}
+
+// AJAX: Xóa khảo sát
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'xoa') {
+    $idKhaoSat = $_POST['id'] ?? 0;
     $stmt = $conn->prepare("UPDATE KhaoSat SET TrangThai = 0 WHERE ID = ?");
     $stmt->execute([$idKhaoSat]);
+    echo json_encode(['status' => 'OK']);
+    exit;
+}
 
-    $_SESSION['success'] = "Xoá khảo sát thành công.";
-    header("Location: " . $_SERVER['REQUEST_URI']);
+// AJAX: Lấy danh sách khảo sát
+if (isset($_GET['ajax'])) {
+    $whereDot = "";
+    $params = [$ID_TaiKhoan];
+    if (!empty($_GET['dot_filter'])) {
+        $whereDot = " AND ks.ID_Dot = ? ";
+        $params[] = $_GET['dot_filter'];
+    }
+    $stmt = $conn->prepare("SELECT ks.ID, ks.TieuDe, ks.ThoiGianTao,
+        (SELECT COUNT(*) FROM PhanHoiKhaoSat WHERE ID_KhaoSat = ks.ID) AS SoLuongPhanHoi,
+        ks.ID_Dot
+        FROM KhaoSat ks
+        WHERE ks.NguoiTao = ? and ks.TrangThai=1 $whereDot
+        ORDER BY ks.ThoiGianTao DESC");
+    $stmt->execute($params);
+    $dsKhaoSatTao = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    ?>
+    <table class="table" id="quanlykhaosat">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Tiêu đề</th>
+                <th>Ngày tạo</th>
+                <th>Đợt thực tập</th>
+                <th>Phản hồi</th>
+                <th>Hành động</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($dsKhaoSatTao as $index => $ks): ?>
+                <tr>
+                    <td onclick="window.location='pages/giaovien/chitietkhaosat?id=<?= $ks['ID'] ?>';" style="cursor: pointer;">
+                        <?= $index + 1 ?>
+                    </td>
+                    <td onclick="window.location='pages/giaovien/chitietkhaosat?id=<?= $ks['ID'] ?>';" style="cursor: pointer;">
+                        <?= htmlspecialchars($ks['TieuDe']) ?>
+                    </td>
+                    <td onclick="window.location='pages/giaovien/chitietkhaosat?id=<?= $ks['ID'] ?>';" style="cursor: pointer;">
+                        <?= date('d/m/Y', strtotime($ks['ThoiGianTao'])) ?>
+                    </td>
+                    <td>
+                        <?php
+                        $tenDot = '';
+                        foreach ($dsDot as $dot) {
+                            if ($dot['ID'] == $ks['ID_Dot']) {
+                                $tenDot = $dot['TenDot'];
+                                break;
+                            }
+                        }
+                        echo htmlspecialchars($tenDot);
+                        ?>
+                    </td>
+                    <td onclick="window.location='pages/giaovien/chitietkhaosat?id=<?= $ks['ID'] ?>';" style="cursor: pointer;">
+                        <?= $ks['SoLuongPhanHoi'] ?>
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-danger btn-sm" onclick="xoaKhaoSat(<?= $ks['ID'] ?>)">Xoá</button>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+            <?php if (empty($dsKhaoSatTao)): ?>
+                <tr>
+                    <td colspan="6" class="text-center text-muted">Chưa có khảo sát nào được tạo.</td>
+                </tr>
+            <?php endif; ?>
+        </tbody>
+    </table>
+    <?php
     exit;
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="vi">
 
@@ -121,45 +266,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_khaosat_id'])) {
                     ORDER BY ks.ThoiGianTao DESC");
                 $stmt->execute([$ID_TaiKhoan]);
                 $dsKhaoSatTao = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                    $tieude = trim($_POST['tieude']);
-                    $mota = trim($_POST['mota']);
-                    $nguoiNhan = $_POST['to'];
-                    $cauHoiList = $_POST['cauhoi'];
-                    $nguoiTao = $_SESSION['ID_TaiKhoan'] ?? "6";
 
-                    if (!$tieude || !$mota || !$nguoiNhan || !$nguoiTao || empty($cauHoiList)) {
-                        echo "<div class='alert alert-danger'id='noti'>Thiếu thông tin bắt buộc.</div>";
-                        exit;
-                    }
-
-                    try {
-                        $conn->beginTransaction();
-                        $stmt = $conn->prepare("INSERT INTO KhaoSat (TieuDe, MoTa,NguoiNhan, NguoiTao, ThoiGianTao, TrangThai) 
-                               VALUES (?,?,?,?, NOW(), 1)");
-                        $stmt->execute([$tieude, $mota, $nguoiNhan, $nguoiTao]);
-                        $idKhaoSat = $conn->lastInsertId();
-
-                        $stmtCauHoi = $conn->prepare("INSERT INTO CauHoiKhaoSat (ID_KhaoSat, NoiDung, TrangThai) 
-                                     VALUES (?, ?, 1)");
-
-                        foreach ($cauHoiList as $cauhoi) {
-                            $noiDung = trim($cauhoi);
-                            if ($noiDung !== '') {
-                                $stmtCauHoi->execute([$idKhaoSat, $noiDung]);
-                            }
-                        }
-
-                        $conn->commit();
-                        echo "<div class='alert alert-success' id='noti'>Tạo khảo sát thành công!</div>";
-                    } catch (Exception $e) {
-                        $conn->rollBack();
-                        echo "<div class='alert alert-danger'id='noti'>Lỗi khi tạo khảo sát: " . htmlspecialchars($e->getMessage()) . "</div>";
-                    }
-                }
                 ?>
                 <div class="form-container">
                     <form id="formKhaoSat" method="post">
+                        <div class="form-group">
+                            <label><strong>Chọn đợt thực tập</strong></label>
+                            <select id="id_dot" name="id_dot" class="form-control" style="width: 250px;" required>
+                                <option value="">-- Chọn đợt --</option>
+                                <?php foreach ($dsDot as $dot): ?>
+                                    <option value="<?= $dot['ID'] ?>"><?= htmlspecialchars($dot['TenDot']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
                         <div class="form-group">
                             <label><strong>Gửi đến</strong></label>
                             <select id="to" name="to" class="form-control" style="width: 200px;" required>
@@ -186,14 +306,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_khaosat_id'])) {
                         <div id="danhSachCauHoi">
                             <div class="form-group cau-hoi-item">
                                 <label>Câu hỏi</label>
-                                <div class="input-group">
-                                    <input type="text" name="cauhoi[]" class="form-control" required
-                                        placeholder="Nhập nội dung câu hỏi">
-                                    <span class="input-group-btn">
-                                        <button class="btn btn-danger btn-remove" type="button">
+                                <div class="row" style="margin-bottom: 5px;">
+                                    <div class="col-md-5">
+                                        <input type="text" name="cauhoi[]" class="form-control" required
+                                            placeholder="Nhập nội dung câu hỏi">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <select name="loaicauhoi[]" class="form-control">
+                                            <option value="text">Tự luận</option>
+                                            <option value="choice">Chọn một</option>
+                                            <option value="multiple">Chọn nhiều</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <input type="text" name="dapan[]" class="form-control nhap-dapan"
+                                            style="display:none;"
+                                            placeholder="Nhập các câu trả lời, cách nhau bởi dấu ;">
+                                    </div>
+                                    <div class="col-md-1">
+                                        <button class="btn btn-danger btn-remove" type="button" style="width:100%;">
                                             <i class="glyphicon glyphicon-remove"></i>
                                         </button>
-                                    </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -212,7 +346,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_khaosat_id'])) {
                 </div>
                 <div class="row">
                     <div class="col-lg-12">
-
                         <div class="panel panel-default">
                             <div class="panel-heading">
                                 <h4>Danh sách khảo sát cần phản hồi</h4>
@@ -253,7 +386,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_khaosat_id'])) {
                     </div>
                 </div>
                 <?php foreach ($dsKhaoSat as $ks): ?>
-                    <div class="modal fade" id="modalPhanHoi<?= $ks['ID'] ?>" tabindex="-1" role="dialog"  data-backdrop="static" data-keyboard="false">
+                    <div class="modal fade" id="modalPhanHoi<?= $ks['ID'] ?>" tabindex="-1" role="dialog"
+                        data-backdrop="static" data-keyboard="false">
                         <div class="modal-dialog">
                             <form method="post">
                                 <div class="modal-content">
@@ -294,63 +428,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_khaosat_id'])) {
                 </div>
                 <div class="row">
                     <div class="col-lg-12">
+                        <form class="form-inline" style="margin-bottom: 15px;">
+                            <label for="dot_filter">Lọc theo đợt: </label>
+                            <select name="dot_filter" id="dot_filter" class="form-control">
+                                <option value="">-- Tất cả --</option>
+                                <?php foreach ($dsDot as $dot): ?>
+                                    <option value="<?= $dot['ID'] ?>"><?= htmlspecialchars($dot['TenDot']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </form>
                         <div class="panel panel-default">
                             <div class="panel-heading">
                                 <h4>Các khảo sát đã tạo</h4>
-
                             </div>
                             <div class="panel-body">
-                                <div class="table-responsive">
-                                    <table class="table " id="quanlykhaosat">
-                                        <thead>
-                                            <tr>
-                                                <th>#</th>
-                                                <th>Tiêu đề</th>
-                                                <th>ngày tạo</th>
-                                                <th>Phản hồi</th>
-                                                <th>Hành động</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <?php foreach ($dsKhaoSatTao as $index => $ks): ?>
-                                                <tr>
-                                                    <td onclick="window.location='pages/giaovien/chitietkhaosat?id=<?= $ks['ID'] ?>';"
-                                                        style="cursor: pointer;">
-                                                        <?= $index + 1 ?>
-                                                    </td>
-                                                    <td onclick="window.location='pages/giaovien/chitietkhaosat?id=<?= $ks['ID'] ?>';"
-                                                        style="cursor: pointer;">
-                                                        <?= htmlspecialchars($ks['TieuDe']) ?>
-                                                    </td>
-                                                    <td onclick="window.location='pages/giaovien/chitietkhaosat?id=<?= $ks['ID'] ?>';"
-                                                        style="cursor: pointer;">
-                                                        <?= date('d/m/Y', strtotime($ks['ThoiGianTao'])) ?>
-                                                    </td>
-                                                    <td onclick="window.location='pages/giaovien/chitietkhaosat?id=<?= $ks['ID'] ?>';"
-                                                        style="cursor: pointer;">
-                                                        <?= $ks['SoLuongPhanHoi'] ?>
-                                                    </td>
-                                                    <td>
-                                                        <form method="post"
-                                                            onsubmit="return confirm('Bạn có chắc chắn muốn xóa khảo sát này?');">
-                                                            <input type="hidden" name="xoa_khaosat_id"
-                                                                value="<?= $ks['ID'] ?>">
-                                                            <button type="submit" class="btn btn-danger btn-sm">Xoá</button>
-                                                        </form>
-                                                    </td>
-                                                </tr>
-                                            <?php endforeach; ?>
-                                            <?php if (empty($dsKhaoSatTao)): ?>
-                                                <tr>
-                                                    <td colspan="5" class="text-center text-muted">Chưa có khảo sát nào
-                                                        được
-                                                        tạo.</td>
-                                                </tr>
-                                            <?php endif; ?>
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <!-- /.table-responsive -->
+                                <div id="quanlykhaosat"></div>
                             </div>
                             <!-- /.panel-body -->
                         </div>
@@ -364,16 +456,136 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_khaosat_id'])) {
         require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
             ?>
         <script>
+            let clickedButton = null;
+
+            // Ghi lại nút được nhấn (dùng để xác định hành động)
+            document.querySelectorAll("button[type='submit']").forEach(button => {
+                button.addEventListener("click", function () {
+                    clickedButton = this;
+                });
+            });
+
+            // Ngăn submit toàn cục và xử lý xác nhận gửi
+            document.querySelectorAll("form").forEach(form => {
+                form.addEventListener("submit", async function (e) {
+                    e.preventDefault();
+
+                    const btn = clickedButton || e.submitter;
+                    if (!btn) return;
+
+                    const action = btn.value;
+
+                    if (action === "guikhaosat") {
+                        const result = await Swal.fire({
+                            title: "Xác nhận gửi khảo sát?",
+                            icon: "question",
+                            showCancelButton: true,
+                            confirmButtonText: "Gửi khảo sát",
+                            cancelButtonText: "Huỷ",
+                            confirmButtonColor: "#3085d6",
+                            cancelButtonColor: "#d33"
+                        });
+
+                        if (result.isConfirmed) {
+                            form.submit(); // chỉ submit khi đã xác nhận
+                        }
+                        // nếu không xác nhận thì dừng lại ở đây, không làm gì cả
+                    } else if (action === "phanhoi") {
+                        const result = await Swal.fire({
+                            title: "Xác nhận gửi phản hồi?",
+                            icon: "question",
+                            showCancelButton: true,
+                            confirmButtonText: "Gửi",
+                            cancelButtonText: "Huỷ",
+                            confirmButtonColor: "#3085d6",
+                            cancelButtonColor: "#d33"
+                        });
+
+                        if (result.isConfirmed) {
+                            form.submit();
+                        }
+                    } else {
+                        // Với các action khác thì cứ submit
+                        form.submit();
+                    }
+                });
+            });
+
+            // Xử lý tạo khảo sát qua Ajax
+            $('#formKhaoSat').on('submit', function (e) {
+                e.preventDefault();
+                $.post('/datn/pages/giaovien/khaosat', $(this).serialize() + '&action=tao', function (res) {
+                    if (res.status === 'OK') {
+                        Swal.fire('Tạo thành công!', '', 'success');
+                        loadBangKhaoSat();
+                        $('#formTaoKhaoSat')[0].reset();
+                    } else {
+                        Swal.fire('Lỗi', res.message || 'Không thể tạo khảo sát', 'error');
+                    }
+                }, 'json');
+            });
+
+            // Load bảng khảo sát theo đợt
+            $('#dot_filter').on('change', function () {
+                loadBangKhaoSat();
+            });
+
+            function loadBangKhaoSat() {
+                $.get('/datn/pages/giaovien/khaosat', {
+                    ajax: 1,
+                    dot_filter: $('#dot_filter').val()
+                }, function (html) {
+                    $('#quanlykhaosat').html(html);
+                    if ($('#quanlykhaosat table').length) {
+                        $('#quanlykhaosat table').DataTable({
+                            info: false,
+                            destroy: true,
+                            language: {
+                                url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json'
+                            }
+                        });
+                    }
+                });
+            }
+
+            // Xoá khảo sát
+            function xoaKhaoSat(id) {
+                Swal.fire({
+                    title: 'Xác nhận xóa?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Xóa',
+                    cancelButtonText: 'Huỷ'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.post('/datn/pages/giaovien/khaosat', { action: 'xoa', id: id }, function (res) {
+                            if (res.status === 'OK') {
+                                loadBangKhaoSat();
+                            } else {
+                                Swal.fire('Lỗi', res.message || 'Không thể xóa', 'error');
+                            }
+                        }, 'json');
+                    }
+                });
+            }
+
+            // Xử lý thêm câu hỏi trong khảo sát
             document.addEventListener("DOMContentLoaded", function () {
                 const danhSachCauHoi = document.getElementById("danhSachCauHoi");
                 const btnThem = document.getElementById("btnThemCauHoi");
-                const form = document.querySelector("form");
 
                 btnThem.addEventListener("click", function () {
                     const cauHoiItem = danhSachCauHoi.querySelector(".cau-hoi-item");
-                    const clone = cauHoiItem.cloneNode(true);
-                    clone.querySelector("input").value = "";
-                    danhSachCauHoi.appendChild(clone);
+                    const html = cauHoiItem.outerHTML;
+                    const temp = document.createElement('div');
+                    temp.innerHTML = html;
+                    const newItem = temp.firstElementChild;
+                    newItem.querySelector("input[name='cauhoi[]']").value = "";
+                    newItem.querySelector("select[name='loaicauhoi[]']").value = "text";
+                    newItem.querySelector("input[name='dapan[]']").style.display = "none";
+                    newItem.querySelector("input[name='dapan[]']").value = "";
+                    newItem.querySelector("input[name='dapan[]']").required = false;
+                    danhSachCauHoi.appendChild(newItem);
                     capNhatTrangThaiNutXoa();
                 });
 
@@ -387,71 +599,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_khaosat_id'])) {
                     }
                 });
 
+                danhSachCauHoi.addEventListener('change', function (e) {
+                    if (e.target.name === 'loaicauhoi[]') {
+                        const $item = e.target.closest('.cau-hoi-item');
+                        const dapAnInput = $item.querySelector("input[name='dapan[]']");
+                        if (e.target.value === 'choice' || e.target.value === 'multiple') {
+                            dapAnInput.style.display = '';
+                            dapAnInput.required = true;
+                        } else {
+                            dapAnInput.style.display = 'none';
+                            dapAnInput.required = false;
+                        }
+                    }
+                });
+
                 function capNhatTrangThaiNutXoa() {
                     const items = danhSachCauHoi.querySelectorAll(".cau-hoi-item");
                     items.forEach((item, index) => {
                         const btn = item.querySelector(".btn-remove");
-                        if (items.length === 1) {
-                            btn.disabled = true;
-                        } else {
-                            btn.disabled = false;
-                        }
+                        btn.disabled = (items.length === 1);
                     });
                 }
 
                 capNhatTrangThaiNutXoa();
             });
-            let clickedButton = null;
 
-            document.querySelectorAll("button[type='submit']").forEach(button => {
-                button.addEventListener("click", function () {
-                    clickedButton = this;
-                });
-            });
-
-            document.querySelectorAll("form").forEach(form => {
-                form.addEventListener("submit", function (e) {
-                    if (!clickedButton) return;
-
-                    const action = clickedButton.value;
-
-                    if (action === "phanhoi") {
-                        if (!confirm("Xác nhận gửi phản hồi?")) {
-                            e.preventDefault();
-                        }
-                    } else if (action === "guikhaosat") {
-                        if (!confirm("Xác nhận gửi khảo sát này?")) {
-                            e.preventDefault();
-                        }
-                    }
-                });
-            });
+            // Modal phản hồi khảo sát
             $(document).ready(function () {
-                $('#quanlykhaosat').DataTable({
-                    info: false,
-                    lengthChange: false
-                    language: {
-                            url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json'
-                        }
-                });
-
                 $('.btnPhanHoi').click(function () {
                     const id = $(this).data('id');
                     const ten = $(this).data('ten');
                     alert("Mở modal phản hồi khảo sát ID " + id + " - " + ten);
                 });
             });
+
+            // Ẩn alert thành công sau 2 giây
             window.addEventListener('DOMContentLoaded', () => {
-                    const alertBox = document.getElementById('noti');
-                    if (alertBox) {
-                        setTimeout(() => {
-                            alertBox.style.transition = 'opacity 0.5s ease';
-                            alertBox.style.opacity = '0';
-                            setTimeout(() => alertBox.remove(), 500);
-                        }, 2000);
-                    }
-                });
+                const alertBox = document.getElementById('noti');
+                if (alertBox) {
+                    setTimeout(() => {
+                        alertBox.style.transition = 'opacity 0.5s ease';
+                        alertBox.style.opacity = '0';
+                        setTimeout(() => alertBox.remove(), 500);
+                    }, 2000);
+                }
+            });
         </script>
+
 </body>
 
 </html>

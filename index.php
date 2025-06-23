@@ -28,7 +28,7 @@ if (!isset($_SESSION['user'])) {
 if ($URL === '') {
     switch ($_SESSION['user']['VaiTro']) {
         case 'Admin':
-            header("Location: " . BASE_PATH . "/admin/pages/quanlythanhvien");
+            header("Location: " . BASE_PATH . "/admin/pages/trangchu");
             break;
         case 'Cán bộ Khoa/Bộ môn':
             header("Location: " . BASE_PATH . "/pages/canbo/trangchu");
@@ -74,6 +74,5 @@ if ($splitURL[0] === 'pages') {
     exit;
 }
 
-// Không khớp đường dẫn
 require_once '404.php';
 ?>

@@ -124,7 +124,14 @@ foreach ($phanHoi as $ph) {
                     <?php foreach ($cauTraLoiTheoPhanHoi[$ph['ID']] as $index => $ctl): ?>
                       <div class="form-group">
                         <label>Câu <?= $index + 1 ?>: <?= htmlspecialchars($ctl['NoiDung']) ?></label>
-                        <input type="text" class="form-control" value="<?= htmlspecialchars($ctl['TraLoi']) ?>" readonly>
+                        <?php if ($ctl['Loai'] === 'multiple'): ?>
+                          <?php foreach (explode(';', $ctl['TraLoi']) as $item): ?>
+                            <span class="label label-info"
+                              style="margin-right: 6px;"><?= htmlspecialchars(trim($item)) ?></span>
+                          <?php endforeach; ?>
+                        <?php else: ?>
+                          <input type="text" class="form-control" value="<?= htmlspecialchars($ctl['TraLoi']) ?>" readonly>
+                        <?php endif; ?>
                       </div>
                     <?php endforeach; ?>
                   </div>
@@ -154,4 +161,5 @@ foreach ($phanHoi as $ph) {
     </div>
   </div>
 </body>
+
 </html>

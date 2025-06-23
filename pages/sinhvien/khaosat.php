@@ -81,11 +81,15 @@ if (
         ");
 
         foreach ($dsIDCauHoi as $i => $idCauHoi) {
-            $traLoi = trim($dsTraLoi[$i]);
-            if ($traLoi !== '') {
-                $stmtTraLoi->execute([$idPhanHoi, $idCauHoi, $traLoi]);
+                $traLoi = $dsTraLoi[$i];
+                if (is_array($traLoi)) {
+                    $traLoi = implode(';', $traLoi); // Nối các đáp án được chọn
+                }
+                $traLoi = trim($traLoi);
+                if ($traLoi !== '') {
+                    $stmtTraLoi->execute([$idPhanHoi, $idCauHoi, $traLoi]);
+                }
             }
-        }
 
         $conn->commit();
         $_SESSION['success'] = "Phản hồi khảo sát thành công!";
@@ -183,13 +187,15 @@ if (
                             </div>
                         </div>
                         <?php foreach ($dsKhaoSat as $ks): ?>
-                            <div class="modal fade" id="modalPhanHoi<?= $ks['ID'] ?>" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+                            <div class="modal fade" id="modalPhanHoi<?= $ks['ID'] ?>" tabindex="-1" role="dialog"
+                                data-backdrop="static" data-keyboard="false">
                                 <div class="modal-dialog">
                                     <form method="post">
                                         <div class="modal-content">
                                             <div class="modal-header">
                                                 <h4 class="modal-title">
-                                                    <strong><?= htmlspecialchars($ks['TieuDe']) ?></strong></h4>
+                                                    <strong><?= htmlspecialchars($ks['TieuDe']) ?></strong>
+                                                </h4>
                                                 <p class="text-muted"><?= htmlspecialchars($ks['MoTa']) ?></p>
                                                 <input type="hidden" name="id_khaosat" value="<?= $ks['ID'] ?>">
                                             </div>
@@ -202,7 +208,33 @@ if (
                                                             <label>Câu <?= $index + 1 ?>:
                                                                 <?= htmlspecialchars($ch['NoiDung']) ?></label>
                                                             <input type="hidden" name="id_cauhoi[]" value="<?= $ch['ID'] ?>">
-                                                            <input type="text" class="form-control" name="traloi[]" required>
+                                                            <?php
+                                                                if (($ch['Loai'] ?? 'text') === 'choice' && !empty($ch['DapAn'])):
+                                                                    $dapanArr = array_map('trim', explode(';', $ch['DapAn']));
+                                                                ?>
+                                                                    <div class="dapan-row" style="display: flex; gap: 24px; flex-wrap: wrap;">
+                                                                        <?php foreach ($dapanArr as $i => $da): ?>
+                                                                            <label style="font-weight: normal;">
+                                                                                <input type="radio" name="traloi[<?= $index ?>]" value="<?= htmlspecialchars($da) ?>" required>
+                                                                                <?= htmlspecialchars($da) ?>
+                                                                            </label>
+                                                                        <?php endforeach; ?>
+                                                                    </div>
+                                                                <?php elseif (($ch['Loai'] ?? 'text') === 'multiple' && !empty($ch['DapAn'])):
+                                                                    $dapanArr = array_map('trim', explode(';', $ch['DapAn']));
+                                                                ?>
+                                                                    <div class="dapan-row" style="display: flex; gap: 24px; flex-wrap: wrap;">
+                                                                        <?php foreach ($dapanArr as $i => $da): ?>
+                                                                            <label style="font-weight: normal;">
+                                                                                <input type="checkbox" name="traloi[<?= $index ?>][]" value="<?= htmlspecialchars($da) ?>">
+                                                                                <?= htmlspecialchars($da) ?>
+                                                                            </label>
+                                                                        <?php endforeach; ?>
+                                                                    </div>
+                                                                <?php else: ?>
+                                                                    <input type="text" class="form-control" name="traloi[<?= $index ?>]" required>
+                                                                <?php endif; ?>
+                                                            
                                                         </div>
                                                     <?php endforeach;
                                                 else: ?>

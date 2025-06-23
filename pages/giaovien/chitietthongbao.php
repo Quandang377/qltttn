@@ -1,7 +1,6 @@
 <?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
-require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/ThongBao_funtions.php";
 
 if (!isset($_GET['id'])) {
   die("Không tìm thấy ID thông báo.");
@@ -9,14 +8,23 @@ if (!isset($_GET['id'])) {
 
 $id = intval($_GET['id']);
 
-$stmt = $conn->prepare("SELECT ID, TIEUDE, NOIDUNG ,ID_TAIKHOAN,NGAYDANG,TRANGTHAI FROM THONGBAO WHERE ID = ?");
+$stmt = $conn->prepare("SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.ID_TAIKHOAN, tb.NGAYDANG, tb.TRANGTHAI, tb.ID_Dot, dt.TenDot
+    FROM THONGBAO tb
+    LEFT JOIN DotThucTap dt ON tb.ID_Dot = dt.ID
+    WHERE tb.ID = ? ");
 $stmt->execute([$id]);
 $thongbao = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$thongbao) {
   die("Không tìm thấy thông báo.");
 }
-$stmt_khac = $conn->prepare("SELECT ID, TIEUDE, NOIDUNG ,ID_TAIKHOAN,NGAYDANG,TRANGTHAI FROM THONGBAO WHERE ID != ? ORDER BY NGAYDANG DESC LIMIT 4");
+
+// Lấy các thông báo khác kèm tên đợt
+$stmt_khac = $conn->prepare("SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.ID_TAIKHOAN, tb.NGAYDANG, tb.TRANGTHAI, tb.ID_Dot, dt.TenDot
+    FROM THONGBAO tb
+    LEFT JOIN DotThucTap dt ON tb.ID_Dot = dt.ID
+    WHERE tb.ID != ? AND tb.TRANGTHAI = 1
+    ORDER BY tb.NGAYDANG DESC LIMIT 20");
 $stmt_khac->execute([$id]);
 $thongbao_khac = $stmt_khac->fetchAll(PDO::FETCH_ASSOC);
 ?>
@@ -40,6 +48,9 @@ $thongbao_khac = $stmt_khac->fetchAll(PDO::FETCH_ASSOC);
         <div class="row">
           <div class="col-lg-12">
             <h1 class="page-header">[THÔNG BÁO] <?= htmlspecialchars($thongbao['TIEUDE']) ?></h1>
+            <?php if (!empty($thongbao['TenDot'])): ?>
+    <p><strong>Đợt thực tập:</strong> <?= htmlspecialchars($thongbao['TenDot']) ?></p>
+<?php endif; ?>
           </div>
         </div>
         <div class="news-content mb-4">
@@ -101,6 +112,7 @@ $thongbao_khac = $stmt_khac->fetchAll(PDO::FETCH_ASSOC);
                             <li>Thông báo</li>
                             <li>|</li>
                             <li>${new Date(tb.NGAYDANG).toLocaleDateString('vi-VN')}</li>
+                            ${tb.TenDot ? `<li>|</li><li>Đợt: ${tb.TenDot}</li>` : ''}
                         </ul>
                     </div>
                 </div>

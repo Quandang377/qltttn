@@ -1,7 +1,6 @@
 <?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
-require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/ThongBao_funtions.php";
 
 if (!isset($_GET['id'])) {
   die("Không tìm thấy ID thông báo.");
@@ -9,15 +8,30 @@ if (!isset($_GET['id'])) {
 
 $id = intval($_GET['id']);
 
-$stmt = $conn->prepare("SELECT ID, TIEUDE, NOIDUNG ,ID_TAIKHOAN,NGAYDANG,TRANGTHAI FROM THONGBAO WHERE ID = ?");
-$stmt->execute([$id]);
+$idTaiKhoan = $_SESSION['user']['ID_TaiKhoan'];
+$stmt = $conn->prepare("SELECT ID_Dot FROM SinhVien WHERE ID_TaiKhoan = ?");
+$stmt->execute([$idTaiKhoan]);
+$idDot = $stmt->fetchColumn();
+
+// Lấy thông báo chi tiết (chỉ thuộc đợt của SV)
+$stmt = $conn->prepare("SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.ID_TAIKHOAN, tb.NGAYDANG, tb.TRANGTHAI, tb.ID_Dot, dt.TenDot
+    FROM THONGBAO tb
+    LEFT JOIN DotThucTap dt ON tb.ID_Dot = dt.ID
+    WHERE tb.ID = ? AND tb.ID_Dot = ?");
+$stmt->execute([$id, $idDot]);
 $thongbao = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$thongbao) {
   die("Không tìm thấy thông báo.");
 }
-$stmt_khac = $conn->prepare("SELECT ID, TIEUDE, NOIDUNG ,ID_TAIKHOAN,NGAYDANG,TRANGTHAI FROM THONGBAO WHERE ID != ? ORDER BY NGAYDANG DESC LIMIT 4");
-$stmt_khac->execute([$id]);
+
+// Lấy các thông báo khác cùng đợt
+$stmt_khac = $conn->prepare("SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.ID_TAIKHOAN, tb.NGAYDANG, tb.TRANGTHAI, tb.ID_Dot, dt.TenDot
+    FROM THONGBAO tb
+    LEFT JOIN DotThucTap dt ON tb.ID_Dot = dt.ID
+    WHERE tb.ID != ? AND tb.ID_Dot = ? AND tb.TRANGTHAI = 1
+    ORDER BY tb.NGAYDANG DESC LIMIT 20");
+$stmt_khac->execute([$id, $idDot]);
 $thongbao_khac = $stmt_khac->fetchAll(PDO::FETCH_ASSOC);
 ?>
 

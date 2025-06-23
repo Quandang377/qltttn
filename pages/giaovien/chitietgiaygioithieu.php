@@ -1,4 +1,6 @@
 <?php
+require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
+
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['giay_id'])) {

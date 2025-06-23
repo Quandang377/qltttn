@@ -1,5 +1,8 @@
 <?php
+
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
+require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
+
 
 $id_gvhd = '2';
 $errorMsg = '';
