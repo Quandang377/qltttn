@@ -1,36 +1,87 @@
 <?php
+require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/template/config.php';
+$vaiTro = $_GET['vaiTro'] ?? 'Tất cả';
 
-$vaiTro = $_GET['vaiTro'] ?? '';
-
-switch ($vaiTro) {
-    case 'Sinh viên':
-        $sql = "SELECT ID_TaiKhoan, MSSV, ID_Dot, Lop, Ten as HoTen, TrangThai FROM SinhVien INNER JOIN TaiKhoan ON SinhVien.ID_TaiKhoan = TaiKhoan.ID_TaiKhoan";
-        break;
-    case 'Giáo viên':
-        $sql = "SELECT ID_TaiKhoan, '' as MSSV, '' as ID_Dot, '' as Lop, Ten as HoTen, TrangThai FROM GiaoVien INNER JOIN TaiKhoan ON GiaoVien.ID_TaiKhoan = TaiKhoan.ID_TaiKhoan";
-        break;
-    case 'Cán bộ Khoa/Bộ môn':
-        $sql = "SELECT ID_TaiKhoan, '' as MSSV, '' as ID_Dot, '' as Lop, Ten as HoTen, TrangThai FROM CanBoKhoa INNER JOIN TaiKhoan ON CanBoKhoa.ID_TaiKhoan = TaiKhoan.ID_TaiKhoan";
-        break;
-    case 'Admin':
-        $sql = "SELECT ID_TaiKhoan, '' as MSSV, '' as ID_Dot, '' as Lop, Ten as HoTen, TrangThai FROM Admin INNER JOIN TaiKhoan ON Admin.ID_TaiKhoan = TaiKhoan.ID_TaiKhoan";
-        break;
-    case 'Tất cả':
-    default:
-        $sql = "SELECT ID_TaiKhoan, MSSV, ID_Dot, Lop, Ten as HoTen, TrangThai FROM SinhVien
-                UNION
-                SELECT ID_TaiKhoan, '', '', '', Ten, TrangThai FROM GiaoVien
-                UNION
-                SELECT ID_TaiKhoan, '', '', '', Ten, TrangThai FROM CanBoKhoa
-                UNION
-                SELECT ID_TaiKhoan, '', '', '', Ten, TrangThai FROM Admin";
+$sql = "SELECT 
+            tk.ID_TaiKhoan, 
+            tk.TaiKhoan,
+            tk.VaiTro, 
+            tk.TrangThai,
+            COALESCE(sv.Ten, gv.Ten, cbk.Ten,ad.Ten) AS HoTen
+        FROM TaiKhoan tk 
+        LEFT JOIN SinhVien sv ON sv.ID_TaiKhoan = tk.ID_TaiKhoan
+        LEFT JOIN GiaoVien gv ON gv.ID_TaiKhoan = tk.ID_TaiKhoan
+        LEFT JOIN CanBoKhoa cbk ON cbk.ID_TaiKhoan = tk.ID_TaiKhoan
+        LEFT JOIN Admin ad ON ad.ID_TaiKhoan = tk.ID_TaiKhoan";
+$params = [];
+if ($vaiTro != 'Tất cả') {
+    $sql .= " WHERE tk.VaiTro = ?";
+    $params[] = $vaiTro;
 }
-
 $stmt = $conn->prepare($sql);
-$stmt->execute();
-$data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$stmt->execute($params);
+$danhSachThanhVien = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-header('Content-Type: application/json');
-echo json_encode($data);
-exit;
+$dsHoatDong = [];
+$dsNgung = [];
+foreach ($danhSachThanhVien as $tv) {
+    if ($tv['TrangThai'] == 1) {
+        $dsHoatDong[] = $tv;
+    } else {
+        $dsNgung[] = $tv;
+    }
+}
+?>
+<table class="table" id="tableThanhVienHoatDong">
+    <thead>
+        <tr>
+            <th></th>
+            <th>Tài Khoản</th>
+            <th>Họ Tên</th>
+            <th>Vai trò</th>
+            <th>Trạng Thái</th>
+        </tr>
+    </thead>
+    <tbody>
+        <?php foreach ($dsHoatDong as $tv): ?>
+    <tr>
+        <td><input type="checkbox" name="chon[]" value="<?= $tv['ID_TaiKhoan'] ?>"></td>
+        <td style="cursor:pointer" onclick='moModalChinhSua(<?= json_encode($tv, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>)'><?= $tv['TaiKhoan'] ?></td>
+        <td style="cursor:pointer" onclick='moModalChinhSua(<?= json_encode($tv, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>)'><?= $tv['HoTen'] ?></td>
+        <td style="cursor:pointer" onclick='moModalChinhSua(<?= json_encode($tv, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>)'><?= $tv['VaiTro'] ?></td>
+        <td>Hoạt động</td>
+    </tr>
+<?php endforeach; ?>
+    </tbody>
+</table>
+
+<!-- Bảng Ngừng hoạt động -->
+<table class="table" id="tableThanhVienNgung">
+    <thead>
+        <tr>
+            <th></th>
+            <th>Tài Khoản</th>
+            <th>Họ Tên</th>
+            <th>Vai trò</th>
+            <th>Trạng Thái</th>
+            <th>Mở khóa</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <?php foreach ($dsNgung as $tv): ?>
+            <tr>
+                <td><input type="checkbox" name="chon[]" value="<?= $tv['ID_TaiKhoan'] ?>"></td>
+                <td><?= $tv['TaiKhoan'] ?></td>
+                <td><?= $tv['HoTen'] ?></td>
+                <td><?= $tv['VaiTro'] ?></td>
+                <td>Ngừng hoạt động</td>
+                <td>
+                    <button type="button" class="btn btn-success btn-xs btn-mo-khoa" data-id="<?= $tv['ID_TaiKhoan'] ?>">Mở
+                        khóa</button>
+                </td>
+            </tr>
+        <?php endforeach; ?>
+    </tbody>
+</table>

@@ -514,7 +514,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                         <button type="button" id="btnAutoPhanCong" class="btn btn-success btn-md" <?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?>>
                             Phân công tự động
                         </button>
-                        <button type="button" class="btn btn-success" id="btnHoanTat" <?= ($tongSinhVien < 1 || $tongGVHD < 1) || $dot['TrangThai'] != 1 ? 'disabled' : '' ?>>
+                        <button type="button" class="btn btn-success" id="btnHoanTat" <?= ($tongSinhVien < 1 || $tongGVHD < 1) || $dot['TrangThai'] != 1 ? 'disabled' : '' ?> title="Hoàn tất phân công, cho phép đăng ký phiếu giới thiệu">
                             Hoàn tất phân công
                         </button>
                         <button onclick="window.location='admin/pages/chinhsuadot?id=<?= $id ?>';"
@@ -642,7 +642,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 $('#btnAutoPhanCong').on('click', function () {
                     Swal.fire({
                         title: 'Xác nhận phân công tự động?',
-                        text: 'Xác nhận phân công đều các sinh viên còn lại cho toàn bộ giáo viên?',
+                        text: 'Xác nhận phân công đều các sinh viên còn lại cho các giáo viên?',
                         icon: 'question',
                         showCancelButton: true,
                         confirmButtonText: 'Xác nhận',

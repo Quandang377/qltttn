@@ -6,9 +6,18 @@ $idTaiKhoan = $_SESSION['user']['ID_TaiKhoan'] ?? null;
 $vaiTro = $_SESSION['user']['VaiTro'] ?? '';
 
 // Lấy thông tin người dùng
-$stmtTen = $conn->prepare("SELECT Ten FROM canbokhoa WHERE ID_TaiKhoan = ?");
-$stmtTen->execute([$idTaiKhoan]);
-$tenNguoiQuanLy = $stmtTen->fetchColumn();
+$stmt = $conn->prepare("
+    SELECT 
+        COALESCE( gv.Ten) AS Ten,
+        tk.TaiKhoan AS Email,
+        tk.VaiTro
+    FROM TaiKhoan tk
+    LEFT JOIN CanBo gv ON tk.ID_TaiKhoan = gv.ID_TaiKhoan
+    WHERE tk.ID_TaiKhoan = ?
+");
+$stmt->execute([$idTaiKhoan]);
+$info = $stmt->fetch(PDO::FETCH_ASSOC);
+$tenNguoiQuanLy = $info['Ten'] ?? '';
 
 // B2: Truy vấn các đợt do người này quản lý (theo tên)
 $stmtDot = $conn->prepare("

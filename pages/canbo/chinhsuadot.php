@@ -139,8 +139,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </select>
                         </div>
                     </div>
-
-                    <!-- Thêm trường thời gian bắt đầu -->
                     <div class="form-group">
                         <label class="col-sm-2 control-label">Thời gian bắt đầu</label>
                         <div class="col-sm-10">
