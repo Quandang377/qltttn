@@ -244,7 +244,7 @@ if (isset($_GET['ajax_tab']) && $_GET['ajax_tab'] == 'gv') {
         LEFT JOIN sinhvien SV ON GV.ID_TaiKhoan = SV.ID_GVHD AND SV.ID_Dot = DG.ID_Dot
         WHERE DG.ID_Dot = :id
         GROUP BY GV.ID_TaiKhoan, GV.Ten
-        ORDER BY GV.Ten
+        ORDER BY SoLuong
     ");
     $stmt->execute(['id' => $id]);
     $dsGiaoVien = $stmt->fetchAll(PDO::FETCH_ASSOC);

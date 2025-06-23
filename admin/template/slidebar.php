@@ -33,3 +33,8 @@
     </aside>
 </nav>
 <!-- /.sidebar -->
+ <style>
+    #page-wrapper, .container-fluid {
+    padding-top: 30px; /* hoặc đúng bằng chiều cao navbar của bạn */
+}
+ </style>
