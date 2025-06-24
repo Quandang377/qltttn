@@ -56,9 +56,9 @@ if (!empty($dsID)) {
 // 3. Lấy các đợt thực tập mà GVHD sinh viên
 $stmt2 = $conn->prepare("
     SELECT DISTINCT dt.ID, dt.TenDot
-    FROM DotThucTap dt
-    JOIN SinhVien sv ON sv.ID_Dot = dt.ID
-    WHERE sv.ID_GVHD = ?
+    FROM dot_giaovien dg
+    JOIN dotthuctap dt ON dg.ID_Dot = dt.ID
+    WHERE dg.ID_GVHD = ?
     ORDER BY dt.ID DESC
 ");
 $stmt2->execute([$ID_TaiKhoan]);
