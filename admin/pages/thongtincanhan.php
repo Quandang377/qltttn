@@ -17,16 +17,13 @@ $stmt = $conn->prepare("
 ");
 $stmt->execute([$idTaiKhoan]);
 $info = $stmt->fetch(PDO::FETCH_ASSOC);
-$tenNguoiQuanLy = $info['Ten'] ?? '';
-
-// B2: Truy vấn các đợt do người này quản lý (theo tên)
 $stmtDot = $conn->prepare("
     SELECT dt.ID, dt.TenDot, dt.Nam, dt.ThoiGianBatDau, dt.ThoiGianKetThuc
     FROM dotthuctap dt
-    WHERE dt.TenNguoiMoDot = ? AND dt.TrangThai != 0 AND dt.TrangThai != -1
+    WHERE dt.NguoiMoDot = ? AND dt.TrangThai != 0 AND dt.TrangThai != -1
     ORDER BY dt.ThoiGianBatDau DESC
 ");
-$stmtDot->execute([$tenNguoiQuanLy]);
+$stmtDot->execute([$idTaiKhoan]);
 $dsDotDangThamGia = $stmtDot->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>

@@ -14,7 +14,17 @@ if (!$id) {
     die("Không tìm thấy ID đợt thực tập.");
 }
 
-$stmt = $conn->prepare("SELECT ID,TenDot,Loai,Nam,TenNguoiMoDot,NguoiQuanLy,ThoiGianBatDau,ThoiGianKetThuc,TrangThai FROM DOTTHUCTAP WHERE ID = :id");
+$stmt = $conn->prepare("
+    SELECT d.ID, d.TenDot, d.Loai, d.Nam, d.NguoiMoDot, d.NguoiQuanLy, d.ThoiGianBatDau, d.ThoiGianKetThuc, d.TrangThai,
+        COALESCE(cb1.Ten, ad1.Ten) AS TenNguoiMoDot,
+        COALESCE(cb2.Ten, ad2.Ten) AS TenNguoiQuanLy
+    FROM DOTTHUCTAP d
+    LEFT JOIN CanBoKhoa cb1 ON d.NguoiMoDot = cb1.ID_TaiKhoan
+    LEFT JOIN Admin ad1 ON d.NguoiMoDot = ad1.ID_TaiKhoan
+    LEFT JOIN CanBoKhoa cb2 ON d.NguoiQuanLy = cb2.ID_TaiKhoan
+    LEFT JOIN Admin ad2 ON d.NguoiQuanLy = ad2.ID_TaiKhoan
+    WHERE d.ID = :id
+");
 $stmt->execute(['id' => $id]);
 $dot = $stmt->fetch();
 
@@ -473,7 +483,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                         <div class="col-sm-4 col-xs-12">
                             <p><b>Loại:</b> <?= htmlspecialchars($dot['Loai']) ?></p>
                             <p><b>Năm:</b> <?= htmlspecialchars($dot['Nam']) ?></p>
-                            <p><b>Người quản lý:</b> <?= htmlspecialchars($dot['NguoiQuanLy']) ?></p>
+                            <p><b>Người quản lý:</b> <?= htmlspecialchars($dot['TenNguoiQuanLy']) ?></p>
                             <p><b>Người mở đợt:</b> <?= htmlspecialchars($dot['TenNguoiMoDot']) ?></p>
 
                         </div>
@@ -514,7 +524,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                         <button type="button" id="btnAutoPhanCong" class="btn btn-success btn-md" <?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?>>
                             Phân công tự động
                         </button>
-                        <button type="button" class="btn btn-success" id="btnHoanTat" <?= ($tongSinhVien < 1 || $tongGVHD < 1) || $dot['TrangThai'] != 1 ? 'disabled' : '' ?> title="Hoàn tất phân công, cho phép đăng ký phiếu giới thiệu">
+                        <button type="button" class="btn btn-success" id="btnHoanTat" <?= ($tongSinhVien < 1 || $tongGVHD < 1) || $dot['TrangThai'] != 1 ? 'disabled' : '' ?>
+                            title="Hoàn tất phân công, cho phép đăng ký phiếu giới thiệu">
                             Hoàn tất phân công
                         </button>
                         <button onclick="window.location='admin/pages/chinhsuadot?id=<?= $id ?>';"

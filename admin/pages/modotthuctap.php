@@ -14,7 +14,14 @@ $stmt->execute([$idTaiKhoan]);
 $hoTen = $stmt->fetchColumn();
 function getAllInternships($conn)
 {
-    $stmt = $conn->prepare("SELECT ID,TenDot,Nam,Loai,NguoiQuanLy,ThoiGianBatDau,ThoiGianKetThuc,TenNguoiMoDot,TrangThai FROM DOTTHUCTAP where TrangThai !=-1 ORDER BY ThoiGianBatDau DESC");
+    $stmt = $conn->prepare("
+        SELECT d.ID, d.TenDot, d.Nam, d.Loai, d.NguoiQuanLy, cb.Ten AS TenNguoiQuanLy,
+               d.ThoiGianBatDau, d.ThoiGianKetThuc, d.NguoiMoDot, d.TrangThai
+        FROM DOTTHUCTAP d
+        LEFT JOIN CanBoKhoa cb ON d.NguoiQuanLy = cb.ID_TaiKhoan
+        WHERE d.TrangThai != -1
+        ORDER BY d.ThoiGianBatDau DESC
+    ");
     $stmt->execute();
     return $stmt->fetchAll();
 }
@@ -26,33 +33,35 @@ function countSimilar($conn, $tendot)
 }
 function saveInternship($conn, $tendot, $loai, $namHoc, $thoigianbatdau, $thoigianketthuc, $nguoiquanly, $nguoitao)
 {
-    $stmt = $conn->prepare("INSERT INTO DOTTHUCTAP (TENDOT, NAM, LOAI, NGUOIQUANLY, THOIGIANBATDAU, THOIGIANKETTHUC, TENNGUOIMODOT, TRANGTHAI) 
-                           VALUES (:tendot, :nam, :loai, :nguoiquanly, :thoigianbatdau, :thoigianketthuc, :tennguoimodot, 1)");
-    if (
-        $stmt->execute([
-            'tendot' => $tendot,
-            'nam' => $namHoc,
-            'loai' => $loai,
-            'nguoiquanly' => $nguoiquanly,
-            'thoigianbatdau' => $thoigianbatdau,
-            'thoigianketthuc' => $thoigianketthuc,
-            'tennguoimodot' => $nguoitao
-        ])
-    ) {
+    $stmt = $conn->prepare("INSERT INTO DOTTHUCTAP (
+        TENDOT, NAM, LOAI, NGUOIQUANLY, THOIGIANBATDAU, THOIGIANKETTHUC, NGUOIMODOT, TRANGTHAI
+    ) VALUES (:tendot, :nam, :loai, :nguoiquanly, :thoigianbatdau, :thoigianketthuc, :nguoimodot, 1)");
+
+    if ($stmt->execute([
+        'tendot' => $tendot,
+        'nam' => $namHoc,
+        'loai' => $loai,
+        'nguoiquanly' => $nguoiquanly,
+        'thoigianbatdau' => $thoigianbatdau,
+        'thoigianketthuc' => $thoigianketthuc,
+        'nguoimodot' => $nguoitao
+    ])) {
         return $conn->lastInsertId();
     }
+
     return false;
 }
 $successMessage = "";
 $notification = "";
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    var_dump($_POST['NguoiQuanLy']);
     $loai = $_POST['loai'];
     $namHoc = $_POST['namhoc'];
-    $nguoitao = $hoTen;
-    $nguoiquanly = $_POST['nguoiquanly'];
+    $nguoitao = $idTaiKhoan;
+    $nguoiQuanLy = intval($_POST['NguoiQuanLy']);
     $thoigianbatdau = $_POST['thoigianbatdau'];
     $thoigianketthuc = $_POST['thoigianketthuc'];
-    if ($loai == "" || $namHoc == "" || $thoigianbatdau == "" || $thoigianketthuc == "" || $nguoiquanly == "") {
+    if ($loai == "" || $namHoc == "" || $thoigianbatdau == "" || $thoigianketthuc == "" || $nguoiQuanLy == "") {
         $notification = "Vui lòng điền tất cả các trường.";
     } else {
         $tendot = ($loai === 'Cao đẳng' ? 'CĐTH' : 'CĐNTH') . substr($namHoc, -2) . $lastWord;
@@ -60,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $count = countSimilar($conn, $tendot);
         $tendot = $tendot . '-' . ($count + 1);
 
-        $idDot = saveInternship($conn, $tendot, $loai, $namHoc, $thoigianbatdau, $thoigianketthuc, $nguoiquanly, $nguoitao);
+        $idDot = saveInternship($conn, $tendot, $loai, $namHoc, $thoigianbatdau, $thoigianketthuc, $nguoiQuanLy, $nguoitao);
         if ($idDot) {
             session_start();
             $_SESSION['success'] = "Đợt thực tập $tendot được mở thành công!";
@@ -143,9 +152,10 @@ $canbokhoa = $conn->query("SELECT ID_TaiKhoan,Ten FROM canbokhoa where TrangThai
                                     </div>
                                     <div class="form-group">
                                         <label>Người quản lý đợt</label>
-                                        <select id="nguoiquanly" name="nguoiquanly" class="form-control">
-                                            <?php foreach ($canbokhoa as $cb): ?>
-                                                <option value="<?= $cb['Ten'] ?>"><?= htmlspecialchars($cb['Ten']) ?>
+                                        <select id="NguoiQuanLy" name="NguoiQuanLy" class="form-control">
+                                            <?php foreach ($canbokhoa as $i => $cb): ?>
+                                                <option value="<?= $cb['ID_TaiKhoan'] ?>" <?= $i === 0 ? 'selected' : '' ?>>
+                                                    <?= htmlspecialchars($cb['Ten']) ?>
                                                 </option>
                                             <?php endforeach; ?>
                                         </select>
@@ -184,76 +194,77 @@ $canbokhoa = $conn->query("SELECT ID_TaiKhoan,Ten FROM canbokhoa where TrangThai
                                             </select>
                                         </div>
                                     </div>
-                            </div>
-                            <div class="panel-body">
-                                <div class="table-responsive">
-
-                                    <table class="table" id="TableDotTT">
-                                        <thead>
-                                            <tr>
-                                                <th>#</th>
-                                                <th>Tên đợt</th>
-                                                <th>Năm</th>
-                                                <th>Loại</th>
-                                                <th>Thời gian bắt đầu</th>
-                                                <th>Thời gian kết thúc</th>
-                                                <th>Người quản lý</th>
-                                                <th>Trạng thái</th>
-                                                <th>Xem</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <?php $i = 1;
-                                            foreach ($danhSachDotThucTap as $dot):
-                                                if ($dot['TrangThai'] == -1)
-                                                    continue;
-                                                $link = '/datn/admin/pages/chitietdot?id=' . urlencode($dot['ID']);
-                                                switch ($dot['TrangThai']) {
-                                                    case 1:
-                                                        $trangthai = 'Đang chuẩn bị';
-                                                        break;
-                                                    case 2:
-                                                        $trangthai = 'Đã bắt đầu';
-                                                        break;
-                                                    case 3:
-                                                        $trangthai = 'Hoàn tất phân công';
-                                                        break;
-                                                    case 0:
-                                                        $trangthai = 'Đã kết thúc';
-                                                        break;
-                                                    default:
-                                                        $trangthai = 'Không xác định';
-                                                }
-                                                ?>
-                                                <tr>
-                                                    <td><?= $i++ ?></td>
-                                                    <td><?= htmlspecialchars($dot['TenDot']) ?></td>
-                                                    <td><?= htmlspecialchars($dot['Nam']) ?></td>
-                                                    <td><?= htmlspecialchars($dot['Loai']) ?></td>
-                                                    <td><?= htmlspecialchars($dot['ThoiGianBatDau']) ?></td>
-                                                    <td><?= htmlspecialchars($dot['ThoiGianKetThuc']) ?></td>
-                                                    <td><?= htmlspecialchars($dot['NguoiQuanLy']) ?></td>
-                                                    <td><?= $trangthai ?></td>
-                                                    <td>
-                                                        <a href="<?= $link ?>" class="btn btn-xs btn-primary">Xem chi
-                                                            tiết</a>
-                                                    </td>
-                                                </tr>
-                                            <?php endforeach; ?>
-                                        </tbody>
-                                    </table>
                                 </div>
-                                <!-- /.table-responsive -->
+                                <div class="panel-body">
+                                    <div class="table-responsive">
+
+                                        <table class="table" id="TableDotTT">
+                                            <thead>
+                                                <tr>
+                                                    <th>#</th>
+                                                    <th>Tên đợt</th>
+                                                    <th>Năm</th>
+                                                    <th>Loại</th>
+                                                    <th>Thời gian bắt đầu</th>
+                                                    <th>Thời gian kết thúc</th>
+                                                    <th>Người quản lý</th>
+                                                    <th>Trạng thái</th>
+                                                    <th>Xem</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php $i = 1;
+                                                foreach ($danhSachDotThucTap as $dot):
+                                                    if ($dot['TrangThai'] == -1)
+                                                        continue;
+                                                    $link = '/datn/admin/pages/chitietdot?id=' . urlencode($dot['ID']);
+                                                    switch ($dot['TrangThai']) {
+                                                        case 1:
+                                                            $trangthai = 'Đang chuẩn bị';
+                                                            break;
+                                                        case 2:
+                                                            $trangthai = 'Đã bắt đầu';
+                                                            break;
+                                                        case 3:
+                                                            $trangthai = 'Hoàn tất phân công';
+                                                            break;
+                                                        case 0:
+                                                            $trangthai = 'Đã kết thúc';
+                                                            break;
+                                                        default:
+                                                            $trangthai = 'Không xác định';
+                                                    }
+
+                                                    ?>
+                                                    <tr>
+                                                        <td><?= $i++ ?></td>
+                                                        <td><?= htmlspecialchars($dot['TenDot']) ?></td>
+                                                        <td><?= htmlspecialchars($dot['Nam']) ?></td>
+                                                        <td><?= htmlspecialchars($dot['Loai']) ?></td>
+                                                        <td><?= htmlspecialchars($dot['ThoiGianBatDau']) ?></td>
+                                                        <td><?= htmlspecialchars($dot['ThoiGianKetThuc']) ?></td>
+                                                        <td><?= htmlspecialchars($dot['TenNguoiQuanLy']) ?></td>
+                                                        <td><?= $trangthai ?></td>
+                                                        <td>
+                                                            <a href="<?= $link ?>" class="btn btn-xs btn-primary">Xem chi
+                                                                tiết</a>
+                                                        </td>
+                                                    </tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <!-- /.table-responsive -->
+                                </div>
+                                <!-- /.panel-body -->
                             </div>
-                            <!-- /.panel-body -->
+                            <!-- /.panel -->
                         </div>
-                        <!-- /.panel -->
+                        <!-- /.col-lg-6 -->
                     </div>
-                    <!-- /.col-lg-6 -->
                 </div>
             </div>
         </div>
-    </div>
     </div>
     <?php
     require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
@@ -322,7 +333,8 @@ $canbokhoa = $conn->query("SELECT ID_TaiKhoan,Ten FROM canbokhoa where TrangThai
 
                 const loai = document.getElementById('loai').value;
                 const nam = document.getElementById('namhoc').value;
-                const nguoiquanly = document.getElementById('nguoiquanly').value;
+                const nguoiquanlySelect = document.getElementById('NguoiQuanLy');
+                const nguoiquanly = nguoiquanlySelect.options[nguoiquanlySelect.selectedIndex].text;
                 const batdau = new Date(startInput.value);
                 const ketthuc = new Date(endInput.value);
 
