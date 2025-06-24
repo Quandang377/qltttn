@@ -4,7 +4,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 $id_sv = $_POST['idsv'] ?? '';
 $tuan = $_POST['tuan'] ?? '';
-$id_gvhd = '2'; // hoặc lấy từ session
+$id_gvhd = '6'; // hoặc lấy từ session
 
 // Nếu thiếu dữ liệu truyền vào thì chuyển sang 404
 if (empty($id_sv) || empty($tuan)) {

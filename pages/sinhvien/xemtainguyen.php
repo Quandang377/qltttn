@@ -1,0 +1,1 @@
+Đây là trang xem tài nguyên

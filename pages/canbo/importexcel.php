@@ -34,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_excel'])) {
 
                 $success = 0;
                 foreach ($sheetData as $i => $row) {
-                    if ($i == 1) continue; // Bỏ qua dòng tiêu đề
+                    if ($i == 1) continue; 
 
                     $mssv = trim($row['B']);
                     $ho = trim($row['C']);
@@ -175,7 +175,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_excel'])) {
                         </button>
                     </div>
                 <?php endif; ?>
-                <!-- Modal upload file excel -->
                 <div class="modal fade" id="uploadModal" tabindex="-1" role="dialog" aria-labelledby="uploadModalLabel">
                   <div class="modal-dialog" role="document">
                     <form method="post" enctype="multipart/form-data">
