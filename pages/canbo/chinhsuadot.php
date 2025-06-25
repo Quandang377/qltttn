@@ -9,13 +9,18 @@ if (!$id) {
     die("Không tìm thấy ID đợt thực tập.");
 }
 
-$stmt = $conn->prepare("SELECT ID,TenDot,Loai,Nam,TenNguoiMoDot,NguoiQuanLy,ThoiGianBatDau,ThoiGianKetThuc,TrangThai FROM DOTTHUCTAP WHERE ID = :id");
+$stmt = $conn->prepare("SELECT ID,TenDot,Loai,Nam,                                                  NguoiMoDot,NguoiQuanLy,ThoiGianBatDau,ThoiGianKetThuc,TrangThai FROM DOTTHUCTAP WHERE ID = :id");
 $stmt->execute(['id' => $id]);
 $dot = $stmt->fetch();
 $successMessage = "";
 $notification = "";
 
-$canbokhoa = $conn->query("SELECT ID_TaiKhoan, Ten FROM canbokhoa WHERE TrangThai = 1")->fetchAll();
+$stmt = $conn->prepare("SELECT ID, TenDot, Loai, Nam, NguoiMoDot, NguoiQuanLy, ThoiGianBatDau, ThoiGianKetThuc, TrangThai 
+                        FROM DOTTHUCTAP WHERE ID = :id");
+$stmt->execute(['id' => $id]);
+$dot = $stmt->fetch();
+
+$canbokhoa = $conn->query("SELECT ID_TaiKhoan, Ten FROM CanBoKhoa WHERE TrangThai = 1")->fetchAll(PDO::FETCH_ASSOC);
 
 if (!$dot) {
     die("Không tìm thấy đợt thực tập.");
@@ -27,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $loai = $_POST['Loai'] ?? '';
     $thoiGianBatDau = $_POST['ThoiGianBatDau'] ?? '';
     $thoiGianKetThuc = $_POST['ThoiGianKetThuc'] ?? '';
-    $nguoiQuanLy = $_POST['NguoiQuanLy'] ?? '';
+    $nguoiQuanLy = intval($_POST['NguoiQuanLy']);
 
     $stmt = $conn->prepare("SELECT COUNT(*) FROM DOTTHUCTAP WHERE TenDot = :tenDot AND ID != :id");
     $stmt->execute(['tenDot' => $tenDot, 'id' => $id]);
@@ -75,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $successMessage = "Cập nhật thành công!";
 
-        $stmt = $conn->prepare("SELECT ID,TenDot,Loai,Nam,TenNguoiMoDot,NguoiQuanLy,ThoiGianBatDau,ThoiGianKetThuc,TrangThai FROM DOTTHUCTAP WHERE ID = :id");
+        $stmt = $conn->prepare("SELECT ID,TenDot,Loai,Nam,NguoiMoDot,NguoiQuanLy,ThoiGianBatDau,ThoiGianKetThuc,TrangThai FROM DOTTHUCTAP WHERE ID = :id");
         $stmt->execute(['id' => $id]);
         $dot = $stmt->fetch();
     }
@@ -106,7 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                     <?php endif; ?>
                     <?php if (!empty($notification)): ?>
-                        <div id="notificationAlert" class="alert alert-warrning">
+                        <div id="notificationAlert" class="alert alert-danger">
                             <?= $notification ?>
                         </div>
                     <?php endif; ?>
@@ -115,15 +120,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="form-group">
                         <label class="col-sm-2 control-label">Tên đợt</label>
                         <div class="col-sm-10">
-                            <input type="text" name="TenDot" class="form-control"
+                            <input <?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?> type="text" name="TenDot" class="form-control"
                                 value="<?= htmlspecialchars($dot['TenDot']) ?>" required>
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label class="col-sm-2 control-label">Năm</label>
-                        <div class="col-sm-10">
-                            <input type="number" name="Nam" min="1000" max="9999" class="form-control"
+                        <div class="col-sm-10" >
+                            <input <?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?> type="number" name="Nam" min="1000" max="9999" class="form-control"
                                 value="<?= htmlspecialchars($dot['Nam']) ?>" required>
                         </div>
                     </div>
@@ -131,7 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="form-group">
                         <label class="col-sm-2 control-label">Loại</label>
                         <div class="col-sm-10">
-                            <select id="Loai" name="Loai" class="form-control" required>
+                            <select <?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?> id="Loai" name="Loai" class="form-control" required>
                                 <option value="Cao đẳng" <?= $dot['Loai'] == 'Cao đẳng' ? 'selected' : '' ?>>Cao đẳng
                                 </option>
                                 <option value="Cao đẳng ngành" <?= $dot['Loai'] == 'Cao đẳng ngành' ? 'selected' : '' ?>>
@@ -139,22 +144,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </select>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label class="col-sm-2 control-label">Thời gian bắt đầu</label>
-                        <div class="col-sm-10">
-                            <input class="form-control"
-                                value="<?= isset($dot['ThoiGianBatDau']) ? htmlspecialchars($dot['ThoiGianBatDau']) : '' ?>"
-                                id="ThoiGianBatDau" name="ThoiGianBatDau" type="date"
-                                placeholder="Chọn thời gian bắt đầu" required>
+                        <div class="form-group">
+                            <label  class="col-sm-2 control-label">Thời gian bắt đầu</label>
+                            <div class="col-sm-10">
+                                <input <?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?> class="form-control"
+                                    value="<?= isset($dot['ThoiGianBatDau']) ? htmlspecialchars($dot['ThoiGianBatDau']) : '' ?>"
+                                    id="ThoiGianBatDau" name="ThoiGianBatDau" type="date"
+                                    required>
+                            </div>
                         </div>
-                    </div>
 
                     <div class="form-group">
                         <label class="col-sm-2 control-label">Thời gian kết thúc</label>
                         <div class="col-sm-10">
                             <?php
                             ?>
-                            <input class="form-control"
+                            <input <?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?> class="form-control"
                                 value="<?= isset($dot['ThoiGianKetThuc']) ? htmlspecialchars($dot['ThoiGianKetThuc']) : '' ?>"
                                 id="ThoiGianKetThuc" name="ThoiGianKetThuc" type="date"
                                 placeholder="Chọn thời gian kết thúc" required>
@@ -164,15 +169,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="form-group">
                         <label class="col-sm-2 control-label">Người quản lý</label>
                         <div class="col-sm-10">
-                            <select id="NguoiQuanLy" name="NguoiQuanLy" class="form-control" required>
+                            <select <?= $dot['TrangThai'] == 0 ? 'disabled' : '' ?> id="NguoiQuanLy" name="NguoiQuanLy" class="form-control" required>
                                 <?php foreach ($canbokhoa as $cb): ?>
-                                    <option value="<?= $cb['Ten'] ?>" <?= $dot['NguoiQuanLy'] == $cb['Ten'] ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($cb['Ten']) ?>
-                                    </option>
+                                    <option value="<?= $cb['ID_TaiKhoan'] ?>" <?= $dot['NguoiQuanLy'] == $cb['ID_TaiKhoan'] ? 'selected' : '' ?>>
+    <?= htmlspecialchars($cb['TenNguoiQuanLy'] ?? $cb['Ten']) ?>
+</option>
+
                                 <?php endforeach; ?>
                             </select>
                         </div>
                     </div>
+
                     <div class="form-group text-center">
                         <button type="submit" class="btn btn-success btn-lg">Lưu thay đổi</button>
                         <a href="/datn/pages/canbo/chitietdot?id=<?= urlencode($id) ?>"

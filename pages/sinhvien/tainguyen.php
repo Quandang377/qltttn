@@ -35,20 +35,15 @@
             color: #4caf50;
         }
 
-        .panel-tainguyen .ten-tainguyen {
-            font-size: 18px;
-            font-weight: bold;
-            color: #222;
-        }
-
-        .panel-tainguyen .tenfile {
-            font-size: 13px;
-            color: #888;
-        }
-
-        .panel-tainguyen .nguoidang {
-            font-size: 12px;
-            color: #666;
+        .panel-tainguyen .ten-tainguyen,
+        .panel-tainguyen .tenfile
+        {
+            max-width: 150px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: block;
+            word-break: break-all;
         }
 
         .panel-tainguyen .btn {
@@ -67,11 +62,15 @@
                     <?php
                     require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
                     // Lấy tài nguyên loại Tainguyen, trạng thái hiển thị
-                    $stmt = $conn->prepare("SELECT f.*, vtt.TenNguoiDung
-                    FROM file f
-                    LEFT JOIN view_taikhoan_ten vtt ON f.ID_SV = vtt.ID_TaiKhoan OR f.ID_GVHD = vtt.ID_TaiKhoan
-                    WHERE f.Loai='Tainguyen' AND f.TrangThai=1
-                    ORDER BY f.NgayNop DESC");
+                    $stmt = $conn->prepare("
+                        SELECT f.*, 
+                            COALESCE(sv.Ten) AS TenNguoiDung
+                        FROM file f
+                        LEFT JOIN SinhVien sv ON f.ID_SV = sv.ID_TaiKhoan
+                       
+                        WHERE f.Loai='Tainguyen' AND f.TrangThai=1
+                        ORDER BY f.NgayNop DESC
+                    ");
                     $stmt->execute();
                     $tainguyen = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     if (empty($tainguyen)) {
@@ -89,9 +88,6 @@
                                     <div>
                                         <div class="ten-tainguyen"><?= htmlspecialchars($row['Ten']) ?></div>
                                         <div class="tenfile"><?= htmlspecialchars($row['TenFile']) ?></div>
-                                        <div class="nguoidang">
-                                            <?= $row['TenNguoiDung'] ? 'Người đăng: ' . htmlspecialchars($row['TenNguoiDung']) : '' ?>
-                                        </div>
                                         <a href="javascript:void(0)"
                                             onclick="xemFileOnline('<?= htmlspecialchars($fileUrl) ?>')"
                                             class="btn btn-xs btn-info">Xem online</a>

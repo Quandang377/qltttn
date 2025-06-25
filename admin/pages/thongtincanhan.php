@@ -20,10 +20,10 @@ $info = $stmt->fetch(PDO::FETCH_ASSOC);
 $stmtDot = $conn->prepare("
     SELECT dt.ID, dt.TenDot, dt.Nam, dt.ThoiGianBatDau, dt.ThoiGianKetThuc
     FROM dotthuctap dt
-    WHERE dt.NguoiMoDot = ? AND dt.TrangThai != 0 AND dt.TrangThai != -1
+    WHERE dt.TrangThai != 0 AND dt.TrangThai != -1
     ORDER BY dt.ThoiGianBatDau DESC
 ");
-$stmtDot->execute([$idTaiKhoan]);
+$stmtDot->execute();
 $dsDotDangThamGia = $stmtDot->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>

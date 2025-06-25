@@ -80,7 +80,7 @@ elseif ($trangThaiDot == 0)
             </a>
           </div>
           <div class="col-md-3 panel-container">
-            <a href="pages/sinhvien/dangkygiaygioithieu" style="text-decoration: none; color: inherit;">
+            <a <?= ($trangThaiDot != 3) ? '' : 'href="pages/sinhvien/dangkygiaygioithieu"' ?>  style="text-decoration: none; color: inherit;">
               <div class="panel panel-default <?= $panelActive === 1 ? 'panel-success' : '' ?>" <?= $panelActive === 1 ? 'data-toggle="tooltip" title="Giai đoạn hiện tại"' : '' ?> style="min-height: 170px;">
                 <div class="panel-heading">Xin giấy giới thiệu thực tập</div>
                 <div class="panel-body">
@@ -90,7 +90,7 @@ elseif ($trangThaiDot == 0)
             </a>
           </div>
           <div class="col-md-3 panel-container">
-            <a href="pages/sinhvien/baocaotuan" style="text-decoration: none; color: inherit;">
+            <a <?= ($trangThaiDot != 2) ? '' : 'href="pages/sinhvien/baocaotuan"' ?>  style="text-decoration: none; color: inherit;">
               <div class="panel panel-default <?= $panelActive === 2 ? 'panel-success' : '' ?>" <?= $panelActive === 2 ? 'data-toggle="tooltip" title="Giai đoạn hiện tại"' : '' ?> style="min-height: 170px;">
                 <div class="panel-heading">Thực tập, báo cáo tuần</div>
                 <div class="panel-body">
@@ -128,7 +128,7 @@ elseif ($trangThaiDot == 0)
                 </div>
                 <div class="modal-footer">
                   <button class="btn btn-default" data-dismiss="modal">Đóng</button>
-                  <a href="pages/sinhvien/nopketqua" class="btn btn-primary">Đến nộp</a>
+                  <a <?= ($trangThaiDot != 0) ? 'disabled' : '' ?>  href="pages/sinhvien/nopketqua" class="btn btn-primary">Đến nộp</a>
                 </div>
               </div>
             </div>
@@ -172,26 +172,26 @@ elseif ($trangThaiDot == 0)
 
         list.forEach(tb => {
           const html = `
-                <div class="row" style="margin-bottom: 15px; border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
-                    <div class="col-md-2 text-center">
-                        <a href="pages/sinhvien/chitietthongbao.php?id=${tb.ID}">
-                            <img src="/datn/uploads/Images/ThongBao.jpg" alt="${tb.TIEUDE}" style="width: 100px; height: 70px; object-fit: cover;">
-                        </a>
-                    </div>
-                    <div class="col-md-10">
-                        <p style="margin-bottom: 5px;">
-                            <a href="pages/sinhvien/chitietthongbao.php?id=${tb.ID}" style="font-weight: bold; text-decoration: none;">
-                                ${tb.TIEUDE}
-                            </a>
-                        </p>
-                        <ul class="list-inline" style="color: #888; font-size: 13px; margin: 0;">
-                            <li>Thông báo</li>
-                            <li>|</li>
-                            <li>${new Date(tb.NGAYDANG).toLocaleDateString('vi-VN')}</li>
-                        </ul>
-                    </div>
-                </div>
-            `;
+    <div class="row" style="margin-bottom: 15px; border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
+      <div class="col-md-2 text-center">
+        <a href="pages/sinhvien/chitietthongbao.php?id=${tb.ID}">
+          <img src="/datn/uploads/Images/ThongBao.jpg" alt="${tb.TIEUDE}" style="width: 100px; height: 70px; object-fit: cover;">
+        </a>
+      </div>
+      <div class="col-lg-10">
+        <p style="margin-bottom: 5px;">
+          <a href="#" class="thongbao-link" data-id="${tb.ID}" style="font-weight: bold; text-decoration: none;">
+            ${tb.TIEUDE}
+          </a>
+        </p>
+        <ul class="list-inline" style="color: #888; font-size: 13px; margin: 0;">
+          <li>Thông báo</li>
+          <li>|</li>
+          <li>${new Date(tb.NGAYDANG).toLocaleDateString('vi-VN')}</li>
+        </ul>
+      </div>
+    </div>
+  `;
           container.insertAdjacentHTML('beforeend', html);
         });
 
@@ -223,6 +223,19 @@ elseif ($trangThaiDot == 0)
     });
 
     renderNotifications();
+    document.addEventListener('click', function(e) {
+  if (e.target.classList.contains('thongbao-link')) {
+    e.preventDefault();
+    const id = e.target.getAttribute('data-id');
+    fetch('pages/sinhvien/ajax_danhdau_thongbao.php', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: 'idThongBao=' + encodeURIComponent(id)
+    }).then(() => {
+      window.location.href = 'pages/sinhvien/chitietthongbao.php?id=' + id;
+    });
+  }
+});
   </script>
 </body>
 

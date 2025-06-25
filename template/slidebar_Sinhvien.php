@@ -10,6 +10,23 @@ if ($idTaiKhoan) {
     $stmt->execute([$idTaiKhoan]);
     $tenDot = $stmt->fetchColumn();
 }
+$coThongBaoMoi = false;
+if ($idTaiKhoan) {
+    // Lấy ID đợt thực tập của sinh viên
+    $stmt = $conn->prepare("SELECT ID_Dot FROM SinhVien WHERE ID_TaiKhoan = ?");
+    $stmt->execute([$idTaiKhoan]);
+    $idDot = $stmt->fetchColumn();
+
+    // Đếm số thông báo chưa xem
+    $stmt = $conn->prepare("
+        SELECT COUNT(*) FROM THONGBAO tb
+        WHERE tb.TRANGTHAI=1 AND tb.ID_Dot = ? AND tb.ID NOT IN (
+            SELECT ID_ThongBao FROM ThongBao_Xem WHERE ID_TaiKhoan = ?
+        )
+    ");
+    $stmt->execute([$idDot, $idTaiKhoan]);
+    $coThongBaoMoi = $stmt->fetchColumn() > 0;
+}
 ?>
 <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
     <div class="navbar-header">
@@ -35,6 +52,15 @@ if ($idTaiKhoan) {
                         <i class="fa fa-calendar-check-o fa-fw"></i> Báo cáo tuần
                     </a>
                 </li>
+                <li>
+                    <a href="pages/sinhvien/thongbaomoi" class="<?= $coThongBaoMoi ? 'has-new' : '' ?>">
+                        <i class="fa fa-bell fa-fw"></i> Thông báo mới
+                        <?php if ($coThongBaoMoi): ?>
+                            <span style="color:red;font-size:16px;vertical-align:middle;">●</span>
+                        <?php endif; ?>
+                    </a>
+                </li>
+
                 <li>
                     <a href="pages/sinhvien/tainguyen">
                         <i class="fa fa-folder-open-o fa-fw"></i> Tài nguyên

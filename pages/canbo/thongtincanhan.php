@@ -8,13 +8,14 @@ $vaiTro = $_SESSION['user']['VaiTro'] ?? '';
 // Lấy thông tin người dùng
 $stmt = $conn->prepare("
     SELECT 
-        COALESCE( gv.Ten) AS Ten,
+        COALESCE(gv.Ten) AS Ten,
         tk.TaiKhoan AS Email,
         tk.VaiTro
     FROM TaiKhoan tk
-    LEFT JOIN CanBo gv ON tk.ID_TaiKhoan = gv.ID_TaiKhoan
+    LEFT JOIN CanBoKhoa gv ON tk.ID_TaiKhoan = gv.ID_TaiKhoan
     WHERE tk.ID_TaiKhoan = ?
 ");
+
 $stmt->execute([$idTaiKhoan]);
 $info = $stmt->fetch(PDO::FETCH_ASSOC);
 $stmtDot = $conn->prepare("
