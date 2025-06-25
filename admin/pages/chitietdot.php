@@ -801,7 +801,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                 sửa</button>
                             <button
                                 onclick="if(confirm('Bạn có chắc muốn xóa đợt này?')) window.location='admin/pages/xoadot?id=<?= $id ?>';"
-                                class="btn btn-danger btn-md" <?= ($tongSinhVien > 0 || $tongGVHD > 0) ? 'disabled title="Không thể xóa: Đợt đã có sinh viên hoặc giáo viên."' : '' ?>>Xóa đợt</button>
+                                class="btn btn-danger btn-md" <?= ($tongSinhVien > 0 || $tongGVHD > 0)||$dot['TrangThai'] !=1 ? 'disabled title="Không thể xóa: Đợt đã có sinh viên hoặc giáo viên."' : '' ?>>Xóa đợt</button>
 
                         </div>
                     </div>
