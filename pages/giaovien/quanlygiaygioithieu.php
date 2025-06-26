@@ -16,15 +16,95 @@
     }   
     ?>
     <style>
+    body {
+        background: linear-gradient(135deg, #e3f0ff 0%, #f8fafc 100%);
+        font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+    }
     #page-wrapper {
         padding: 30px;
         min-height: 100vh;
-        box-sizing: border-box;
-        max-height: 100%;
+        background: none;
+    }
+    .page-header h1 {
+        font-size: 2.2rem;
+        font-weight: 700;
+        color: #007bff;
+        letter-spacing: 1px;
+        margin-bottom: 32px;
+        text-align: center;
+        text-shadow: 0 2px 8px #b6d4fe44;
+    }
+    .btn-group .btn,
+    .btn-success, .btn-info, .btn-primary {
+        border-radius: 8px !important;
+        font-weight: 600;
+        box-shadow: 0 2px 8px #007bff22;
+        transition: background 0.2s, box-shadow 0.2s;
+        border: none;
+    }
+    .btn-group .btn.active,
+    .btn-group .btn:active,
+    .btn-group .btn:focus,
+    .btn-group .btn:hover,
+    .btn-success:hover, .btn-info:hover, .btn-primary:hover {
+        background: linear-gradient(90deg, #007bff 70%, #5bc0f7 100%) !important;
+        color: #fff !important;
+        box-shadow: 0 4px 16px #007bff33;
+    }
+    .btn-group .btn {
+        background: #fafdff;
+        color: #007bff;
+        border: 1.5px solid #b6d4fe;
+        margin-right: 8px;
+    }
+    .btn-group .btn:last-child { margin-right: 0; }
+    .form-control {
+        border-radius: 8px;
+        border: 1.5px solid #b6d4fe;
+        font-size: 16px;
+        padding: 8px 14px;
+        background: #fafdff;
+        transition: border 0.2s;
+    }
+    .form-control:focus {
+        border: 1.5px solid #007bff;
+        background: #f0f8ff;
+        outline: none;
+    }
+    .panel {
+        border-radius: 18px;
+        border: 2px solid #e3eafc;
+        background: #fff;
+        box-shadow: 0 2px 16px rgba(0,123,255,0.07);
+        margin-bottom: 28px;
+        transition: box-shadow 0.2s, border-color 0.2s, background 0.2s;
+    }
+    .panel:hover {
+        border-color: #007bff;
+        box-shadow: 0 4px 24px rgba(0,123,255,0.16);
+        background: #f0f8ff;
+        transform: translateY(-2px) scale(1.01);
+    }
+    .pannel-header {
+        font-size: 18px;
+        color: #007bff;
+        font-weight: 700;
+        padding-bottom: 0;
+    }
+    .panel-body {
+        background: #fafdff;
+        border-radius: 0 0 18px 18px;
+        font-size: 15px;
     }
     .print-all-btn {
         margin-left: 10px;
     }
+    @media (max-width: 991px) {
+        .panel { margin-bottom: 18px; }
+        .panel-body { padding: 12px !important; }
+    }
+    ::-webkit-scrollbar-thumb { background: #b6d4fe; border-radius: 8px; }
+    ::-webkit-scrollbar-track { background: #fafdff; }
     @media print {
         body * {
             visibility: hidden;

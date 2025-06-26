@@ -33,7 +33,7 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['VaiTro'] !== 'Sinh viên') {
         <div class="row panel-row">
           <div class="col-md-3 panel-container">
             <a href="pages/sinhvien/xemdanhsachcongty" style="text-decoration: none; color: inherit;">
-              <div class="panel panel-default" style="min-height: 170px;">
+              <div class="panel panel-default<?php if($trangThaiDot == 1) echo ' active-step'; ?>" style="min-height: 170px;">
                 <div class="panel-heading">Tìm công ty thực tập</div>
                 <div class="panel-body">
                   <p>&bull; Xem danh sách công ty từ các khóa trước</p>
@@ -44,7 +44,7 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['VaiTro'] !== 'Sinh viên') {
           </div>
           <div class="col-md-3 panel-container">
             <a href="pages/sinhvien/dangkygiaygioithieu" style="text-decoration: none; color: inherit;">
-              <div class="panel panel-default" style="min-height: 170px;">
+              <div class="panel panel-default<?php if($trangThaiDot == 3) echo ' active-step'; ?>" style="min-height: 170px;">
                 <div class="panel-heading">Xin giấy giới thiệu thực tập</div>
                 <div class="panel-body">
                   <p>&bull; Gửi thông tin đăng ký xin giấy giới thiệu thực tập</p>
@@ -54,7 +54,7 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['VaiTro'] !== 'Sinh viên') {
           </div>
           <div class="col-md-3 panel-container">
             <a href="pages/sinhvien/baocaotuan" style="text-decoration: none; color: inherit;">
-              <div class="panel panel-default" style="min-height: 170px;">
+              <div class="panel panel-default<?php if($trangThaiDot == 2) echo ' active-step'; ?>" style="min-height: 170px;">
                 <div class="panel-heading">Thực tập, báo cáo tuần</div>
                 <div class="panel-body">
                   <p>&bull; Bắt dầu thực tập, gửi báo cáo hằng tuần cho giáo viên hướng dẫn</p>
@@ -64,7 +64,7 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['VaiTro'] !== 'Sinh viên') {
           </div>
           <div class="col-md-3 ">
             <a href="#" data-toggle="modal" data-target="#detailModal" style="text-decoration: none; color: inherit;">
-              <div class="panel panel-default" style="min-height: 170px;">
+              <div class="panel panel-default<?php if($trangThaiDot == 0) echo ' active-step'; ?>" style="min-height: 170px;">
                 <div class="panel-heading">Chấm điểm kết thúc</div>
                 <div class="panel-body">
                   <p>&bull; Phiếu chấm điểm...</p>
@@ -245,4 +245,32 @@ require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
     margin-left: 0;
     margin-right: 0;
   }
+
+  .panel {
+    border: 2px solid #e3eafc !important;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 2px 8px #007bff11;
+    transition: box-shadow 0.2s, border 0.2s, background 0.2s, transform 0.2s;
+  }
+
+  .panel.active-step {
+    border: 2.5px solid #007bff !important;
+    box-shadow: 0 4px 24px #007bff33;
+    background: linear-gradient(90deg, #e3f0ff 70%, #fafdff 100%);
+    transform: scale(1.04);
+  }
+
+  .panel.active-step .panel-heading {
+    color: #007bff;
+    font-weight: bold;
+    font-size: 18px;
+    letter-spacing: 1px;
+  }
 </style>
+<?php
+$idSinhVien = 3;
+$stmt = $conn->prepare("SELECT TrangThaiDot FROM sinhvien WHERE ID = ?");
+$stmt->execute([$idSinhVien]);
+$trangThaiDot = $stmt->fetchColumn();
+?>

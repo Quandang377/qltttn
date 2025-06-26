@@ -31,6 +31,34 @@ if ($id) {
 
 // Xử lý duyệt giấy giới thiệu
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['duyet']) && $id) {
+    // Lấy lại thông tin giấy để lấy mã số thuế và thông tin công ty
+    $stmt = $conn->prepare("
+        SELECT TenCty, MaSoThue, LinhVuc, Sdt, Email, DiaChi
+        FROM GiayGioiThieu
+        WHERE ID = ?
+    ");
+    $stmt->execute([$id]);
+    $giayInfo = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($giayInfo) {
+        // Kiểm tra công ty đã tồn tại chưa (theo MaSoThue)
+        $stmtCheck = $conn->prepare("SELECT ID FROM congty WHERE MaSoThue = ?");
+        $stmtCheck->execute([$giayInfo['MaSoThue']]);
+        if (!$stmtCheck->fetch()) {
+            // Nếu chưa có thì thêm vào bảng congty
+            $stmtInsert = $conn->prepare("INSERT INTO congty (MaSoThue, TenCty, LinhVuc, Sdt, Email, DiaChi, TrangThai) VALUES (?, ?, ?, ?, ?, ?, 1)");
+            $stmtInsert->execute([
+                $giayInfo['MaSoThue'],
+                $giayInfo['TenCty'],
+                $giayInfo['LinhVuc'],
+                $giayInfo['Sdt'],
+                $giayInfo['Email'],
+                $giayInfo['DiaChi']
+            ]);
+        }
+    }
+
+    // Cập nhật trạng thái giấy giới thiệu
     $stmt = $conn->prepare("UPDATE GiayGioiThieu SET TrangThai = 1 WHERE ID = ?");
     if ($stmt->execute([$id])) {
         $message = "Đã duyệt giấy giới thiệu thành công!";
