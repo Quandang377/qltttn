@@ -156,7 +156,7 @@ if ($idTaiKhoan) {
     <a href="pages/sinhvien/dangkygiaygioithieu" class="<?= strpos($currentPath, 'dangkygiaygioithieu') !== false ? 'active' : '' ?>">Giấy giới thiệu</a>
     <a href="pages/sinhvien/baocaotuan" class="<?= strpos($currentPath, 'baocaotuan') !== false ? 'active' : '' ?>">Báo cáo tuần</a>
     <a href="pages/sinhvien/tainguyen" class="<?= strpos($currentPath, 'tainguyen') !== false ? 'active' : '' ?>">Tài nguyên</a>
-    <a href="pages/sinhvien/xemdanhsachcongty" class="<?= strpos($currentPath, 'xemdanhsachcongty') !== false ? 'active' : '' ?>">Công ty</a>
+    <a href="pages/sinhvien/nopketqua" class="<?= strpos($currentPath, 'nopketqua') !== false ? 'active' : '' ?>">Nộp kết quả</a>
     <a href="pages/sinhvien/khaosat" class="<?= strpos($currentPath, 'khaosat') !== false ? 'active' : '' ?>">Khảo sát</a>
     <form method="get" action="pages/sinhvien/timkiem.php" class="form-inline text-right" style="margin-right: -50px;">
     <input type="text" name="q" class="form-control" placeholder="Tìm kiếm thông tin..." style="width: 300px;" required>

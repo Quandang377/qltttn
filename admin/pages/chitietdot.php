@@ -5,7 +5,6 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
-
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
@@ -62,6 +61,8 @@ $headers = ['STT', 'Mã SV', 'Họ Tên', 'Ngày Sinh', 'Lớp', 'Họ Tên GVHD
 $sheet->fromArray($headers, NULL, 'A3');
 $sheet->getStyle('A3:G3')->getFont()->setBold(true);
 $sheet->getStyle('A3:G3');
+$sheet->getPageSetup()->setRowsToRepeatAtTopByStartAndEnd(3, 3);
+
 
 // ======= Nội dung dữ liệu =======
 $rowIndex = 4;
@@ -95,14 +96,6 @@ foreach (range('A', 'G') as $col) {
 }
 $sheet->getStyle('C4:C' . ($rowIndex - 1))->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT); // Tên SV
 $sheet->getStyle('F4:F' . ($rowIndex - 1))->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT); // Tên GVHD
-
-// ======= Cấu hình in vừa trang =======
-$sheet->getPageSetup()
-    ->setOrientation(\PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::ORIENTATION_LANDSCAPE)
-    ->setFitToPage(true)
-    ->setFitToWidth(1)
-    ->setFitToHeight(0);
-$sheet->getPageSetup()->setPrintArea('A1:F' . ($rowIndex - 1));
 
 // Ẩn cột thừa nếu có (G trở đi)
 foreach (range('G', 'Z') as $col) {
