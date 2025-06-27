@@ -13,6 +13,12 @@ $stmt = $conn->prepare("
 ");
 $stmt->execute();
 $thongbaos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$today = date('Y-m-d');
+$updateStmt = $conn->prepare("UPDATE DOTTHUCTAP SET TRANGTHAI = 0 WHERE THOIGIANKETTHUC <= :today AND TRANGTHAI = 2");
+$updateStmt->execute(['today' => $today]);
+$updateStmt2 = $conn->prepare("UPDATE DOTTHUCTAP SET TRANGTHAI = 2 WHERE THOIGIANBATDAU <= :today AND TRANGTHAI != -1 AND TRANGTHAI != 0");
+$updateStmt2->execute(['today' => $today]);
 ?>
 <!DOCTYPE html>
 <html lang="vi">

@@ -36,8 +36,7 @@
         }
 
         .panel-tainguyen .ten-tainguyen,
-        .panel-tainguyen .tenfile
-        {
+        .panel-tainguyen .tenfile {
             max-width: 150px;
             white-space: nowrap;
             overflow: hidden;
@@ -60,6 +59,7 @@
                 <h1 class="page-header">Tài nguyên</h1>
                 <div class="row">
                     <?php
+                    require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
                     require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
                     // Lấy tài nguyên loại Tainguyen, trạng thái hiển thị
                     $stmt = $conn->prepare("
@@ -90,7 +90,11 @@
                                         <div class="tenfile"><?= htmlspecialchars($row['TenFile']) ?></div>
                                         <a href="javascript:void(0)"
                                             onclick="xemFileOnline('<?= htmlspecialchars($fileUrl) ?>')"
-                                            class="btn btn-xs btn-info">Xem online</a>
+                                            class="btn btn-xs btn-info">Xem</a>
+                                        <a href="<?= htmlspecialchars($fileUrl) ?>" download class="btn btn-xs btn-success"
+                                            style="margin-left: 5px;">
+                                            Tải xuống
+                                        </a>
                                     </div>
                                 </div>
                             </div>

@@ -14,14 +14,14 @@ $stmt->execute([$idTaiKhoan]);
 $idDot = $stmt->fetchColumn();
 
 $idThongBao = $_POST['idThongBao'] ?? null;
-
-if ($idTaiKhoan && $idThongBao) {
-    $stmt = $conn->prepare("INSERT IGNORE INTO ThongBaoDaXem (ID_TaiKhoan, ID_ThongBao) VALUES (?, ?)");
-    $stmt->execute([$idTaiKhoan, $idThongBao]);
-    echo 'OK';
-} else {
-    http_response_code(400);
-    echo 'ERR';
+// ✅ Đánh dấu đã xem ngay khi truy cập chi tiết
+if ($idTaiKhoan && $id) {
+    $stmt = $conn->prepare("SELECT COUNT(*) FROM ThongBao_Xem WHERE ID_TaiKhoan = ? AND ID_ThongBao = ?");
+    $stmt->execute([$idTaiKhoan, $id]);
+    if ($stmt->fetchColumn() == 0) {
+        $stmt = $conn->prepare("INSERT INTO ThongBao_Xem (ID_TaiKhoan, ID_ThongBao) VALUES (?, ?)");
+        $stmt->execute([$idTaiKhoan, $id]);
+    }
 }
 // Lấy thông báo chi tiết (chỉ thuộc đợt của SV)
 $stmt = $conn->prepare("SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.ID_TAIKHOAN, tb.NGAYDANG, tb.TRANGTHAI, tb.ID_Dot, dt.TenDot

@@ -142,6 +142,24 @@ $tongGVHD = $stmt->fetchColumn();
     ");
 $stmt->execute(['id' => $id]);
 $dsGiaoVien = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Thống kê số SV hoàn thành và chưa hoàn thành
+$stmt = $conn->prepare("SELECT 
+    SUM(CASE WHEN T.TrangThai = 1 THEN 1 ELSE 0 END) AS DaHoanThanh,
+    SUM(CASE WHEN T.TrangThai != 1 OR T.TrangThai IS NULL THEN 1 ELSE 0 END) AS ChuaHoanThanh
+FROM sinhvien SV
+LEFT JOIN tongket T ON SV.ID_TaiKhoan = T.IDSV
+WHERE SV.ID_Dot = :id");
+$stmt->execute(['id' => $id]);
+$tkTrangThai = $stmt->fetch(PDO::FETCH_ASSOC);
+
+// Thống kê xếp loại
+$stmt = $conn->prepare("SELECT SV.XepLoai, COUNT(*) AS SoLuong
+FROM sinhvien SV
+WHERE SV.ID_Dot = :id AND SV.XepLoai IS NOT NULL AND SV.XepLoai <> ''
+GROUP BY SV.XepLoai");
+$stmt->execute(['id' => $id]);
+$tkXepLoai = $stmt->fetchAll(PDO::FETCH_ASSOC);
 if (isset($_GET['export_excel']) && $_GET['export_excel'] == 2) {
     ob_clean();
     header_remove();
@@ -156,15 +174,22 @@ header_remove();
 $spreadsheet = new Spreadsheet();
 $sheet = $spreadsheet->getActiveSheet();
 $sheet->setTitle("ThongKeDot");
-// ===== Tiêu đề =====
 $row = 1;
+
+// ===== TIÊU ĐỀ =====
 $sheet->setCellValue("A$row", "THỐNG KÊ ĐỢT: " . $dot['TenDot']);
 $sheet->mergeCells("A$row:B$row");
 $sheet->getStyle("A$row")->getFont()->setBold(true)->setSize(14);
 $sheet->getStyle("A$row")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+// Tiêu đề Xếp loại
+$sheet->setCellValue("D$row", "THỐNG KÊ XẾP LOẠI SINH VIÊN");
+$sheet->mergeCells("D$row:F$row");
+$sheet->getStyle("D$row")->getFont()->setBold(true);
+$sheet->getStyle("D$row")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 $row++;
 
-// ===== Thông tin đợt =====
+// ===== THÔNG TIN ĐỢT =====
 $infoFields = [
     "Loại:" => $dot['Loai'],
     "Năm:" => $dot['Nam'],
@@ -179,44 +204,54 @@ $infoFields = [
         default => 'Đã kết thúc'
     },
     "Tổng sinh viên:" => $tongSinhVien,
-    "Tổng GVHD:" => $tongGVHD
+    "Sinh viên đã hoàn thành:" => $tkTrangThai['DaHoanThanh'],
+    "Sinh viên chưa hoàn thành:" => $tkTrangThai['ChuaHoanThanh'],
+    "Tổng GVHD:" => $tongGVHD,
 ];
+$infoStart = $row;
 
-$infoStartRow = $row;
 foreach ($infoFields as $label => $value) {
     $sheet->setCellValue("A$row", $label);
     $sheet->setCellValue("B$row", $value);
     $row++;
 }
-$infoEndRow = $row - 1;
-
-// ===== Border cho bảng thông tin đợt =====
-$sheet->getStyle("A$infoStartRow:B$infoEndRow")->applyFromArray([
-    'borders' => [
-        'allBorders' => [
-            'borderStyle' => Border::BORDER_THIN,
-            'color' => ['argb' => '000000'],
-        ],
-    ],
+$infoEnd = $row - 1;
+$sheet->getStyle("A$infoStart:B$infoEnd")->applyFromArray([
+    'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
 ]);
 
-$row += 2; // Dòng trống
+// ===== XẾP LOẠI =====
+$sheet->fromArray(['STT', 'Xếp loại', 'Số lượng'], NULL, "D" . ($infoStart));
+$sheet->getStyle("D$infoStart:F$infoStart")->getFont()->setBold(true);
+$sheet->getStyle("D$infoStart:F$infoStart")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+$xlRow = $infoStart + 1;
+$stt = 1;
+foreach ($tkXepLoai as $xl) {
+    $sheet->setCellValue("D$xlRow", $stt++);
+    $sheet->setCellValue("E$xlRow", $xl['XepLoai']);
+    $sheet->setCellValue("F$xlRow", $xl['SoLuong']);
+    $xlRow++;
+}
+$sheet->getStyle("D$infoStart:F" . ($xlRow - 1))->applyFromArray([
+    'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
+]);
 
-// ===== Tiêu đề bảng GVHD =====
+$row = max($row, $xlRow) + 2;
+
+// ===== TIÊU ĐỀ GVHD =====
 $sheet->setCellValue("A$row", "GVHD VÀ SỐ LƯỢNG SV");
 $sheet->mergeCells("A$row:C$row");
 $sheet->getStyle("A$row")->getFont()->setBold(true);
 $sheet->getStyle("A$row")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 $row++;
 
-// ===== Header bảng GVHD =====
+// ===== HEADER GVHD =====
 $sheet->fromArray(['STT', 'Tên GVHD', 'Số SV Hướng Dẫn'], NULL, "A$row");
 $sheet->getStyle("A$row:C$row")->getFont()->setBold(true);
 $sheet->getStyle("A$row:C$row")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-$tableStart = $row;
+$gvStart = $row;
 $row++;
 
-// ===== Dữ liệu GVHD =====
 $stt = 1;
 foreach ($dsGiaoVien as $gv) {
     $sheet->setCellValue("A$row", $stt++);
@@ -224,27 +259,19 @@ foreach ($dsGiaoVien as $gv) {
     $sheet->setCellValue("C$row", $gv['SoLuong']);
     $row++;
 }
-$tableEnd = $row - 1;
-
-// ===== Border cho bảng GVHD =====
-$sheet->getStyle("A$tableStart:C$tableEnd")->applyFromArray([
-    'borders' => [
-        'allBorders' => [
-            'borderStyle' => Border::BORDER_THIN,
-            'color' => ['argb' => '000000'],
-        ],
-    ],
+$sheet->getStyle("A$gvStart:C" . ($row - 1))->applyFromArray([
+    'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
 ]);
 
-// ===== Căn chỉnh cột và xuất =====
-foreach (range('A', 'C') as $col) {
+// ===== Auto size columns =====
+foreach (range('A', 'F') as $col) {
     $sheet->getColumnDimension($col)->setAutoSize(true);
 }
 
+// ===== Xuất file =====
 header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 header('Content-Disposition: attachment; filename="ThongKe_Dot_' . $dot['TenDot'] . '.xlsx"');
 header('Cache-Control: max-age=0');
-
 $writer = new Xlsx($spreadsheet);
 $writer->save('php://output');
 exit;
@@ -784,7 +811,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                             <button onclick="window.location='admin/pages/importexcel?id=<?= $id ?>';"
                                 class="btn btn-primary btn-md" title="Import danh sách sinh viên"<?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?>>Import sinh
                                 viên</button>
-                            <button type="button" class="btn btn-primary btn-md" id="btnMoModalThemGV " title="Thêm giáo viên cho đợt thực tập"
+                            <button type="button" class="btn btn-primary btn-md" id="btnMoModalThemGV" title="Thêm giáo viên cho đợt thực tập"
                                 <?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?>>
                                 Thêm giáo viên
                             </button>

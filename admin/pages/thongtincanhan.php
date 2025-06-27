@@ -20,7 +20,7 @@ $info = $stmt->fetch(PDO::FETCH_ASSOC);
 $stmtDot = $conn->prepare("
     SELECT dt.ID, dt.TenDot, dt.Nam, dt.ThoiGianBatDau, dt.ThoiGianKetThuc
     FROM dotthuctap dt
-    WHERE dt.TrangThai != 0 AND dt.TrangThai != -1
+    WHERE dt.TrangThai>=1
     ORDER BY dt.ThoiGianBatDau DESC
 ");
 $stmtDot->execute();

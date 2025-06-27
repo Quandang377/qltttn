@@ -1,8 +1,5 @@
 <?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
-
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
-
-
 
 $idTaiKhoan = $_SESSION['user']['ID_TaiKhoan'];
 $stmt = $conn->prepare("SELECT sv.ID_Dot, dt.TrangThai 
@@ -43,6 +40,11 @@ elseif ($trangThaiDot == 2)
   $panelActive = 2;
 elseif ($trangThaiDot == 0)
   $panelActive = 3;
+$today = date('Y-m-d');
+$updateStmt = $conn->prepare("UPDATE DOTTHUCTAP SET TRANGTHAI = 0 WHERE THOIGIANKETTHUC <= :today AND TRANGTHAI = 2");
+$updateStmt->execute(['today' => $today]);
+$updateStmt2 = $conn->prepare("UPDATE DOTTHUCTAP SET TRANGTHAI = 2 WHERE THOIGIANBATDAU <= :today AND TRANGTHAI != -1 AND TRANGTHAI != 0");
+$updateStmt2->execute(['today' => $today]);
 ?>
 <!DOCTYPE html>
 <html lang="vi">

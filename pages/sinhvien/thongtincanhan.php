@@ -10,7 +10,7 @@ $stmt = $conn->prepare("
         sv.Ten, 
         tksv.TaiKhoan AS Email, 
         sv.Lop, 
-        dt.TenDot, 
+        dt.TenDot, dt.TrangThai,
         gv.Ten AS TenGV, 
         tkgv.TaiKhoan AS EmailGV
     FROM SinhVien sv
@@ -22,6 +22,18 @@ $stmt = $conn->prepare("
 ");
 $stmt->execute([$idTaiKhoan]);
 $info = $stmt->fetch(PDO::FETCH_ASSOC);
+
+$HienTrangThaiDot='';
+$trangThaiDot = $info['TrangThai'];
+if ($trangThaiDot == 1)
+  $HienTrangThaiDot = 'Đang chuẩn bị';
+elseif ($trangThaiDot == 3)
+  $HienTrangThaiDot = 'Hoàn Tất phân công';
+elseif ($trangThaiDot == 2)
+  $HienTrangThaiDot = 'Đã bắt đầu';
+elseif ($trangThaiDot == 0)
+  $HienTrangThaiDot = 'Đã kết thúc';
+
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -60,7 +72,7 @@ $info = $stmt->fetch(PDO::FETCH_ASSOC);
                                     </div>
                                     <div class="col-sm-6">
                                         <label>Đợt thực tập:</label>
-                                        <p><?= htmlspecialchars($info['TenDot'] ?? 'Chưa phân công') ?></p>
+                                        <p><?= htmlspecialchars($info['TenDot'] ?? 'Chưa phân công') ?>: <?= $HienTrangThaiDot?></p>
                                     </div>
                                 </div>
                                 <div class="row">

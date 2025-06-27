@@ -7,20 +7,6 @@ $stmt = $conn->prepare("SELECT ID_Dot FROM SinhVien WHERE ID_TaiKhoan = ?");
 $stmt->execute([$idTaiKhoan]);
 $idDot = $stmt->fetchColumn();
 
-$idThongBao = $_POST['idThongBao'] ?? null;
-
-if ($idTaiKhoan && $idThongBao) {
-    // Chỉ thêm nếu chưa tồn tại
-    $stmt = $conn->prepare("SELECT COUNT(*) FROM ThongBao_Xem WHERE ID_TaiKhoan = ? AND ID_ThongBao = ?");
-    $stmt->execute([$idTaiKhoan, $idThongBao]);
-    if ($stmt->fetchColumn() == 0) {
-        $insert = $conn->prepare("INSERT INTO ThongBao_Xem (ID_TaiKhoan, ID_ThongBao) VALUES (?, ?)");
-        $insert->execute([$idTaiKhoan, $idThongBao]);
-    }
-    echo json_encode(['status' => 'OK']);
-} else {
-    echo json_encode(['status' => 'ERR']);
-}
 
 $stmt = $conn->prepare("
     SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.ID_TAIKHOAN, tb.NGAYDANG, tb.TRANGTHAI, tb.ID_Dot, dt.TenDot

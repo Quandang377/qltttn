@@ -1,6 +1,15 @@
-<?php if (isset($_GET['msg']) && $_GET['msg'] === 'mo_khoa_ok'): ?>
+<?php
+require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
+
+if (isset($_GET['msg']) && $_GET['msg'] === 'mo_khoa_ok'): ?>
     <div id="noti" class="alert alert-success text-center">Mở khóa thành công.</div>
-<?php endif; ?>
+<?php endif; 
+
+$stmt = $conn->prepare("SELECT ID, TenDot FROM DotThucTap WHERE TrangThai =1 ORDER BY ThoiGianBatDau desc");
+$stmt->execute();
+$dsDotThucTap = $stmt->fetchAll(PDO::FETCH_ASSOC);
+?>
 <!DOCTYPE html>
 <html lang="vi">
 

@@ -1,4 +1,5 @@
 <?php
+require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 $id_gvhd = '6'; // Đặt mặc định là 6
 $id_dot = '71'; // Đợt thực tập mặc định là 71

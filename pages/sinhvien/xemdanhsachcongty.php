@@ -19,6 +19,7 @@
 <body>
     <div id="wrapper">
         <?php
+    require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
     require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_SinhVien.php";
     ?>
         <div id="page-wrapper">
