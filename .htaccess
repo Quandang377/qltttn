@@ -1,11 +1,13 @@
 RewriteEngine On
 RewriteBase /datn/
 
-RewriteCond %{REQUEST_URI} \.(css|js|png|jpg|woff|woff2)$ [NC]
+# Cho phép truy cập trực tiếp đến các file tĩnh
+RewriteCond %{REQUEST_URI} \.(css|js|png|jpg|jpeg|gif|woff|woff2|ttf|svg|eot|pdf|txt|mp4)$ [NC]
 RewriteRule ^ - [L]
 
-# Ngoại lệ cho download.php
+# Cho phép truy cập trực tiếp đến download.php
 RewriteCond %{REQUEST_URI} ^/datn/download\.php$ [NC]
 RewriteRule ^ - [L]
 
+# Mặc định: chuyển tất cả yêu cầu còn lại về index.php
 RewriteRule ^(.*)$ index.php [QSA,L]

@@ -1,49 +1,57 @@
-<?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
-
+<?php
+require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
+
 $idTaiKhoan = $_SESSION['user_id'] ?? null;
-$stmt = $conn->prepare("SELECT Ten FROM canbokhoa WHERE ID_TaiKhoan = ?");
+
+// Lấy danh sách đợt mà cán bộ này quản lý
+$stmt = $conn->prepare("SELECT ID, TenDot FROM DotThucTap WHERE NguoiQuanLy = ?");
 $stmt->execute([$idTaiKhoan]);
-$hoTen = $stmt->fetchColumn();
-$stmt = $conn->prepare("SELECT ID, TenDot FROM DotThucTap WHERE NguoiQuanLy = ? ORDER BY ID DESC");
-$stmt->execute([$hoTen]);
 $dsDot = $stmt->fetchAll(PDO::FETCH_ASSOC);
-$hoTen = $stmt->fetchColumn();
-$order = "DESC";
-$whereDot = "";
-$params = [$idTaiKhoan];
-if (!empty($_GET['dot_filter'])) {
-  $whereDot = " AND tb.ID_Dot = ? ";
-  $params[] = $_GET['dot_filter'];
+
+// Lấy danh sách ID đợt
+$dsDotID = array_column($dsDot, 'ID');
+
+$thongbaos = [];
+
+if (!empty($dsDotID)) {
+  // Nếu lọc theo đợt cụ thể
+  if (!empty($_GET['dot_filter'])) {
+    $placeholders = '?';
+    $params = [$_GET['dot_filter']];
+  } else {
+    // Nếu không, lấy theo tất cả các đợt quản lý
+    $placeholders = implode(',', array_fill(0, count($dsDotID), '?'));
+    $params = $dsDotID;
+  }
+
+  $stmt = $conn->prepare("
+        SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.NGAYDANG, tb.ID_Dot,
+            COALESCE(ad.Ten, cbk.Ten, tk.TaiKhoan) AS NguoiTao,
+            dt.TenDot
+        FROM THONGBAO tb
+        LEFT JOIN admin ad ON tb.ID_TaiKhoan = ad.ID_TaiKhoan
+        LEFT JOIN canbokhoa cbk ON tb.ID_TaiKhoan = cbk.ID_TaiKhoan
+        LEFT JOIN TaiKhoan tk ON tb.ID_TaiKhoan = tk.ID_TaiKhoan
+        LEFT JOIN DotThucTap dt ON tb.ID_Dot = dt.ID
+        WHERE tb.TRANGTHAI = 1 AND tb.ID_Dot IN ($placeholders)
+        ORDER BY tb.NGAYDANG DESC
+    ");
+  $stmt->execute($params);
+  $thongbaos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
-$stmt = $conn->prepare("
-    SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.NGAYDANG, tb.ID_Dot,
-        COALESCE(ad.Ten, cbk.Ten, tk.TaiKhoan) AS NguoiTao,
-        dt.TenDot
-    FROM THONGBAO tb
-    LEFT JOIN admin ad ON tb.ID_TaiKhoan = ad.ID_TaiKhoan
-    LEFT JOIN canbokhoa cbk ON tb.ID_TaiKhoan = cbk.ID_TaiKhoan
-    LEFT JOIN TaiKhoan tk ON tb.ID_TaiKhoan = tk.ID_TaiKhoan
-    LEFT JOIN DotThucTap dt ON tb.ID_Dot = dt.ID
-    WHERE tb.TRANGTHAI=1 AND tb.ID_TaiKhoan = ? $whereDot
-    ORDER BY tb.NGAYDANG $order
-");
-$stmt->execute($params);
-$thongbaos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-
+// Xử lý xóa thông báo
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_thongbao_id'])) {
   $idThongBao = $_POST['xoa_thongbao_id'];
-
   $stmt = $conn->prepare("UPDATE ThongBao SET TrangThai = 0 WHERE ID = ?");
   $stmt->execute([$idThongBao]);
-
   $_SESSION['success'] = "Xoá thông báo thành công.";
   header("Location: " . $_SERVER['REQUEST_URI']);
   exit;
 }
-
 ?>
+
 <!DOCTYPE html>
 <html lang="vi">
 
@@ -71,16 +79,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_thongbao_id'])) {
         <div class="row">
           <div class="col-lg-12">
             <form method="get" class="form-inline" style="margin-bottom: 15px;">
-              <label for="dot_filter">Lọc theo đợt: </label>
+              <label for="dot_filter">Lọc theo đợt:</label>
               <select name="dot_filter" id="dot_filter" class="form-control" onchange="this.form.submit()">
                 <option value="">-- Tất cả --</option>
                 <?php foreach ($dsDot as $dot): ?>
-                  <option value="<?= $dot['ID'] ?>" <?= (isset($_GET['dot_filter']) && $_GET['dot_filter'] == $dot['ID']) ? 'selected' : '' ?>>
+                  <option value="<?= $dot['ID'] ?>" <?= ($_GET['dot_filter'] ?? '') == $dot['ID'] ? 'selected' : '' ?>>
                     <?= htmlspecialchars($dot['TenDot']) ?>
                   </option>
                 <?php endforeach; ?>
               </select>
             </form>
+
             <div class="panel panel-default">
               <div class="panel-heading">
                 Danh sách thông báo đã tạo
@@ -93,6 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_thongbao_id'])) {
                         <th>#</th>
                         <th>Tiêu đề</th>
                         <th>Đợt</th>
+                        <th>Người đăng</th>
                         <th>Thời gian đăng</th>
                         <th>Hành động</th>
                       </tr>
@@ -108,6 +118,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_thongbao_id'])) {
                           </td>
                           <td onclick="window.location='<?= $link ?>';" style="cursor: pointer;">
                             <?= htmlspecialchars($thongbao['TenDot'] ?? '') ?>
+                          </td>
+                          <td onclick="window.location='<?= $link ?>';" style="cursor: pointer;">
+                          <?= htmlspecialchars($thongbao['NguoiTao']) ?>
+
                           </td>
                           <td onclick="window.location='<?= $link ?>';" style="cursor: pointer;">
                             <?= htmlspecialchars($thongbao['NGAYDANG']) ?>
@@ -131,7 +145,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_thongbao_id'])) {
           </div>
           <!-- /.col-lg-6 -->
         </div>
-        <div style="position: fixed; bottom: 5%; right: 5%;">
+        <div style="position: fixed; bottom: 5%; right: 5%;z-index: 999;">
           <a href="pages/canbo/taothongbao" class="fixed-button btn btn-primary btn-lg">
             Tạo thông báo
           </a>

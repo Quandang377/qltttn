@@ -1,3 +1,7 @@
+<?php
+ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
+                    require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
+?>
 <!DOCTYPE html>
 <html lang="vi">
 
@@ -49,18 +53,18 @@
             margin-top: 8px;
         }
     </style>
+        <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_Sinhvien.php"; ?>
+
 </head>
 
 <body>
     <div id="wrapper">
-        <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_Sinhvien.php"; ?>
         <div id="page-wrapper">
             <div class="container-fluid">
                 <h1 class="page-header">Tài nguyên</h1>
                 <div class="row">
                     <?php
-                    require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
-                    require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
+                   
                     // Lấy tài nguyên loại Tainguyen, trạng thái hiển thị
                     $stmt = $conn->prepare("
                         SELECT f.*, 

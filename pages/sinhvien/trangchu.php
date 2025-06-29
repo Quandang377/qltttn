@@ -19,7 +19,7 @@ if ($idDot) {
         LEFT JOIN DotThucTap dt ON tb.ID_Dot = dt.ID
         WHERE tb.ID_Dot = ? AND tb.TRANGTHAI=1
         ORDER BY tb.NGAYDANG DESC
-        LIMIT 50
+        LIMIT 10
     ");
   $stmt->execute([$idDot]);
   $thongbaos = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -58,6 +58,7 @@ $updateStmt2->execute(['today' => $today]);
 </head>
 
 <body>
+  
   <div id="wrapper">
     <?php
     require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_SinhVien.php";

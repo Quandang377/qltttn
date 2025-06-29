@@ -4,7 +4,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
 if (isset($_GET['msg']) && $_GET['msg'] === 'mo_khoa_ok'): ?>
     <div id="noti" class="alert alert-success text-center">Mở khóa thành công.</div>
-<?php endif; 
+<?php endif;
 
 $stmt = $conn->prepare("SELECT ID, TenDot FROM DotThucTap WHERE TrangThai =1 ORDER BY ThoiGianBatDau desc");
 $stmt->execute();
@@ -60,7 +60,7 @@ $dsDotThucTap = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 </div>
                 <div class="row">
                     <div class="col-lg-12">
-                        <form method="POST" id="formLocThanhVien">
+                        <form method="POST" id="formLocThanhVien" class="form-inline">
                             <div class="form-group col-sm-3">
                                 <select name="selectVaiTro" id="selectVaiTro" class="form-control">
                                     <option value="Tất cả">Tất cả</option>
@@ -68,6 +68,18 @@ $dsDotThucTap = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                     <option value="Giáo viên">Giáo viên</option>
                                     <option value="Sinh viên">Sinh viên</option>
                                     <option value="Admin">Admin</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group col-sm-3" id="dotThucTapContainer" style="display: none;">
+                                <select name="selectDot" id="selectDot" class="form-control">
+                                    <option value="">Tất cả đợt</option>
+                                    <?php
+                                    $stmt = $conn->query("SELECT ID, TenDot FROM dotthuctap WHERE TrangThai >= 1 ORDER BY ID DESC");
+                                    while ($dot = $stmt->fetch(PDO::FETCH_ASSOC)):
+                                        ?>
+                                        <option value="<?= $dot['ID'] ?>"><?= htmlspecialchars($dot['TenDot']) ?></option>
+                                    <?php endwhile; ?>
                                 </select>
                             </div>
                         </form>
@@ -106,141 +118,143 @@ $dsDotThucTap = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     </div>
                 </div>
             </div>
-            <?php
-            require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
+        </div>
+    </div>
+    <?php
+    require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
 
-                ?>
-            <script>
-                document.querySelector("select[name='selectVaiTro']").addEventListener('change', function () {
-                    document.getElementById('FormQuanLy').submit();
-                });
-                $(document).ready(function () {
-                    var table = $('#tableThanhVien').DataTable({
-                        responsive: true,
-                        pageLength: 20,
-                        language: {
-                            url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json'
-                        }
-                    });
-                    $.get('admin/pages/loadthanhvien', { vaiTro: 'Tất cả' }, function (html) {
-                        let temp = $('<div>').html(html);
-                        $('#wrapHoatDong').html(temp.find('#tableThanhVienHoatDong').prop('outerHTML'));
-                        $('#wrapNgung').html(temp.find('#tableThanhVienNgung').prop('outerHTML'));
-                        $('#tableThanhVienHoatDong').DataTable({pageLength:20, language: { url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json' } });
-                        $('#tableThanhVienNgung').DataTable({pageLength:20, language: { url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json' } });
-                    });
-
-                });
-                function xacNhanXoa() {
-                    const checkboxes = document.querySelectorAll("input[name='chon[]']:checked");
-
-                    if (checkboxes.length === 0) {
-                        alert("Vui lòng chọn ít nhất một thành viên để xóa.");
-                        return false;
-                    }
-
-                    let danhSachTaiKhoan = [];
-
-                    checkboxes.forEach(cb => {
-                        const row = cb.closest('tr');
-                        const taiKhoan = row.cells[1].textContent.trim();
-                        const hoTen = row.cells[2].textContent.trim();
-                        danhSachTaiKhoan.push(`${hoTen} (${taiKhoan})`);
-                    });
-
-                    const message = "Bạn có chắc chắn muốn xóa các tài khoản sau?\n\n" + danhSachTaiKhoan.join('\n');
-
-                    return confirm(message);
+        ?>
+    <script>
+        document.querySelector("select[name='selectVaiTro']").addEventListener('change', function () {
+            document.getElementById('FormQuanLy').submit();
+        });
+        $(document).ready(function () {
+            var table = $('#tableThanhVien').DataTable({
+                responsive: true,
+                pageLength: 20,
+                language: {
+                    url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json'
                 }
+            });
+            $.get('admin/pages/loadthanhvien', { vaiTro: 'Tất cả' }, function (html) {
+                let temp = $('<div>').html(html);
+                $('#wrapHoatDong').html(temp.find('#tableThanhVienHoatDong').prop('outerHTML'));
+                $('#wrapNgung').html(temp.find('#tableThanhVienNgung').prop('outerHTML'));
+                $('#tableThanhVienHoatDong').DataTable({ pageLength: 20, language: { url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json' } });
+                $('#tableThanhVienNgung').DataTable({ pageLength: 20, language: { url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json' } });
+            });
 
-                $('#selectVaiTro').on('change', function () {
-                    let vaiTro = $(this).val();
-                    $.get('admin/pages/loadthanhvien', { vaiTro: vaiTro }, function (html) {
-                        let temp = $('<div>').html(html);
-                        $('#wrapHoatDong').html(temp.find('#tableThanhVienHoatDong').prop('outerHTML'));
-                        $('#wrapNgung').html(temp.find('#tableThanhVienNgung').prop('outerHTML'));
-                        $('#tableThanhVienHoatDong').DataTable({pageLength:20, language: { url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json' } });
-                        $('#tableThanhVienNgung').DataTable({pageLength:20, language: { url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json' } });
+        });
+        function xacNhanXoa() {
+            const checkboxes = document.querySelectorAll("input[name='chon[]']:checked");
+
+            if (checkboxes.length === 0) {
+                alert("Vui lòng chọn ít nhất một thành viên để xóa.");
+                return false;
+            }
+
+            let danhSachTaiKhoan = [];
+
+            checkboxes.forEach(cb => {
+                const row = cb.closest('tr');
+                const taiKhoan = row.cells[1].textContent.trim();
+                const hoTen = row.cells[2].textContent.trim();
+                danhSachTaiKhoan.push(`${hoTen} (${taiKhoan})`);
+            });
+
+            const message = "Bạn có chắc chắn muốn xóa các tài khoản sau?\n\n" + danhSachTaiKhoan.join('\n');
+
+            return confirm(message);
+        }
+
+        $('#selectVaiTro').on('change', function () {
+            let vaiTro = $(this).val();
+            $.get('admin/pages/loadthanhvien', { vaiTro: vaiTro }, function (html) {
+                let temp = $('<div>').html(html);
+                $('#wrapHoatDong').html(temp.find('#tableThanhVienHoatDong').prop('outerHTML'));
+                $('#wrapNgung').html(temp.find('#tableThanhVienNgung').prop('outerHTML'));
+                $('#tableThanhVienHoatDong').DataTable({ pageLength: 20, language: { url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json' } });
+                $('#tableThanhVienNgung').DataTable({ pageLength: 20, language: { url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json' } });
+            });
+        });
+        function moModalThem() {
+            $('#formThanhVien')[0].reset();
+            $('#modalTitle').text('Thêm thành viên');
+            $('#che_do').val('them');
+            $('#id_tai_khoan').val('');
+            $('#dotThucTapGroup').show();
+            $('#matkhau').prop('required', true);
+            $('#matkhau').prop('placeholder', '');
+
+            $('#vai_tro').val('');
+            $('#sinhvien_fields').hide();
+
+            $('#modalThanhVien').modal('show');
+        }
+        function hienSinhVienFields() {
+            const vaiTro = $('#vai_tro').val();
+            if (vaiTro === 'Sinh viên') {
+                $('#sinhvien_fields').show();
+            } else {
+                $('#sinhvien_fields').hide();
+            }
+        }
+
+        function moModalChinhSua(data) {
+            $('#formThanhVien')[0].reset();
+            $('#modalTitle').text('Chỉnh sửa thành viên');
+            $('#che_do').val('sua');
+            $('#id_tai_khoan').val(data.ID_TaiKhoan);
+            $('#ten').val(data.HoTen);
+            $('#tai_khoan').val(data.TaiKhoan);
+            $('#vai_tro').val(data.VaiTro);
+            $('#matkhau').prop('placeholder', 'Nhập để đổi mật khẩu');
+            $('#matkhau').prop('required', false);
+
+            hienSinhVienFields();
+
+            if (data.VaiTro === 'Sinh viên') {
+                $('#mssv').val(data.MSSV);
+                $('#lop').val(data.Lop);
+                $('#dotThucTapGroup').hide();
+            } else {
+                $('#sinhvien_fields').hide();
+            }
+
+            $('#modalThanhVien').modal('show');
+        }
+        $(document).on('click', '.btn-mo-khoa', function () {
+            var id = $(this).data('id');
+            Swal.fire({
+                title: 'Xác nhận mở khóa?',
+                text: 'Bạn có chắc muốn mở khóa tài khoản này?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Mở khóa',
+                cancelButtonText: 'Hủy'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.post('admin/pages/xulythanhvien', {
+                        che_do: 'mo_khoa',
+                        id_tai_khoan: id
+                    }, function () {
+                        window.location.href = 'admin/pages/quanlythanhvien?msg=unlocked';
                     });
-                });
-                function moModalThem() {
-                    $('#formThanhVien')[0].reset();
-                    $('#modalTitle').text('Thêm thành viên');
-                    $('#che_do').val('them');
-                    $('#id_tai_khoan').val('');
-                    $('#dotThucTapGroup').show();
-                    $('#matkhau').prop('required', true);
-                    $('#matkhau').prop('placeholder', '');
-
-                    $('#vai_tro').val('');
-                    $('#sinhvien_fields').hide();
-
-                    $('#modalThanhVien').modal('show');
                 }
-                function hienSinhVienFields() {
-                    const vaiTro = $('#vai_tro').val();
-                    if (vaiTro === 'Sinh viên') {
-                        $('#sinhvien_fields').show();
-                    } else {
-                        $('#sinhvien_fields').hide();
-                    }
-                }
+            });
+        });
+        window.addEventListener('DOMContentLoaded', () => {
+            const alertBox = document.getElementById('noti');
+            if (alertBox) {
+                setTimeout(() => {
+                    alertBox.style.transition = 'opacity 0.5s ease';
+                    alertBox.style.opacity = '0';
+                    setTimeout(() => alertBox.remove(), 500);
+                }, 2000);
+            }
+        });
 
-                function moModalChinhSua(data) {
-                    $('#formThanhVien')[0].reset();
-                    $('#modalTitle').text('Chỉnh sửa thành viên');
-                    $('#che_do').val('sua');
-                    $('#id_tai_khoan').val(data.ID_TaiKhoan);
-                    $('#ten').val(data.HoTen);
-                    $('#tai_khoan').val(data.TaiKhoan);
-                    $('#vai_tro').val(data.VaiTro);
-                    $('#matkhau').prop('placeholder', 'Nhập để đổi mật khẩu');
-                    $('#matkhau').prop('required', false);
-
-                    hienSinhVienFields();
-
-                    if (data.VaiTro === 'Sinh viên') {
-                        $('#mssv').val(data.MSSV);
-                        $('#lop').val(data.Lop);
-                        $('#dotThucTapGroup').hide();
-                    } else {
-                        $('#sinhvien_fields').hide();
-                    }
-
-                    $('#modalThanhVien').modal('show');
-                }
-                $(document).on('click', '.btn-mo-khoa', function () {
-                    var id = $(this).data('id');
-                    Swal.fire({
-                        title: 'Xác nhận mở khóa?',
-                        text: 'Bạn có chắc muốn mở khóa tài khoản này?',
-                        icon: 'question',
-                        showCancelButton: true,
-                        confirmButtonText: 'Mở khóa',
-                        cancelButtonText: 'Hủy'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            $.post('admin/pages/xulythanhvien', {
-                                che_do: 'mo_khoa',
-                                id_tai_khoan: id
-                            }, function () {
-                                window.location.href = 'admin/pages/quanlythanhvien?msg=unlocked';
-                            });
-                        }
-                    });
-                });
-                window.addEventListener('DOMContentLoaded', () => {
-                    const alertBox = document.getElementById('noti');
-                    if (alertBox) {
-                        setTimeout(() => {
-                            alertBox.style.transition = 'opacity 0.5s ease';
-                            alertBox.style.opacity = '0';
-                            setTimeout(() => alertBox.remove(), 500);
-                        }, 2000);
-                    }
-                });
-
-            </script>
+    </script>
 </body>
 
 <div class="modal fade" id="modalThanhVien" data-backdrop="static" data-keyboard="false">

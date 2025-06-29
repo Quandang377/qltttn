@@ -29,12 +29,38 @@ if ($idTaiKhoan) {
     $stmt->execute([$idDot, $idTaiKhoan]);
     $coThongBaoMoi = $stmt->fetchColumn() > 0;
 }
+$stmt = $conn->prepare("
+    SELECT COUNT(*) FROM KhaoSat ks
+    WHERE ks.TrangThai = 1
+    AND (
+        ks.NguoiNhan IN ('Tất cả', ?) 
+        OR (
+            ks.NguoiNhan = 'Sinh viên thuộc hướng dẫn'
+            AND EXISTS (
+                SELECT 1 FROM SinhVien sv
+                WHERE sv.ID_TaiKhoan = ? AND sv.ID_GVHD = ks.NguoiTao
+            )
+        )
+    )
+    AND ks.ID NOT IN (
+        SELECT ID_KhaoSat FROM PhanHoiKhaoSat WHERE ID_TaiKhoan = ?
+    )
+");
+$stmt->execute([$vaiTro, $idTaiKhoan, $idTaiKhoan]);
+$coKhaoSatMoi = $stmt->fetchColumn() > 0;
+
+$stmt = $conn->query("SELECT * FROM cauhinh");
+$cauhinh = [];
+foreach ($stmt as $row) {
+    $cauhinh[$row['Ten']] = $row['GiaTri'];
+}
+
 ?>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
     .topbar {
-        background: linear-gradient(to right, #3b82f6, #2563eb);
+        background: linear-gradient(to right, <?= $cauhinh['mau_sac_giaodien'] ?? '#2563eb' ?>);
         padding: 10px 20px;
         color: white;
         display: flex;
@@ -79,32 +105,36 @@ if ($idTaiKhoan) {
     }
 
     .nav-bar {
-    background: white;
-    display: flex;
-    justify-content: center;
-    gap: 25px;
-    padding: 12px 0;
-    border-bottom: 1px solid #e5e7eb;
-}
+        background: white;
+        display: flex;
+        justify-content: center;
+        gap: 25px;
+        padding: 12px 0;
+        border-bottom: 1px solid #e5e7eb;
+    }
 
-.nav-bar a {
-    color: #333;
-    font-weight: 500;
-    text-decoration: none;
-    padding: 8px 14px;
-    border-radius: 4px;
-    transition: all 0.2s ease;
-}
+    .nav-bar a {
+        color: #333;
+        font-weight: 500;
+        text-decoration: none;
+        padding: 8px 14px;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+    }
 
-.nav-bar a:hover {
-    background-color: #f0f0f0; /* nền xám khi hover */
-    color: #000;
-}
+    .nav-bar a:hover {
+        background-color: #f0f0f0;
+        /* nền xám khi hover */
+        color: #000;
+    }
 
-.nav-bar a.active {
-    background-color: #2563eb; /* xanh khi active */
-    color: white;
-}
+    .nav-bar a.active {
+        background-color:
+            <?= $cauhinh['mau_sac_giaodien'] ?? '#2563eb' ?>
+        ;
+        /* xanh khi active */
+        color: white;
+    }
 
     #page-wrapper {
         margin-left: 0 !important;
@@ -132,34 +162,46 @@ if ($idTaiKhoan) {
     </div>
     <div class="topbar-center">
 
-        <a href="https://cntt.caothang.edu.vn/" style="color:rgb(255, 255, 255);" title="Đến trang web của Khoa" >Khoa Công Nghệ Thông Tin CĐKT Cao Thắng</a>
+        <a style="color:rgb(255, 255, 255);" title="Đến trang web của Khoa">
+            <?= $cauhinh['ten_trang'] ?? 'Hệ thống quản lý thực tập' ?></a>
     </div>
     <div class="topbar-right">
-        
+
         <a href="pages/sinhvien/thongbaomoi" title="Thông báo mới" style="color: #ffffff;">
             <i class="fa fa-bell"></i>
             <?php if ($coThongBaoMoi): ?><span style="color:red;">●</span><?php endif; ?>
         </a>
         <a href="pages/sinhvien/thongtincanhan" title="Tài khoản" style="color: #ffffff;"><i class="fa fa-user"></i></a>
-        <a href="/datn/logout" title="Đăng xuất" style="color: #ffffff;"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>
-
-        <a href="#" title=""><i class="fa fa-moon"></i></a>
-        <a href="#" title=""><i class="fa fa-download"></i></a>
-        <a href="#" title=""></a>
-        <a href="#" title=""></a>
+        <a href="/datn/logout" title="Đăng xuất" style="color: #ffffff;"><i
+                class="fa-solid fa-arrow-right-from-bracket"></i></a>
+        <a href="<?= $cauhinh['website_khoa'] ?? 'https://cntt.caothang.edu.vn/' ?>" title="Khoa Công Nghệ Thông Tin">
+            <img src="<?= htmlspecialchars($cauhinh['logo'] ?? '/datn/uploads/Images/logo.jpg') ?>" alt="Logo"
+                style="height: 30px; margin-left: 10px; vertical-align: middle;">
+        </a>
     </div>
 </div>
 
 <!-- Navigation Menu -->
 <div class="nav-bar">
-    <a href="pages/sinhvien/trangchu" class="<?= strpos($currentPath, 'trangchu') !== false ? 'active' : '' ?>">Trang chủ</a>
-    <a href="pages/sinhvien/dangkygiaygioithieu" class="<?= strpos($currentPath, 'dangkygiaygioithieu') !== false ? 'active' : '' ?>">Giấy giới thiệu</a>
-    <a href="pages/sinhvien/baocaotuan" class="<?= strpos($currentPath, 'baocaotuan') !== false ? 'active' : '' ?>">Báo cáo tuần</a>
-    <a href="pages/sinhvien/tainguyen" class="<?= strpos($currentPath, 'tainguyen') !== false ? 'active' : '' ?>">Tài nguyên</a>
-    <a href="pages/sinhvien/nopketqua" class="<?= strpos($currentPath, 'nopketqua') !== false ? 'active' : '' ?>">Nộp kết quả</a>
-    <a href="pages/sinhvien/khaosat" class="<?= strpos($currentPath, 'khaosat') !== false ? 'active' : '' ?>">Khảo sát</a>
+    <a href="pages/sinhvien/trangchu" class="<?= strpos($currentPath, 'trangchu') !== false ? 'active' : '' ?>">Trang
+        chủ</a>
+    <a href="pages/sinhvien/dangkygiaygioithieu"
+        class="<?= strpos($currentPath, 'dangkygiaygioithieu') !== false ? 'active' : '' ?>">Giấy giới thiệu</a>
+    <a href="pages/sinhvien/baocaotuan" class="<?= strpos($currentPath, 'baocaotuan') !== false ? 'active' : '' ?>">Báo
+        cáo tuần</a>
+    <a href="pages/sinhvien/tainguyen" class="<?= strpos($currentPath, 'tainguyen') !== false ? 'active' : '' ?>">Tài
+        nguyên</a>
+    <a href="pages/sinhvien/nopketqua" class="<?= strpos($currentPath, 'nopketqua') !== false ? 'active' : '' ?>">Nộp
+        kết quả</a>
+    <a href="pages/sinhvien/khaosat" class="<?= strpos($currentPath, 'khaosat') !== false ? 'active' : '' ?>">
+        Khảo sát
+        <?php if (!empty($coKhaoSatMoi)): ?>
+            <span style="color:red;font-size:16px;vertical-align:middle;">●</span>
+        <?php endif; ?>
+    </a>
     <form method="get" action="pages/sinhvien/timkiem.php" class="form-inline text-right" style="margin-right: -50px;">
-    <input type="text" name="q" class="form-control" placeholder="Tìm kiếm thông tin..." style="width: 300px;" required>
-    <button type="submit" class="btn btn-primary">Tìm kiếm</button>
-</form>
+        <input type="text" name="q" class="form-control" placeholder="Tìm kiếm thông tin..." style="width: 300px;"
+            required>
+        <button type="submit" class="btn btn-primary">Tìm kiếm</button>
+    </form>
 </div>

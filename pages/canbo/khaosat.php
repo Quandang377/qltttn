@@ -79,7 +79,7 @@ if (isset($_GET['ajax'])) {
         $whereDot = " AND ks.ID_Dot = ? ";
         $params[] = $_GET['dot_filter'];
     }
-    $stmt = $conn->prepare("SELECT ks.ID, ks.TieuDe, ks.ThoiGianTao,
+    $stmt = $conn->prepare("SELECT ks.ID, ks.TieuDe, ks.ThoiGianTao,ks.NguoiNhan,
         (SELECT COUNT(*) FROM PhanHoiKhaoSat WHERE ID_KhaoSat = ks.ID) AS SoLuongPhanHoi,
         ks.ID_Dot
         FROM KhaoSat ks
@@ -96,6 +96,7 @@ if (isset($_GET['ajax'])) {
                 <th>Tiêu đề</th>
                 <th>Ngày tạo</th>
                 <th>Đợt thực tập</th>
+                <th>Người nhận</th>
                 <th>Phản hồi</th>
                 <th>Hành động</th>
             </tr>
@@ -123,6 +124,9 @@ if (isset($_GET['ajax'])) {
                         }
                         echo htmlspecialchars($tenDot);
                         ?>
+                    </td>
+                    <td onclick="window.location='admin/pages/chitietkhaosat?id=<?= $ks['ID'] ?>';" style="cursor: pointer;">
+                        <?= $ks['NguoiNhan'] ?>
                     </td>
                     <td onclick="window.location='pages/canbo/chitietkhaosat?id=<?= $ks['ID'] ?>';" style="cursor: pointer;">
                         <?= $ks['SoLuongPhanHoi'] ?>
@@ -261,6 +265,8 @@ if (isset($_GET['ajax'])) {
                         </div>
                     </div>
                 </div>
+            </div>
+            </div>
             </div>
             <?php require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php" ?>
             <script>

@@ -452,6 +452,7 @@ if (isset($_GET['ajax'])) {
                 </div>
             </div>
         </div>
+        </div>
         <?php
         require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
             ?>

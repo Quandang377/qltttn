@@ -179,9 +179,6 @@ $updateStmt2->execute(['today' => $today]);
                             <li>${new Date(tb.NGAYDANG).toLocaleDateString('vi-VN')}</li>
                             ${tb.TenDot ? `<li>|</li><li>Đợt: ${tb.TenDot}</li>` : ''}
                         </ul>
-                        <p class="noidung-rutgon" style="margin-top: 5px;">
-                            ${tb.NOIDUNG.length > 100 ? tb.NOIDUNG.substring(0, 100) + '...' : tb.NOIDUNG}
-                        </p>
                     </div>
                 </div>
             `;

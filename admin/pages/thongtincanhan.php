@@ -103,8 +103,9 @@ $dsDotDangThamGia = $stmtDot->fetchAll(PDO::FETCH_ASSOC);
                     </div>
                 </div>
             </div>
-            <?php require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"; ?>
         </div>
+
+            <?php require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"; ?>
 </body>
 
 </html>

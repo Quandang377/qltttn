@@ -1,17 +1,12 @@
 <?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
-require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 $idTaiKhoan = $_SESSION['user_id'] ?? null;
-$stmt = $conn->prepare("SELECT Ten FROM canbokhoa WHERE ID_TaiKhoan = ?");
-$stmt->execute([$idTaiKhoan]);
-$hoTen = $stmt->fetchColumn();
 
-// Lấy danh sách ID đợt do mình quản lý
+// Lấy danh sách ID đợt do chính cán bộ này quản lý (theo ID_TaiKhoan chứ không phải Ten)
 $stmt = $conn->prepare("SELECT ID FROM DotThucTap WHERE NguoiQuanLy = ?");
-$stmt->execute([$hoTen]);
+$stmt->execute([$idTaiKhoan]);
 $dsDot = $stmt->fetchAll(PDO::FETCH_COLUMN);
-
 // Lấy thông báo thuộc các đợt này
 $thongbaos = [];
 if (!empty($dsDot)) {
@@ -70,7 +65,7 @@ $updateStmt2->execute(['today' => $today]);
             </a>
           </div>
           <div class="col-md-3 panel-container">
-            <a style="text-decoration: none; color: inherit;">
+            <a href="pages/canbo/quanlygiaygioithieu" style="text-decoration: none; color: inherit;">
               <div class="panel panel-default" style="min-height: 170px;">
                 <div class="panel-heading">Xin giấy giới thiệu thực tập</div>
                 <div class="panel-body">
@@ -137,6 +132,8 @@ $updateStmt2->execute(['today' => $today]);
       </div>
     </div>
   </div>
+    <?php require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"; ?>
+
 </body>
 
 </html>

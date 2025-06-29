@@ -128,7 +128,7 @@ $dsDot = $stmt->fetchAll(PDO::FETCH_ASSOC);
           </div>
           <!-- /.col-lg-6 -->
         </div>
-        <div style="position: fixed; bottom: 5%; right: 5%;">
+        <div style="position: fixed; bottom: 5%; right: 5%; z-index: 999;">
           <a href="admin/pages/taothongbao" class="fixed-button btn btn-primary btn-lg">
             Tạo thông báo
           </a>

@@ -23,6 +23,9 @@
                     <a href="admin/pages/quanlythanhvien"><i class="fa fa-user  fa-fw"></i> Quản lí thành viên</a>
                 </li>
                 <li>
+                    <a href="admin/pages/cauhinh"><i class="fa fa-cog fa-fw"></i> Cấu hình</a>
+                </li>
+                <li>
                     <a href="admin/pages/thongtincanhan">
                         <i class="fa fa-info  fa-fw"></i> Thông tin cá nhân
                     </a>

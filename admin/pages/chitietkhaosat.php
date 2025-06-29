@@ -141,26 +141,30 @@ $khaoSat = $stmt->fetch(PDO::FETCH_ASSOC);
                 </div>
               </div>
             </div>
-          <?php endforeach; ?>
-        </div><?php
-  require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
-    ?>
-        <script>
-          function hienPhanHoi(idPhanHoi) {
-            $('#modalPhanHoi' + idPhanHoi).modal('show');
-          }
-          $(document).ready(function () {
-            $('#quanlykhaosat').DataTable({
-              searching: false, info: false,
-              lengthChange: false
-            });
-
-          });
-        </script>
+          </div>
+        </div>
       </div>
     </div>
+  <?php endforeach; ?>
+  <?php
+  require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
+    ?>
+  <script>
+    function hienPhanHoi(idPhanHoi) {
+      $('#modalPhanHoi' + idPhanHoi).modal('show');
+    }
+    $(document).ready(function () {
+      $('#quanlykhaosat').DataTable({
+        searching: false, info: false,
+        lengthChange: false
+      });
+
+    });
+  </script>
   </div>
-  
+  </div>
+  </div>
+
 </body>
 
 </html>
