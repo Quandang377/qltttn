@@ -1,5 +1,6 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
+require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 
 // Tạm thời lấy id tài khoản giáo viên là 6
 $id_gvhd = 6;

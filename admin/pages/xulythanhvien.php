@@ -31,16 +31,24 @@ if ($cheDo === 'them') {
         $stmt = $conn->prepare("INSERT INTO SinhVien (ID_TaiKhoan, ID_Dot, Ten, Lop, XepLoai, MSSV, ID_GVHD, TrangThai)
                                 VALUES (?, ?, ?, ?, NULL, ?, NULL, ?)");
         $stmt->execute([$idTaiKhoan, $idDot, $hoTen, $lop, $mssv, $trangThai]);
+        header("Location: /datn/admin/pages/quanlythanhvien?msg=added");
+        exit;
     } elseif ($vaiTro == 'Giáo viên') {
         $stmt = $conn->prepare("INSERT INTO GiaoVien (ID_TaiKhoan, Ten, TrangThai) VALUES (?, ?, ?)");
         $stmt->execute([$idTaiKhoan, $hoTen, $trangThai]);
+        header("Location: /datn/admin/pages/quanlythanhvien?msg=added");
+        exit;
     } elseif ($vaiTro == 'Cán bộ Khoa/Bộ môn') {
         $stmt = $conn->prepare("INSERT INTO CanBoKhoa (ID_TaiKhoan, Ten, TrangThai) VALUES (?, ?, ?)");
         $stmt->execute([$idTaiKhoan, $hoTen, $trangThai]);
+        header("Location: /datn/admin/pages/quanlythanhvien?msg=added");
+        exit;
     }else
     {
         $stmt = $conn->prepare("INSERT INTO admin (ID_TaiKhoan, Ten, TrangThai) VALUES (?,?, ?)");
         $stmt->execute([$idTaiKhoan, $hoTen, $trangThai]);
+        header("Location: /datn/admin/pages/quanlythanhvien?msg=added");
+        exit;
     }
 } elseif ($cheDo === 'sua') {
     $stmt = $conn->prepare("SELECT COUNT(*) FROM TaiKhoan WHERE TaiKhoan = ? AND ID_TaiKhoan != ?");
@@ -65,13 +73,30 @@ if ($cheDo === 'them') {
         $lop = $_POST['lop'];
         $stmt = $conn->prepare("UPDATE SinhVien SET Ten = ?, Lop = ? , MSSV = ? WHERE ID_TaiKhoan = ?");
         $stmt->execute([$hoTen, $lop,$mssv, $idTaiKhoan]);
+        header("Location: /datn/admin/pages/quanlythanhvien?msg=edited");
+        exit;
     } elseif ($vaiTro == 'Giáo viên') {
         $stmt = $conn->prepare("UPDATE GiaoVien SET Ten = ? WHERE ID_TaiKhoan = ?");
         $stmt->execute([$hoTen, $idTaiKhoan]);
+        header("Location: /datn/admin/pages/quanlythanhvien?msg=edited");
+        exit;
     } elseif ($vaiTro == 'Cán bộ Khoa/Bộ môn') {
         $stmt = $conn->prepare("UPDATE CanBoKhoa SET Ten = ? WHERE ID_TaiKhoan = ?");
         $stmt->execute([$hoTen, $idTaiKhoan]);
+        header("Location: /datn/admin/pages/quanlythanhvien?msg=edited");
+        exit;
+    }elseif ($vaiTro == 'Admin') {
+        $stmt = $conn->prepare("UPDATE admin SET Ten = ? WHERE ID_TaiKhoan = ?");
+        $stmt->execute([$hoTen, $idTaiKhoan]);
+        header("Location: /datn/admin/pages/quanlythanhvien?msg=edited");
+        exit;
     }
+} elseif ($cheDo == 'mo_khoa' && isset($_POST['id_tai_khoan'])) {
+    $id = $_POST['id_tai_khoan'];
+    $stmt = $conn->prepare("UPDATE TaiKhoan SET TrangThai = 1 WHERE ID_TaiKhoan = ?");
+    $stmt->execute([$id]);
+    header("Location: /datn/admin/pages/quanlythanhvien?msg=unlocked");
+    exit;
 }
 
 header("Location: quanlythanhvien");

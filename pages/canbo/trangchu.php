@@ -1,10 +1,33 @@
 <?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
-require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/ThongBao_funtions.php";
-require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
+$idTaiKhoan = $_SESSION['user_id'] ?? null;
 
-
+// Lấy danh sách ID đợt do chính cán bộ này quản lý (theo ID_TaiKhoan chứ không phải Ten)
+$stmt = $conn->prepare("SELECT ID FROM DotThucTap WHERE NguoiQuanLy = ?");
+$stmt->execute([$idTaiKhoan]);
+$dsDot = $stmt->fetchAll(PDO::FETCH_COLUMN);
+// Lấy thông báo thuộc các đợt này
+$thongbaos = [];
+if (!empty($dsDot)) {
+  $placeholders = implode(',', array_fill(0, count($dsDot), '?'));
+  $stmt = $conn->prepare("
+        SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.NGAYDANG, tb.ID_Dot, dt.TenDot
+        FROM THONGBAO tb
+        LEFT JOIN DotThucTap dt ON tb.ID_Dot = dt.ID
+        WHERE tb.ID_Dot IN ($placeholders) AND tb.TRANGTHAI=1
+        ORDER BY tb.NGAYDANG DESC
+        LIMIT 50
+    ");
+  $stmt->execute($dsDot);
+  $thongbaos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+$today = date('Y-m-d');
+$updateStmt = $conn->prepare("UPDATE DOTTHUCTAP SET TRANGTHAI = 0 WHERE THOIGIANKETTHUC <= :today AND TRANGTHAI = 2");
+$updateStmt->execute(['today' => $today]);
+$updateStmt2 = $conn->prepare("UPDATE DOTTHUCTAP SET TRANGTHAI = 2 WHERE THOIGIANBATDAU <= :today AND TRANGTHAI != -1 AND TRANGTHAI != 0");
+$updateStmt2->execute(['today' => $today]);
+?>
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -42,7 +65,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
             </a>
           </div>
           <div class="col-md-3 panel-container">
-            <a style="text-decoration: none; color: inherit;">
+            <a href="pages/canbo/quanlygiaygioithieu" style="text-decoration: none; color: inherit;">
               <div class="panel panel-default" style="min-height: 170px;">
                 <div class="panel-heading">Xin giấy giới thiệu thực tập</div>
                 <div class="panel-body">
@@ -109,6 +132,8 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
       </div>
     </div>
   </div>
+    <?php require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"; ?>
+
 </body>
 
 </html>
@@ -147,6 +172,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
                             <li>Thông báo</li>
                             <li>|</li>
                             <li>${new Date(tb.NGAYDANG).toLocaleDateString('vi-VN')}</li>
+                            ${tb.TenDot ? `<li>|</li><li>Đợt: ${tb.TenDot}</li>` : ''}
                         </ul>
                     </div>
                 </div>

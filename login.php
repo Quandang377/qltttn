@@ -11,8 +11,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($user) {
         $_SESSION['user'] = $user;
         $_SESSION['user_id'] = $user['ID_TaiKhoan'];
-        $_SESSION['user_role']   = $user['VaiTro'];
-        $_SESSION['user_email']  = $user['TaiKhoan'];
+        $_SESSION['user_role'] = $user['VaiTro'];
+        $_SESSION['user_email'] = $user['TaiKhoan'];    
         header("Location: " . BASE_PATH . "/");
         exit;
     } else {
@@ -22,6 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ?>
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <title>Đăng nhập hệ thống</title>
@@ -97,9 +98,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
     </div>
-    <?php
-    require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
-        ?>
 </body>
 
 </html>

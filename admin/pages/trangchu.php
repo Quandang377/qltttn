@@ -1,7 +1,24 @@
 <?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
-require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/ThongBao_funtions.php";
+
+// Lấy tất cả thông báo và tên đợt
+$stmt = $conn->prepare("
+    SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.NGAYDANG, tb.ID_Dot, dt.TenDot
+    FROM THONGBAO tb
+    LEFT JOIN DotThucTap dt ON tb.ID_Dot = dt.ID
+    WHERE tb.TRANGTHAI=1
+    ORDER BY tb.NGAYDANG DESC
+    LIMIT 50
+");
+$stmt->execute();
+$thongbaos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$today = date('Y-m-d');
+$updateStmt = $conn->prepare("UPDATE DOTTHUCTAP SET TRANGTHAI = 0 WHERE THOIGIANKETTHUC <= :today AND TRANGTHAI = 2");
+$updateStmt->execute(['today' => $today]);
+$updateStmt2 = $conn->prepare("UPDATE DOTTHUCTAP SET TRANGTHAI = 2 WHERE THOIGIANBATDAU <= :today AND TRANGTHAI != -1 AND TRANGTHAI != 0");
+$updateStmt2->execute(['today' => $today]);
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -40,7 +57,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/ThongBao_funtions.php";
             </a>
           </div>
           <div class="col-md-3 panel-container">
-            <a style="text-decoration: none; color: inherit;">
+            <a href="admin/pages/quanlygiaygioithieu" style="text-decoration: none; color: inherit;">
               <div class="panel panel-default" style="min-height: 170px;">
                 <div class="panel-heading">Xin giấy giới thiệu thực tập</div>
                 <div class="panel-body">
@@ -145,6 +162,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/ThongBao_funtions.php";
                             <li>Thông báo</li>
                             <li>|</li>
                             <li>${new Date(tb.NGAYDANG).toLocaleDateString('vi-VN')}</li>
+                            ${tb.TenDot ? `<li>|</li><li>Đợt: ${tb.TenDot}</li>` : ''}
                         </ul>
                     </div>
                 </div>

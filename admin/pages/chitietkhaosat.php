@@ -39,6 +39,12 @@ foreach ($phanHoi as $ph) {
   $stmt->execute([$ph['ID']]);
   $cauTraLoiTheoPhanHoi[$ph['ID']] = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
+$stmt = $conn->prepare("SELECT ks.ID, ks.TieuDe, ks.MoTa, ks.NguoiNhan, ks.NguoiTao, ks.ThoiGianTao, ks.TrangThai, ks.ID_Dot, dt.TenDot
+    FROM KhaoSat ks
+    LEFT JOIN DotThucTap dt ON ks.ID_Dot = dt.ID
+    WHERE ks.ID = ?");
+$stmt->execute([$idKhaoSat]);
+$khaoSat = $stmt->fetch(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -59,12 +65,14 @@ foreach ($phanHoi as $ph) {
     <div id="page-wrapper">
       <div class="container-fluid">
         <div class="page-header">
+
           <h1>
             <?= htmlspecialchars($khaoSat['TieuDe']) ?>
           </h1>
           <h4>
             <?= htmlspecialchars($khaoSat['MoTa']) ?>
           </h4>
+          <h5>Đợt thực tập: <?= htmlspecialchars($khaoSat['TenDot'] ?? '') ?></h5>
         </div>
         <div id="containerKhaoSat" class="mt-3">
           <div id="listKhaoSat" class="row">
@@ -133,26 +141,30 @@ foreach ($phanHoi as $ph) {
                 </div>
               </div>
             </div>
-          <?php endforeach; ?>
-        </div><?php
-  require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
-    ?>
-        <script>
-          function hienPhanHoi(idPhanHoi) {
-            $('#modalPhanHoi' + idPhanHoi).modal('show');
-          }
-          $(document).ready(function () {
-            $('#quanlykhaosat').DataTable({
-              searching: false, info: false,
-              lengthChange: false
-            });
-
-          });
-        </script>
+          </div>
+        </div>
       </div>
     </div>
+  <?php endforeach; ?>
+  <?php
+  require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
+    ?>
+  <script>
+    function hienPhanHoi(idPhanHoi) {
+      $('#modalPhanHoi' + idPhanHoi).modal('show');
+    }
+    $(document).ready(function () {
+      $('#quanlykhaosat').DataTable({
+        searching: false, info: false,
+        lengthChange: false
+      });
+
+    });
+  </script>
   </div>
-  
+  </div>
+  </div>
+
 </body>
 
 </html>

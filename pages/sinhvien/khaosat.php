@@ -1,6 +1,4 @@
 <?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_login.php';
-
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 $ID_TaiKhoan = $_SESSION['user_id'];
 
@@ -81,7 +79,11 @@ if (
         ");
 
         foreach ($dsIDCauHoi as $i => $idCauHoi) {
-            $traLoi = trim($dsTraLoi[$i]);
+            $traLoi = $dsTraLoi[$i];
+            if (is_array($traLoi)) {
+                $traLoi = implode(';', $traLoi); // Nối các đáp án được chọn
+            }
+            $traLoi = trim($traLoi);
             if ($traLoi !== '') {
                 $stmtTraLoi->execute([$idPhanHoi, $idCauHoi, $traLoi]);
             }
@@ -107,148 +109,189 @@ if (
     <?php
     require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php";
     ?>
+    <style>
+        .survey-card {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            transition: box-shadow 0.3s ease;
+        }
+
+        .survey-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .survey-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .survey-title {
+            font-weight: bold;
+            font-size: 18px;
+            color: #1e40af;
+        }
+
+        .survey-meta {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .btn-respond {
+            margin-top: 10px;
+        }
+    </style>
 </head>
 
 <body>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <div id="wrapper">
-        <?php
-        require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_SinhVien.php";
-        ?>
+        <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_SinhVien.php"; ?>
+
         <div id="page-wrapper">
             <div class="container-fluid">
-                <div class="page-header">
-                    <h1>
-                        Khảo Sát
-                    </h1>
+                <div class="row">
+                    <div class="col-lg-12">
+                        <h2 class="page-header">Khảo sát đang chờ phản hồi</h2>
+                    </div>
                 </div>
+
                 <?php if (isset($_SESSION['success'])): ?>
-                    <div id="notificationAlert" class="alert alert-success">
-                        <?= $_SESSION['success'];
-                        unset($_SESSION['success']); ?>
-                    </div>
+                    <script>
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Thành công!',
+                            text: '<?= $_SESSION['success'] ?>',
+                            confirmButtonText: 'Đóng'
+                        });
+                    </script>
+                    <?php unset($_SESSION['success']); ?>
                 <?php elseif (isset($_SESSION['error'])): ?>
-                    <div id="notificationAlert" class="alert alert-danger">
-                        <?= $_SESSION['error'];
-                        unset($_SESSION['error']); ?>
-                    </div>
-
+                    <script>
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi!',
+                            text: '<?= $_SESSION['error'] ?>',
+                            confirmButtonText: 'Đóng'
+                        });
+                    </script>
+                    <?php unset($_SESSION['error']); ?>
                 <?php endif; ?>
-                <script>
-                    setTimeout(function () {
-                        const alertBox = document.getElementById('notificationAlert');
-                        if (alertBox) {
-                            alertBox.style.transition = 'opacity 0.5s ease';
-                            alertBox.style.opacity = '0';
-                            setTimeout(() => alertBox.remove(), 500);
-                        }
-                    }, 2000);
-                </script>
-                <div id="containerKhaoSat" class="mt-3">
-                    <div id="listKhaoSat" class="row">
-                    </div>
-                    <div class="row">
 
-                        <div class="col-lg-12">
-                            <div class="panel panel-default">
-                                <div class="panel-heading">
-                                    <h4>Danh sách khảo sát cần phản hồi</h4>
+                <div class="row">
+                    <?php if (empty($dsKhaoSat)): ?>
+                        <div class="col-md-12">
+                            <div class="alert alert-info">Bạn không có khảo sát nào cần phản hồi.</div>
+                        </div>
+                    <?php endif; ?>
 
+                    <?php foreach ($dsKhaoSat as $ks): ?>
+                        <div class="col-md-6">
+                            <div class="survey-card">
+                                <div class="survey-header">
+                                    <div class="survey-title"><?= htmlspecialchars($ks['TieuDe']) ?></div>
+                                    <div class="survey-meta"><?= date("d/m/Y H:i", strtotime($ks['ThoiGianTao'])) ?></div>
                                 </div>
-                                <table class="table" id="bangKhaoSat">
-                                    <thead>
-                                        <tr>
-                                            <th>#</th>
-                                            <th>Tiêu đề</th>
-                                            <th>Người gửi</th>
-                                            <th>Vào lúc</th>
-                                            <th>Phản hồi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php foreach ($dsKhaoSat as $index => $ks): ?>
-                                            <tr>
-                                                <td><?= $index + 1 ?></td>
-                                                <td><?= htmlspecialchars($ks['TieuDe']) ?></td>
-                                                <td><?= htmlspecialchars($ks['TenNguoiTao']) ?></td>
-                                                <td><?= $ks['ThoiGianTao'] ?></td>
-                                                <td>
-                                                    <button class="btn btn-primary" data-toggle="modal"
-                                                        data-target="#modalPhanHoi<?= $ks['ID'] ?>">Phản hồi</button>
-                                                </td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                </table>
+                                <p><?= nl2br(htmlspecialchars($ks['MoTa'])) ?></p>
+                                <div class="survey-meta">Người gửi: <strong><?= htmlspecialchars($ks['TenNguoiTao']) ?></strong></div>
+                                <button class="btn btn-sm btn-primary btn-respond" data-toggle="modal"
+                                        data-target="#modalPhanHoi<?= $ks['ID'] ?>">Phản hồi</button>
                             </div>
                         </div>
-                        <?php foreach ($dsKhaoSat as $ks): ?>
-                            <div class="modal fade" id="modalPhanHoi<?= $ks['ID'] ?>" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
-                                <div class="modal-dialog">
-                                    <form method="post">
-                                        <div class="modal-content">
-                                            <div class="modal-header">
-                                                <h4 class="modal-title">
-                                                    <strong><?= htmlspecialchars($ks['TieuDe']) ?></strong></h4>
-                                                <p class="text-muted"><?= htmlspecialchars($ks['MoTa']) ?></p>
-                                                <input type="hidden" name="id_khaosat" value="<?= $ks['ID'] ?>">
-                                            </div>
-                                            <div class="modal-body">
-                                                <?php
-                                                $cauHoi = $dsCauHoiTheoKhaoSat[$ks['ID']] ?? [];
-                                                if (!empty($cauHoi)):
-                                                    foreach ($cauHoi as $index => $ch): ?>
-                                                        <div class="form-group">
-                                                            <label>Câu <?= $index + 1 ?>:
-                                                                <?= htmlspecialchars($ch['NoiDung']) ?></label>
-                                                            <input type="hidden" name="id_cauhoi[]" value="<?= $ch['ID'] ?>">
-                                                            <input type="text" class="form-control" name="traloi[]" required>
-                                                        </div>
-                                                    <?php endforeach;
-                                                else: ?>
-                                                    <p class="text-danger">Không có câu hỏi nào cho khảo sát này.</p>
-                                                <?php endif; ?>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="submit" class="btn btn-success">Gửi phản hồi</button>
-                                                <button type="button" class="btn btn-default"
-                                                    data-dismiss="modal">Đóng</button>
-                                            </div>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-
-                    </div>
+                    <?php endforeach; ?>
                 </div>
+
+                <!-- Modal phản hồi khảo sát -->
+                <?php foreach ($dsKhaoSat as $ks): ?>
+                    <div class="modal fade" id="modalPhanHoi<?= $ks['ID'] ?>" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+                        <div class="modal-dialog">
+                            <form method="post">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h4 class="modal-title"><strong><?= htmlspecialchars($ks['TieuDe']) ?></strong></h4>
+                                        <p class="text-muted"><?= htmlspecialchars($ks['MoTa']) ?></p>
+                                        <input type="hidden" name="id_khaosat" value="<?= $ks['ID'] ?>">
+                                    </div>
+                                    <div class="modal-body">
+                                        <?php
+                                        $cauHoi = $dsCauHoiTheoKhaoSat[$ks['ID']] ?? [];
+                                        if (!empty($cauHoi)):
+                                            foreach ($cauHoi as $index => $ch): ?>
+                                                <div class="form-group">
+                                                    <label>Câu <?= $index + 1 ?>: <?= htmlspecialchars($ch['NoiDung']) ?></label>
+                                                    <input type="hidden" name="id_cauhoi[]" value="<?= $ch['ID'] ?>">
+                                                    <?php
+                                                    if (($ch['Loai'] ?? 'text') === 'choice' && !empty($ch['DapAn'])):
+                                                        $dapanArr = array_map('trim', explode(';', $ch['DapAn']));
+                                                        foreach ($dapanArr as $da): ?>
+                                                            <div class="form-check">
+                                                                <label>
+                                                                    <input type="radio" name="traloi[<?= $index ?>]" value="<?= htmlspecialchars($da) ?>" required>
+                                                                    <?= htmlspecialchars($da) ?>
+                                                                </label>
+                                                            </div>
+                                                        <?php endforeach;
+                                                    elseif (($ch['Loai'] ?? 'text') === 'multiple' && !empty($ch['DapAn'])):
+                                                        $dapanArr = array_map('trim', explode(';', $ch['DapAn']));
+                                                        foreach ($dapanArr as $da): ?>
+                                                            <div class="form-check">
+                                                                <label>
+                                                                    <input type="checkbox" name="traloi[<?= $index ?>][]" value="<?= htmlspecialchars($da) ?>">
+                                                                    <?= htmlspecialchars($da) ?>
+                                                                </label>
+                                                            </div>
+                                                        <?php endforeach;
+                                                    else: ?>
+                                                        <input type="text" class="form-control" name="traloi[<?= $index ?>]" required>
+                                                    <?php endif; ?>
+                                                </div>
+                                            <?php endforeach;
+                                        else: ?>
+                                            <p class="text-danger">Không có câu hỏi nào cho khảo sát này.</p>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="submit" class="btn btn-success">Gửi phản hồi</button>
+                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+
             </div>
-            <?php
-            require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
-                ?>
-            <script>
-                document.addEventListener("DOMContentLoaded", function () {
-                    const forms = document.querySelectorAll("form");
-
-                    forms.forEach(form => {
-                        form.addEventListener("submit", function (e) {
-                            const xacNhan = confirm("Xác nhận phản hồi.");
-                            if (!xacNhan) {
-                                e.preventDefault();
-                            }
-                        });
-                    });
-                });
-                $('.btnPhanHoi').click(function () {
-                    const id = $(this).data('id');
-                    const ten = $(this).data('ten');
-                    alert("Mở modal phản hồi khảo sát ID " + id + " - " + ten);
-                });
-
-
-            </script>
         </div>
     </div>
+    <?php require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"; ?>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const forms = document.querySelectorAll("form");
+            forms.forEach(form => {
+                form.addEventListener("submit", function (e) {
+                    e.preventDefault(); // Ngăn submit mặc định
+                    Swal.fire({
+                        title: "Xác nhận gửi phản hồi?",
+                        text: "Bạn sẽ không thể chỉnh sửa sau khi gửi!",
+                        icon: "question",
+                        showCancelButton: true,
+                        confirmButtonText: "Gửi",
+                        cancelButtonText: "Hủy",
+                        reverseButtons: true
+                    }).then(result => {
+                        if (result.isConfirmed) {
+                            form.submit(); // Gửi nếu xác nhận
+                        }
+                    });
+                });
+            });
+        });
+    </script>
 </body>
-
 </html>

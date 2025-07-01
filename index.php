@@ -4,31 +4,37 @@ define('BASE_PATH', '/datn');
 
 $URL = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
+// Loại bỏ tiền tố BASE_PATH
 if (strpos($URL, BASE_PATH) === 0) {
     $URL = substr($URL, strlen(BASE_PATH));
 }
 $URL = trim($URL, '/');
 $splitURL = explode('/', $URL);
+
+// ==== Các route đặc biệt ==== //
 if ($splitURL[0] === 'logout') {
     session_unset();
     session_destroy();
     header("Location: " . BASE_PATH . "/login");
     exit;
 }
+
 if ($splitURL[0] === 'login') {
     require_once 'login.php';
     exit;
 }
 
+// ==== Nếu chưa đăng nhập => về login ==== //
 if (!isset($_SESSION['user'])) {
     header("Location: " . BASE_PATH . "/login");
     exit;
 }
 
+// ==== Trang chủ tương ứng vai trò ==== //
 if ($URL === '') {
     switch ($_SESSION['user']['VaiTro']) {
         case 'Admin':
-            header("Location: " . BASE_PATH . "/admin/pages/quanlythanhvien");
+            header("Location: " . BASE_PATH . "/admin/pages/trangchu");
             break;
         case 'Cán bộ Khoa/Bộ môn':
             header("Location: " . BASE_PATH . "/pages/canbo/trangchu");
@@ -40,13 +46,14 @@ if ($URL === '') {
             header("Location: " . BASE_PATH . "/pages/sinhvien/trangchu");
             break;
         default:
-            echo "Không xác định được vai trò người dùng.";
+            require_once '404.php';
     }
     exit;
 }
 
-$area = ['admin', 'api'];
-if (in_array($splitURL[0], $area)) {
+// ==== Phân luồng các khu vực riêng ==== //
+$specialAreas = ['admin', 'api'];
+if (in_array($splitURL[0], $specialAreas)) {
     $target = $splitURL[0] . '/index.php';
     if (file_exists($target)) {
         require_once $target;
@@ -56,24 +63,23 @@ if (in_array($splitURL[0], $area)) {
     exit;
 }
 
-// pages/...
+// ==== Xử lý pages/role/page ==== //
 if ($splitURL[0] === 'pages') {
-    $rolePath = $splitURL[1] ?? '';
+    $role = $splitURL[1] ?? '';
     $page = $splitURL[2] ?? 'trangchu';
 
-    $path = "pages/$rolePath/$page";
-    if (!str_ends_with($path, '.php')) {
-        $path .= '.php';
+    $filePath = "pages/$role/$page";
+    if (!str_ends_with($filePath, '.php')) {
+        $filePath .= '.php';
     }
 
-    if (file_exists($path)) {
-        require_once $path;
+    if (file_exists($filePath)) {
+        require_once $filePath;
     } else {
         require_once '404.php';
     }
     exit;
 }
 
-// Không khớp đường dẫn
+// ==== Nếu không khớp gì cả => 404 ==== //
 require_once '404.php';
-?>

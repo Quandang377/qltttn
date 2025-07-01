@@ -1,20 +1,42 @@
 <?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
-
+require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_login.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
+
+$id_taikhoan = $_SESSION['user_id'] ?? null;
+
+$stmt = $conn->prepare("SELECT ID, TenDot FROM DotThucTap WHERE TrangThai >= 0 ORDER BY ID DESC");
+$stmt->execute();
+$dsDot = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $tieude = $_POST['tieude'] ?? '';
   $noidung = $_POST['noidung'] ?? '';
+  $id_dot = $_POST['id_dot'] ?? null;
 
-  $stmt = $conn->prepare("INSERT INTO THONGBAO (TIEUDE, NOIDUNG, NGAYDANG, TRANGTHAI) VALUES (:tieude, :noidung, NOW(),1)");
+  // Kiểm tra id_dot có hợp lệ không
+  $validDot = false;
+  foreach ($dsDot as $dot) {
+    if ($dot['ID'] == $id_dot) {
+      $validDot = true;
+      break;
+    }
+  }
+  if (!$validDot) {
+    die("Đợt thực tập không hợp lệ!");
+  }
+
+  $stmt = $conn->prepare("INSERT INTO THONGBAO (TIEUDE, NOIDUNG, NGAYDANG, TRANGTHAI, ID_Dot, ID_TaiKhoan) VALUES (:tieude, :noidung, NOW(),1, :id_dot, :id_taikhoan)");
   $stmt->execute([
     'tieude' => $tieude,
     'noidung' => $noidung,
+    'id_dot' => $id_dot,
+    'id_taikhoan' => $id_taikhoan,
   ]);
 
   header("Location: quanlythongbao");
   exit;
 }
+
 ?>
 
 <!DOCTYPE html>
@@ -44,7 +66,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="col-md-12 ">
               <div class="form-container" style="margin-top: 20px;">
                 <form id="FormThongBao" method="post" enctype="multipart/form-data">
-
+                  <div class="form-group">
+                    <label>Chọn đợt thực tập</label>
+                    <select class="form-control" name="id_dot" required>
+                      <option value="">-- Chọn đợt --</option>
+                      <?php foreach ($dsDot as $dot): ?>
+                        <option value="<?= $dot['ID'] ?>"><?= htmlspecialchars($dot['TenDot']) ?></option>
+                      <?php endforeach; ?>
+                    </select>
+                  </div>
                   <div class="form-group">
                     <label>Tiêu đề</label>
                     <input class="form-control" id="tieude" name="tieude" type="text" placeholder="Nhập tiêu đề"

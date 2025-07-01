@@ -1,24 +1,55 @@
 <?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
-require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/ThongBao_funtions.php";
 
 if (!isset($_GET['id'])) {
   die("Không tìm thấy ID thông báo.");
 }
 
 $id = intval($_GET['id']);
+$idTaiKhoan = $_SESSION['user_id'] ?? null;
 
-$stmt = $conn->prepare("SELECT ID, TIEUDE, NOIDUNG ,ID_TAIKHOAN,NGAYDANG,TRANGTHAI FROM THONGBAO WHERE ID = ?");
+$stmt = $conn->prepare("SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.ID_TAIKHOAN, tb.NGAYDANG, tb.TRANGTHAI, tb.ID_Dot, dt.TenDot
+    FROM THONGBAO tb
+    LEFT JOIN DotThucTap dt ON tb.ID_Dot = dt.ID
+    WHERE tb.ID = ? ");
 $stmt->execute([$id]);
 $thongbao = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$thongbao) {
   die("Không tìm thấy thông báo.");
 }
-$stmt_khac = $conn->prepare("SELECT ID, TIEUDE, NOIDUNG ,ID_TAIKHOAN,NGAYDANG,TRANGTHAI FROM THONGBAO WHERE ID != ? ORDER BY NGAYDANG DESC LIMIT 4");
-$stmt_khac->execute([$id]);
-$thongbao_khac = $stmt_khac->fetchAll(PDO::FETCH_ASSOC);
+// Lấy danh sách ID đợt mà giáo viên này tham gia từ bảng dot_giaovien
+$stmt = $conn->prepare("
+    SELECT DISTINCT ID_Dot
+    FROM dot_giaovien
+    WHERE ID_GVHD = ?
+");
+$stmt->execute([$idTaiKhoan]);
+$dsDot = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+$thongbao_khac = [];
+
+if (!empty($dsDot)) {
+    // Tạo placeholders cho câu truy vấn
+    $placeholders = implode(',', array_fill(0, count($dsDot), '?'));
+
+    $sql = "
+        SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.NGAYDANG, tb.ID_Dot, dt.TenDot
+        FROM THONGBAO tb
+        LEFT JOIN DotThucTap dt ON tb.ID_Dot = dt.ID
+        WHERE tb.ID != ? 
+            AND tb.TRANGTHAI = 1 
+            AND tb.ID_Dot IN ($placeholders)
+        ORDER BY tb.NGAYDANG DESC
+        LIMIT 50
+    ";
+
+    $params = array_merge([$id], $dsDot); // $id là ID thông báo đang xem
+    $stmt_khac = $conn->prepare($sql);
+    $stmt_khac->execute($params);
+    $thongbao_khac = $stmt_khac->fetchAll(PDO::FETCH_ASSOC);
+}
 ?>
 
 <!DOCTYPE html>
@@ -40,6 +71,9 @@ $thongbao_khac = $stmt_khac->fetchAll(PDO::FETCH_ASSOC);
         <div class="row">
           <div class="col-lg-12">
             <h1 class="page-header">[THÔNG BÁO] <?= htmlspecialchars($thongbao['TIEUDE']) ?></h1>
+            <?php if (!empty($thongbao['TenDot'])): ?>
+              <p><strong>Đợt thực tập:</strong> <?= htmlspecialchars($thongbao['TenDot']) ?></p>
+            <?php endif; ?>
           </div>
         </div>
         <div class="news-content mb-4">
@@ -63,6 +97,9 @@ $thongbao_khac = $stmt_khac->fetchAll(PDO::FETCH_ASSOC);
       </div>
     </div>
   </div>
+  <?php
+  require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
+    ?>
 </body>
 
 </html>
@@ -101,6 +138,7 @@ $thongbao_khac = $stmt_khac->fetchAll(PDO::FETCH_ASSOC);
                             <li>Thông báo</li>
                             <li>|</li>
                             <li>${new Date(tb.NGAYDANG).toLocaleDateString('vi-VN')}</li>
+                            ${tb.TenDot ? `<li>|</li><li>Đợt: ${tb.TenDot}</li>` : ''}
                         </ul>
                     </div>
                 </div>
