@@ -7,7 +7,6 @@
 
 <head>
     <meta charset="UTF-8">
-<<<<<<< HEAD
     <title>Tài nguyên</title>
     <?php
     require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php";
@@ -95,56 +94,6 @@
         margin-bottom: 20px;
     }
     </style>
-=======
-    <title>Tài nguyên thực tập</title>
-    <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php"; ?>
-    <style>
-        #page-wrapper {
-            padding: 30px;
-            min-height: 100vh;
-            box-sizing: border-box;
-            max-height: 100%;
-            overflow-y: auto;
-        }
-
-        .panel-tainguyen {
-            padding: 20px;
-            min-height: 120px;
-            background: #f8fff8;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            transition: box-shadow 0.2s;
-        }
-
-        .panel-tainguyen:hover {
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-            background: #eaffea;
-        }
-
-        .panel-tainguyen .fa {
-            margin-right: 12px;
-            font-size: 28px;
-            color: #4caf50;
-        }
-
-        .panel-tainguyen .ten-tainguyen,
-        .panel-tainguyen .tenfile {
-            max-width: 150px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            display: block;
-            word-break: break-all;
-        }
-
-        .panel-tainguyen .btn {
-            margin-top: 8px;
-        }
-    </style>
-        <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_Sinhvien.php"; ?>
-
->>>>>>> e2493fb9eccefe43493535a26cd6705d9a037692
 </head>
 
 <body>

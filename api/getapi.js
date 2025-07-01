@@ -16,6 +16,3 @@ async function getBusinessInfoByTaxCode(taxCode) {
         return null;
     }
 }
-
-// Ví dụ sử dụng:
-// getBusinessInfoByTaxCode('123456789').then(info =
