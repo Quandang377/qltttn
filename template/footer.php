@@ -11,6 +11,32 @@ foreach ($stmt as $row) {
 
 </head>
 
+<style>
+    html,
+    body {
+        height: 100%;
+        min-height: 100%;
+    }
+
+    body {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+    }
+
+    #wrapper,
+    #page-wrapper,
+    .container-fluid {
+        flex: 1 0 auto;
+    }
+
+    footer,
+    #footer,
+    .footer {
+        flex-shrink: 0;
+    }
+</style>
+
 <footer
     style="background-color: <?= $cauhinh['mau_sac_giaodien'] ?? '#2563eb' ?>; color: white; padding: 30px 0; margin-top: 50px;">
     <div class="container">
