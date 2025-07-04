@@ -378,28 +378,7 @@
         // Sau khi in xong, load lại trang để đảm bảo mọi thứ hoạt động bình thường
         location.reload();
     });
-
-    function markAsReceived(id) {
-        if (confirm('Bạn có chắc chắn muốn xác nhận sinh viên đã nhận giấy giới thiệu này?')) {
-            // Gửi yêu cầu AJAX để cập nhật trạng thái
-            var xhr = new XMLHttpRequest();
-            xhr.open('POST', '/datn/pages/giaovien/mark_as_received.php', true);
-            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-            xhr.onload = function() {
-                if (xhr.status === 200) {
-                    alert('Đã xác nhận sinh viên nhận giấy giới thiệu!');
-                    location.reload();
-                } else {
-                    alert('Có lỗi xảy ra: ' + xhr.responseText);
-                }
-            };
-            xhr.send('id=' + id);
-        }
-    }
     </script>
-    <script src="js/jquery.min.js"></script>
-    <script src="js/bootstrap.min.js"></script>
-    <script src="js/metisMenu.min.js"></script>
-    <script src="js/startmin.js"></script>
+    <!-- jQuery đã được include trong template head.php -->
 </body>
 </html>
