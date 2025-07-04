@@ -58,6 +58,72 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_baocao'])) {
     }
 }
 
+// Xử lý xóa file nhận xét
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_nhanxet'])) {
+    $stmt = $conn->prepare("SELECT Dir FROM file WHERE ID_SV = ? AND TrangThai = 1 AND Loai = 'nhanxet' ORDER BY ID DESC LIMIT 1");
+    $stmt->execute([$id_taikhoan]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    $filePath = $row['Dir'] ?? null;
+
+    $stmt = $conn->prepare("UPDATE file SET TrangThai = 0 WHERE ID_SV = ? AND TrangThai = 1 AND Loai = 'nhanxet'");
+    $success = $stmt->execute([$id_taikhoan]);
+
+    if ($filePath && file_exists($filePath)) {
+        unlink($filePath);
+    }
+
+    if ($success) {
+        header("Location: " . $_SERVER['REQUEST_URI']);
+        exit;
+    } else {
+        echo "<script>alert('Xóa file nhận xét thất bại!');</script>";
+    }
+}
+
+// Xử lý xóa file phiếu thực tập
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_phieuthuctap'])) {
+    $stmt = $conn->prepare("SELECT Dir FROM file WHERE ID_SV = ? AND TrangThai = 1 AND Loai = 'phieuthuctap' ORDER BY ID DESC LIMIT 1");
+    $stmt->execute([$id_taikhoan]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    $filePath = $row['Dir'] ?? null;
+
+    $stmt = $conn->prepare("UPDATE file SET TrangThai = 0 WHERE ID_SV = ? AND TrangThai = 1 AND Loai = 'phieuthuctap'");
+    $success = $stmt->execute([$id_taikhoan]);
+
+    if ($filePath && file_exists($filePath)) {
+        unlink($filePath);
+    }
+
+    if ($success) {
+        header("Location: " . $_SERVER['REQUEST_URI']);
+        exit;
+    } else {
+        echo "<script>alert('Xóa file phiếu thực tập thất bại!');</script>";
+    }
+}
+
+// Xử lý xóa file khảo sát
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_khoasat'])) {
+    $stmt = $conn->prepare("SELECT Dir FROM file WHERE ID_SV = ? AND TrangThai = 1 AND Loai = 'khoasat' ORDER BY ID DESC LIMIT 1");
+    $stmt->execute([$id_taikhoan]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    $filePath = $row['Dir'] ?? null;
+
+    $stmt = $conn->prepare("UPDATE file SET TrangThai = 0 WHERE ID_SV = ? AND TrangThai = 1 AND Loai = 'khoasat'");
+    $success = $stmt->execute([$id_taikhoan]);
+
+    if ($filePath && file_exists($filePath)) {
+        unlink($filePath);
+    }
+
+    if ($success) {
+        header("Location: " . $_SERVER['REQUEST_URI']);
+        exit;
+    } else {
+        echo "<script>alert('Xóa file khảo sát thất bại!');</script>";
+    }
+}
+
 // Lấy báo cáo mới nhất có trạng thái true (1) và loại 'Baocao'
 $stmt = $conn->prepare("SELECT TenFile, Dir, TrangThai FROM file WHERE ID_SV = ? AND TrangThai = 1 AND Loai = 'Baocao' ORDER BY ID DESC LIMIT 1");
 $stmt->execute([$id_taikhoan]);
@@ -66,117 +132,8 @@ $baocao = $row['TenFile'] ?? null;
 $baocao_dir = $row['Dir'] ?? null;
 $baocao_trangthai = $row['TrangThai'] ?? null;
 
-// Xử lý upload file
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_baocao'])) {
-    if (!$cho_phep_nop) {
-        echo "<script>alert('Giáo viên đã khóa chức năng!');</script>";
-    } else if ($baocao_trangthai) {
-        echo "<script>alert('Bạn đã nộp báo cáo rồi, không thể nộp thêm!');</script>";
-    } else {
-        // Xử lý báo cáo
-        if (isset($_FILES['baocao_file']) && $_FILES['baocao_file']['error'] === UPLOAD_ERR_OK) {
-            $tenFile = $_FILES['baocao_file']['name'];
-            $ext = strtolower(pathinfo($tenFile, PATHINFO_EXTENSION));
-            $allowed = ['doc', 'docx'];
-            if (in_array($ext, $allowed)) {
-                $targetDir = $_SERVER['DOCUMENT_ROOT'] . "/datn/file/";
-                if (!is_dir($targetDir)) {
-                    mkdir($targetDir, 0777, true);
-                }
-                // Lưu đúng tên file gốc, nếu trùng thì thêm hậu tố thời gian
-                $targetFile = $targetDir . basename($tenFile);
-                if (file_exists($targetFile)) {
-                    $fileNameNoExt = pathinfo($tenFile, PATHINFO_FILENAME);
-                    $targetFile = $targetDir . $fileNameNoExt . '_' . time() . '.' . $ext;
-                    $tenFile = basename($targetFile); // cập nhật lại tên file lưu vào DB
-                }
-                if (move_uploaded_file($_FILES['baocao_file']['tmp_name'], $targetFile)) {
-                    $dirForDB = realpath($targetFile);
-                    $stmt = $conn->prepare("INSERT INTO file (TenFile, Dir, ID_SV, TrangThai, Loai,NgayNop) VALUES (?, ?, ?, 1, 'Baocao',?)");
-                    if ($stmt->execute([$tenFile, $dirForDB, $id_taikhoan, date('Y-m-d H:i:s')])) {
-                        header("Location: " . $_SERVER['REQUEST_URI']);
-                        exit;
-                    } else {
-                        unlink($targetFile);
-                        echo "<script>alert('Lưu vào cơ sở dữ liệu thất bại!');</script>";
-                    }
-                } else {
-                    echo "<script>alert('Không thể lưu file lên máy chủ!');</script>";
-                }
-            } else {
-                echo "<script>alert('Chỉ chấp nhận file Word (.doc, .docx)!');</script>";
-            }
-        } else {
-            echo "<script>alert('Vui lòng chọn file hợp lệ!');</script>";
-        }
-        // Xử lý nhận xét công ty
-        if (isset($_FILES['nhanxet_file']) && $_FILES['nhanxet_file']['error'] === UPLOAD_ERR_OK) {
-            $tenFile = $_FILES['nhanxet_file']['name'];
-            $ext = strtolower(pathinfo($tenFile, PATHINFO_EXTENSION));
-            $allowed = ['jpg', 'jpeg', 'png'];
-            if (in_array($ext, $allowed)) {
-                $targetDir = $_SERVER['DOCUMENT_ROOT'] . "/datn/file/";
-                if (!is_dir($targetDir)) mkdir($targetDir, 0777, true);
-                $targetFile = $targetDir . basename($tenFile);
-                if (file_exists($targetFile)) {
-                    $fileNameNoExt = pathinfo($tenFile, PATHINFO_FILENAME);
-                    $targetFile = $targetDir . $fileNameNoExt . '_' . time() . '.' . $ext;
-                    $tenFile = basename($targetFile);
-                }
-                if (move_uploaded_file($_FILES['nhanxet_file']['tmp_name'], $targetFile)) {
-                    $dirForDB = realpath($targetFile);
-                    $stmt = $conn->prepare("INSERT INTO file (TenFile, Dir, ID_SV, TrangThai, Loai, NgayNop) VALUES (?, ?, ?, 1, 'nhanxet', ?)");
-                    $stmt->execute([$tenFile, $dirForDB, $id_taikhoan, date('Y-m-d H:i:s')]);
-                }
-            }
-        }
-        // Xử lý phiếu thực tập
-        if (isset($_FILES['phieuthuctap_file']) && $_FILES['phieuthuctap_file']['error'] === UPLOAD_ERR_OK) {
-            $tenFile = $_FILES['phieuthuctap_file']['name'];
-            $ext = strtolower(pathinfo($tenFile, PATHINFO_EXTENSION));
-            $allowed = ['jpg', 'jpeg', 'png'];
-            if (in_array($ext, $allowed)) {
-                $targetDir = $_SERVER['DOCUMENT_ROOT'] . "/datn/file/";
-                if (!is_dir($targetDir)) mkdir($targetDir, 0777, true);
-                $targetFile = $targetDir . basename($tenFile);
-                if (file_exists($targetFile)) {
-                    $fileNameNoExt = pathinfo($tenFile, PATHINFO_FILENAME);
-                    $targetFile = $targetDir . $fileNameNoExt . '_' . time() . '.' . $ext;
-                    $tenFile = basename($targetFile);
-                }
-                if (move_uploaded_file($_FILES['phieuthuctap_file']['tmp_name'], $targetFile)) {
-                    $dirForDB = realpath($targetFile);
-                    $stmt = $conn->prepare("INSERT INTO file (TenFile, Dir, ID_SV, TrangThai, Loai, NgayNop) VALUES (?, ?, ?, 1, 'phieuthuctap', ?)");
-                    $stmt->execute([$tenFile, $dirForDB, $id_taikhoan, date('Y-m-d H:i:s')]);
-                }
-            }
-        }
-        // Xử lý phiếu khảo sát
-        if (isset($_FILES['khoasat_file']) && $_FILES['khoasat_file']['error'] === UPLOAD_ERR_OK) {
-            $tenFile = $_FILES['khoasat_file']['name'];
-            $ext = strtolower(pathinfo($tenFile, PATHINFO_EXTENSION));
-            $allowed = ['jpg', 'jpeg', 'png'];
-            if (in_array($ext, $allowed)) {
-                $targetDir = $_SERVER['DOCUMENT_ROOT'] . "/datn/file/";
-                if (!is_dir($targetDir)) mkdir($targetDir, 0777, true);
-                $targetFile = $targetDir . basename($tenFile);
-                if (file_exists($targetFile)) {
-                    $fileNameNoExt = pathinfo($tenFile, PATHINFO_FILENAME);
-                    $targetFile = $targetDir . $fileNameNoExt . '_' . time() . '.' . $ext;
-                    $tenFile = basename($targetFile);
-                }
-                if (move_uploaded_file($_FILES['khoasat_file']['tmp_name'], $targetFile)) {
-                    $dirForDB = realpath($targetFile);
-                    $stmt = $conn->prepare("INSERT INTO file (TenFile, Dir, ID_SV, TrangThai, Loai, NgayNop) VALUES (?, ?, ?, 1, 'khoasat', ?)");
-                    $stmt->execute([$tenFile, $dirForDB, $id_taikhoan, date('Y-m-d H:i:s')]);
-                }
-            }
-        }
-        // Sau khi upload xong, reload lại trang
-        header("Location: " . $_SERVER['REQUEST_URI']);
-        exit;
-    }
-}
+// Xử lý upload file nếu có file upload (đặt trong một điều kiện để tránh exit sớm)
+
 
 // Lấy các file đã nộp cho từng loại
 $nhanxet = $phieuthuctap = $khoasat = null;
@@ -197,6 +154,49 @@ foreach (['nhanxet', 'phieuthuctap', 'khoasat'] as $loai) {
         $khoasat_dir = $row['Dir'] ?? null;
     }
 }
+
+// Xử lý upload file từ từng panel (modal mới)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_file_panel'])) {
+    $type = $_POST['upload_type'] ?? '';
+    $file = $_FILES['upload_file'] ?? null;
+    $allow = [
+        'baocao' => ['doc','docx'],
+        'nhanxet' => ['jpg','jpeg','png'],
+        'phieuthuctap' => ['jpg','jpeg','png'],
+        'khoasat' => ['jpg','jpeg','png']
+    ];
+    $loai_db = [
+        'baocao' => 'Baocao',
+        'nhanxet' => 'nhanxet',
+        'phieuthuctap' => 'phieuthuctap',
+        'khoasat' => 'khoasat'
+    ];
+    if ($type && $file && $file['error'] === UPLOAD_ERR_OK) {
+        $tenFile = $file['name'];
+        $ext = strtolower(pathinfo($tenFile, PATHINFO_EXTENSION));
+        if (in_array($ext, $allow[$type])) {
+            $targetDir = $_SERVER['DOCUMENT_ROOT'] . "/datn/file/";
+            if (!is_dir($targetDir)) mkdir($targetDir, 0777, true);
+            $targetFile = $targetDir . basename($tenFile);
+            if (file_exists($targetFile)) {
+                $fileNameNoExt = pathinfo($tenFile, PATHINFO_FILENAME);
+                $targetFile = $targetDir . $fileNameNoExt . '_' . time() . '.' . $ext;
+                $tenFile = basename($targetFile);
+            }
+            if (move_uploaded_file($file['tmp_name'], $targetFile)) {
+                $dirForDB = realpath($targetFile);
+                $stmt = $conn->prepare("INSERT INTO file (TenFile, Dir, ID_SV, TrangThai, Loai, NgayNop) VALUES (?, ?, ?, 1, ?, ?)");
+                $stmt->execute([$tenFile, $dirForDB, $id_taikhoan, $loai_db[$type], date('Y-m-d H:i:s')]);
+                header("Location: " . $_SERVER['REQUEST_URI']);
+                exit;
+            } else {
+                echo "<script>alert('Không thể lưu file lên máy chủ!');</script>";
+            }
+        } else {
+            echo "<script>alert('File không đúng định dạng!');</script>";
+        }
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -207,12 +207,193 @@ foreach (['nhanxet', 'phieuthuctap', 'khoasat'] as $loai) {
     require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php";
     ?>
     <style>
+        body {
+            background: linear-gradient(135deg, #e3f0ff 0%, #f8fafc 100%);
+            font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+        }
         #page-wrapper {
             padding: 30px;
             min-height: 100vh;
             box-sizing: border-box;
-            max-height: 100%;
-            overflow-y: auto;
+        }
+        .page-header {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: rgb(0, 58, 217);
+            letter-spacing: 1px;
+            margin-bottom: 32px;
+            text-align: center;
+            text-shadow: 0 2px 8px #b6d4fe44;
+        }
+        .upload-panel {
+            border: 2px solid #e3eafc;
+            border-radius: 16px;
+            background: #fff;
+            margin-bottom: 24px;
+            padding: 24px 20px;
+            box-shadow: 0 4px 18px rgba(0,123,255,0.08);
+            min-height: 140px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+        .upload-panel:hover {
+            border-color: #007bff;
+            box-shadow: 0 6px 24px rgba(0,123,255,0.16);
+            transform: translateY(-3px);
+        }
+        .upload-panel[style*="opacity:0.6"] {
+            background-color: #f8fafc !important;
+            opacity: 0.6 !important;
+        }
+        .upload-panel[style*="opacity:0.6"]:hover {
+            transform: none;
+            box-shadow: 0 4px 18px rgba(0,123,255,0.08);
+        }
+        .upload-panel .panel-icon {
+            font-size: 32px;
+            margin-right: 16px;
+        }
+        .upload-panel .panel-content {
+            flex: 1;
+        }
+        .upload-panel .panel-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #007bff;
+        }
+        .upload-panel .panel-status {
+            font-size: 14px;
+            color: #666;
+        }
+        .upload-panel .file-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .upload-panel .file-link {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .upload-panel .file-link:hover {
+            color: #0056b3;
+            text-decoration: none;
+        }
+        .btn-action {
+            border: none;
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        .btn-download {
+            background: #28a745;
+            color: white;
+        }
+        .btn-download:hover {
+            background: #218838;
+        }
+        .btn-delete {
+            background: #dc3545;
+            color: white;
+        }
+        .btn-delete:hover {
+            background: #c82333;
+        }
+        .alert-success {
+            border-radius: 12px;
+            border: 2px solid #d4edda;
+            background: linear-gradient(90deg, #d4edda 0%, #f8f9fa 100%);
+            color: #155724;
+            padding: 16px 20px;
+            margin-top: 20px;
+        }
+        .modal-content {
+            border-radius: 16px;
+            border: none;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+        }
+        .modal-header {
+            background: linear-gradient(90deg, #007bff 70%, #5bc0f7 100%);
+            color: white;
+            border-radius: 16px 16px 0 0;
+            border: none;
+            padding: 18px 24px;
+        }
+        .modal-title {
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+        .modal-body {
+            padding: 24px;
+            background: #fafdff;
+        }
+        .modal-footer {
+            border: none;
+            background: #fafdff;
+            border-radius: 0 0 16px 16px;
+            padding: 16px 24px;
+        }
+        .form-control {
+            border-radius: 8px;
+            border: 2px solid #e3eafc;
+            padding: 10px 16px;
+            font-size: 14px;
+            background: #fff;
+            transition: border-color 0.2s ease;
+        }
+        .form-control:focus {
+            border-color: #007bff;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+        }
+        .btn-success {
+            background: linear-gradient(90deg, #28a745 0%, #20c997 100%);
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        .btn-success:hover {
+            background: linear-gradient(90deg, #218838 0%, #1a9b7a 100%);
+            transform: translateY(-1px);
+        }
+        .btn-default {
+            background: #f8f9fa;
+            border: 2px solid #e3eafc;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-weight: 600;
+            color: #6c757d;
+            transition: all 0.2s ease;
+        }
+        .btn-default:hover {
+            background: #e9ecef;
+            border-color: #007bff;
+            color: #007bff;
+        }
+        /* Panel màu sắc cụ thể */
+        .panel-baocao {
+            background: linear-gradient(135deg, #d4edda 0%, #f8f9fa 100%);
+            border-color: #28a745;
+        }
+        .panel-baocao .panel-icon {
+            color: #28a745;
+        }
+        .panel-nhanxet, .panel-phieuthuctap, .panel-khoasat {
+            background: linear-gradient(135deg, #e3f0ff 0%, #f8fafc 100%);
+            border-color: #007bff;
+        }
+        .panel-nhanxet .panel-icon, 
+        .panel-phieuthuctap .panel-icon, 
+        .panel-khoasat .panel-icon {
+            color: #007bff;
         }
     </style>
 </head>
@@ -222,114 +403,82 @@ foreach (['nhanxet', 'phieuthuctap', 'khoasat'] as $loai) {
     <div id="page-wrapper">
         <div class="container-fluid">
             <div class="row">
-                <h1 class="page-header ">Nộp kết quả</h1>
+                <div class="col-md-12">
+                    <h1 class="page-header">Nộp kết quả</h1>
+                </div>
             </div>
             <div class="row">
-                <!-- Hiển thị báo cáo (panel) -->
-                <?php if ($baocao_trangthai): ?>
-                    <div class="col-md-4">
-                        <div class="panel panel-default" style="padding: 20px;background-color: #7ae98c;">
-                            <div style="display: flex; align-items: center;">
-                                <i class="fa fa-file-o fa-fw" style="margin-right: 12px; font-size: 28px; color: white"></i>
-                                <div>
-                                    <div style="font-size: 20px; font-weight: bold; display: flex; align-items: center;">
-                                        <a href="<?php echo htmlspecialchars($baocao_dir); ?>" target="_blank" style="color: #222; margin-right: 10px;">
-    <?php
-        $maxLen = 10;
-        $tenHienThi = (mb_strlen($baocao) > $maxLen)
-            ? mb_substr($baocao, 0, $maxLen) . '...'
-            : $baocao;
-        echo htmlspecialchars($tenHienThi);
-    ?>
-                                        </a>
-                                        <?php if ($baocao_dir): ?>
-    <a href="/datn/download.php?file=<?php echo urlencode(basename($baocao_dir)); ?>" download style="color: #222;" title="Tải xuống">
-        <i class="fa fa-download" style="font-size: 20px; margin-left: 5px;"></i>
-    </a>
-    <?php endif; ?>
-                                        <!-- Nút xóa file -->
-                                        <form method="post" style="display:inline;">
-                                            <button type="submit" name="xoa_baocao" class="btn btn-danger btn-xs" style="margin-left: 10px;" onclick="return confirm('Bạn có chắc muốn xóa báo cáo này?');">
-                                                <i class="fa fa-trash"></i> Xóa
-                                            </button>
-                                        </form>
-                                    </div>
-                                    <div style="font-size: 12px; font-weight: bold;">
-                                        <?php echo htmlspecialchars($ten_sv ?: ''); ?>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                <?php endif; ?>
-            </div> 
-            <div class="row">
-                <!-- Panel Báo cáo tổng kết: chỉ hiện khi chưa nộp -->
-                <?php if (!$baocao_trangthai): ?>
+                <!-- Panel Báo cáo tổng kết -->
                 <div class="col-md-3">
-                    <div class="panel panel-default upload-panel" data-type="baocao" style="padding: 20px; background-color: #7ae98c; cursor:pointer; <?php if($baocao) echo 'opacity:0.6;pointer-events:none;'; ?>">
+                    <div class="upload-panel panel-baocao" data-type="baocao" style="<?php if($baocao && !$cho_phep_nop) echo 'opacity:0.6;pointer-events:none;'; ?>">
                         <div style="display: flex; align-items: center;">
-                            <i class="fa fa-file-o fa-fw" style="margin-right: 12px; font-size: 28px; color: #white"></i>
-                            <div>
-                                <div style="font-size: 18px; font-weight: bold;">
-                                    Báo cáo tổng kết:
+                            <i class="fa fa-file-text panel-icon"></i>
+                            <div class="panel-content">
+                                <div class="panel-title">Báo cáo tổng kết</div>
+                                <div class="panel-status">
                                     <?php if ($baocao): ?>
-                                        <a href="<?php echo htmlspecialchars($baocao_dir); ?>" target="_blank" style="color: #222; margin-left: 10px;">
-                                            <?php
-                                                $maxLen = 10;
-                                                $tenHienThi = (mb_strlen($baocao) > $maxLen)
-                                                    ? mb_substr($baocao, 0, $maxLen) . '...'
-                                                    : $baocao;
-                                                echo htmlspecialchars($tenHienThi);
-                                            ?>
-                                        </a>
-                                        <a href="/datn/download.php?file=<?php echo urlencode(basename($baocao_dir)); ?>" download style="color: #222;" title="Tải xuống">
-                                            <i class="fa fa-download" style="font-size: 18px; margin-left: 5px;"></i>
-                                        </a>
-                                        <!-- Nút xóa file -->
-                                        <form method="post" style="display:inline;">
-                                            <button type="submit" name="xoa_baocao" class="btn btn-danger btn-xs" style="margin-left: 10px;" onclick="return confirm('Bạn có chắc muốn xóa báo cáo này?');">
-                                                <i class="fa fa-trash"></i> Xóa
-                                            </button>
-                                        </form>
-                                        <span class="badge badge-success" style="margin-left:10px;">Đã nộp</span>
+                                        <div class="file-actions">
+                                            <a href="<?php echo htmlspecialchars($baocao_dir); ?>" target="_blank" class="file-link">
+                                                <?php
+                                                    $maxLen = 15;
+                                                    $tenHienThi = (mb_strlen($baocao) > $maxLen)
+                                                        ? mb_substr($baocao, 0, $maxLen) . '...'
+                                                        : $baocao;
+                                                    echo htmlspecialchars($tenHienThi);
+                                                ?>
+                                            </a>
+                                            <a href="/datn/download.php?file=<?php echo urlencode(basename($baocao_dir)); ?>" download class="btn-action btn-download" title="Tải xuống">
+                                                <i class="fa fa-download"></i>
+                                            </a>
+                                            <?php if ($cho_phep_nop): ?>
+                                            <form method="post" style="display:inline;">
+                                                <button type="submit" name="xoa_baocao" class="btn-action btn-delete" onclick="return confirm('Bạn có chắc muốn xóa báo cáo này?');" title="Xóa">
+                                                    <i class="fa fa-trash"></i>
+                                                </button>
+                                            </form>
+                                            <?php endif; ?>
+                                        </div>
+                                        <small class="text-success">✓ Đã nộp</small>
                                     <?php else: ?>
-                                        <span class="text-muted">Chưa nộp (bấm để nộp)</span>
+                                        <span class="text-muted">Chưa nộp (bấm để upload)</span>
                                     <?php endif; ?>
-                                </div>
-                                <div style="font-size: 12px; font-weight: bold;">
-                                    <?php echo htmlspecialchars($ten_sv ?: ''); ?>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <?php endif; ?>
 
                 <!-- Panel Nhận xét công ty -->
                 <div class="col-md-3">
-                    <div class="panel panel-default upload-panel" data-type="nhanxet" style="padding: 20px; background-color: #e3f0ff; cursor:pointer; <?php if($nhanxet) echo 'opacity:0.6;pointer-events:none;'; ?>">
+                    <div class="upload-panel panel-nhanxet" data-type="nhanxet">
                         <div style="display: flex; align-items: center;">
-                            <i class="fa fa-file-image-o fa-fw" style="margin-right: 12px; font-size: 28px; color: #1976d2"></i>
-                            <div>
-                                <div style="font-size: 18px; font-weight: bold;">
-                                    Nhận xét công ty:
+                            <i class="fa fa-comments panel-icon"></i>
+                            <div class="panel-content">
+                                <div class="panel-title">Nhận xét công ty</div>
+                                <div class="panel-status">
                                     <?php if ($nhanxet): ?>
-                                        <a href="<?php echo htmlspecialchars($nhanxet_dir); ?>" target="_blank" style="color: #222; margin-left: 10px;">
-                                            <?php echo htmlspecialchars($nhanxet); ?>
-                                        </a>
-                                        <a href="/datn/download.php?file=<?php echo urlencode(basename($nhanxet_dir)); ?>" download style="color: #222;" title="Tải xuống">
-                                            <i class="fa fa-download" style="font-size: 18px; margin-left: 5px;"></i>
-                                        </a>
-                                        <!-- Nút xóa file -->
-                                        <form method="post" style="display:inline;">
-                                            <button type="submit" name="xoa_nhanxet" class="btn btn-danger btn-xs" style="margin-left: 10px;" onclick="return confirm('Bạn có chắc muốn xóa file này?');">
-                                                <i class="fa fa-trash"></i> Xóa
-                                            </button>
-                                        </form>
+                                        <div class="file-actions">
+                                            <a href="<?php echo htmlspecialchars($nhanxet_dir); ?>" target="_blank" class="file-link">
+                                                <?php
+                                                    $maxLen = 15;
+                                                    $tenHienThi = (mb_strlen($nhanxet) > $maxLen)
+                                                        ? mb_substr($nhanxet, 0, $maxLen) . '...'
+                                                        : $nhanxet;
+                                                    echo htmlspecialchars($tenHienThi);
+                                                ?>
+                                            </a>
+                                            <a href="/datn/download.php?file=<?php echo urlencode(basename($nhanxet_dir)); ?>" download class="btn-action btn-download" title="Tải xuống">
+                                                <i class="fa fa-download"></i>
+                                            </a>
+                                            <form method="post" style="display:inline;">
+                                                <button type="submit" name="xoa_nhanxet" class="btn-action btn-delete" onclick="return confirm('Bạn có chắc muốn xóa file này?');" title="Xóa">
+                                                    <i class="fa fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                        <small class="text-success">✓ Đã nộp</small>
                                     <?php else: ?>
-                                        <span class="text-muted">Chưa nộp (bấm để nộp)</span>
+                                        <span class="text-muted">Chưa nộp (bấm để upload)</span>
                                     <?php endif; ?>
                                 </div>
                             </div>
@@ -338,27 +487,35 @@ foreach (['nhanxet', 'phieuthuctap', 'khoasat'] as $loai) {
                 </div>
                 <!-- Panel Phiếu thực tập -->
                 <div class="col-md-3">
-                    <div class="panel panel-default upload-panel" data-type="phieuthuctap" style="padding: 20px; background-color: #e3f0ff; cursor:pointer; <?php if($phieuthuctap) echo 'opacity:0.6;pointer-events:none;'; ?>">
+                    <div class="upload-panel panel-phieuthuctap" data-type="phieuthuctap">
                         <div style="display: flex; align-items: center;">
-                            <i class="fa fa-file-image-o fa-fw" style="margin-right: 12px; font-size: 28px; color: #1976d2"></i>
-                            <div>
-                                <div style="font-size: 18px; font-weight: bold;">
-                                    Phiếu thực tập:
+                            <i class="fa fa-clipboard panel-icon"></i>
+                            <div class="panel-content">
+                                <div class="panel-title">Phiếu thực tập</div>
+                                <div class="panel-status">
                                     <?php if ($phieuthuctap): ?>
-                                        <a href="<?php echo htmlspecialchars($phieuthuctap_dir); ?>" target="_blank" style="color: #222; margin-left: 10px;">
-                                            <?php echo htmlspecialchars($phieuthuctap); ?>
-                                        </a>
-                                        <a href="/datn/download.php?file=<?php echo urlencode(basename($phieuthuctap_dir)); ?>" download style="color: #222;" title="Tải xuống">
-                                            <i class="fa fa-download" style="font-size: 18px; margin-left: 5px;"></i>
-                                        </a>
-                                        <!-- Nút xóa file -->
-                                        <form method="post" style="display:inline;">
-                                            <button type="submit" name="xoa_phieuthuctap" class="btn btn-danger btn-xs" style="margin-left: 10px;" onclick="return confirm('Bạn có chắc muốn xóa file này?');">
-                                                <i class="fa fa-trash"></i> Xóa
-                                            </button>
-                                        </form>
+                                        <div class="file-actions">
+                                            <a href="<?php echo htmlspecialchars($phieuthuctap_dir); ?>" target="_blank" class="file-link">
+                                                <?php
+                                                    $maxLen = 15;
+                                                    $tenHienThi = (mb_strlen($phieuthuctap) > $maxLen)
+                                                        ? mb_substr($phieuthuctap, 0, $maxLen) . '...'
+                                                        : $phieuthuctap;
+                                                    echo htmlspecialchars($tenHienThi);
+                                                ?>
+                                            </a>
+                                            <a href="/datn/download.php?file=<?php echo urlencode(basename($phieuthuctap_dir)); ?>" download class="btn-action btn-download" title="Tải xuống">
+                                                <i class="fa fa-download"></i>
+                                            </a>
+                                            <form method="post" style="display:inline;">
+                                                <button type="submit" name="xoa_phieuthuctap" class="btn-action btn-delete" onclick="return confirm('Bạn có chắc muốn xóa file này?');" title="Xóa">
+                                                    <i class="fa fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                        <small class="text-success">✓ Đã nộp</small>
                                     <?php else: ?>
-                                        <span class="text-muted">Chưa nộp (bấm để nộp)</span>
+                                        <span class="text-muted">Chưa nộp (bấm để upload)</span>
                                     <?php endif; ?>
                                 </div>
                             </div>
@@ -367,27 +524,35 @@ foreach (['nhanxet', 'phieuthuctap', 'khoasat'] as $loai) {
                 </div>
                 <!-- Panel Phiếu khảo sát -->
                 <div class="col-md-3">
-                    <div class="panel panel-default upload-panel" data-type="khoasat" style="padding: 20px; background-color: #e3f0ff; cursor:pointer; <?php if($khoasat) echo 'opacity:0.6;pointer-events:none;'; ?>">
+                    <div class="upload-panel panel-khoasat" data-type="khoasat">
                         <div style="display: flex; align-items: center;">
-                            <i class="fa fa-file-image-o fa-fw" style="margin-right: 12px; font-size: 28px; color: #1976d2"></i>
-                            <div>
-                                <div style="font-size: 18px; font-weight: bold;">
-                                    Phiếu khảo sát:
+                            <i class="fa fa-list-alt panel-icon"></i>
+                            <div class="panel-content">
+                                <div class="panel-title">Phiếu khảo sát</div>
+                                <div class="panel-status">
                                     <?php if ($khoasat): ?>
-                                        <a href="<?php echo htmlspecialchars($khoasat_dir); ?>" target="_blank" style="color: #222; margin-left: 10px;">
-                                            <?php echo htmlspecialchars($khoasat); ?>
-                                        </a>
-                                        <a href="/datn/download.php?file=<?php echo urlencode(basename($khoasat_dir)); ?>" download style="color: #222;" title="Tải xuống">
-                                            <i class="fa fa-download" style="font-size: 18px; margin-left: 5px;"></i>
-                                        </a>
-                                        <!-- Nút xóa file -->
-                                        <form method="post" style="display:inline;">
-                                            <button type="submit" name="xoa_khoasat" class="btn btn-danger btn-xs" style="margin-left: 10px;" onclick="return confirm('Bạn có chắc muốn xóa file này?');">
-                                                <i class="fa fa-trash"></i> Xóa
-                                            </button>
-                                        </form>
+                                        <div class="file-actions">
+                                            <a href="<?php echo htmlspecialchars($khoasat_dir); ?>" target="_blank" class="file-link">
+                                                <?php
+                                                    $maxLen = 15;
+                                                    $tenHienThi = (mb_strlen($khoasat) > $maxLen)
+                                                        ? mb_substr($khoasat, 0, $maxLen) . '...'
+                                                        : $khoasat;
+                                                    echo htmlspecialchars($tenHienThi);
+                                                ?>
+                                            </a>
+                                            <a href="/datn/download.php?file=<?php echo urlencode(basename($khoasat_dir)); ?>" download class="btn-action btn-download" title="Tải xuống">
+                                                <i class="fa fa-download"></i>
+                                            </a>
+                                            <form method="post" style="display:inline;">
+                                                <button type="submit" name="xoa_khoasat" class="btn-action btn-delete" onclick="return confirm('Bạn có chắc muốn xóa file này?');" title="Xóa">
+                                                    <i class="fa fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                        <small class="text-success">✓ Đã nộp</small>
                                     <?php else: ?>
-                                        <span class="text-muted">Chưa nộp (bấm để nộp)</span>
+                                        <span class="text-muted">Chưa nộp (bấm để upload)</span>
                                     <?php endif; ?>
                                 </div>
                             </div>
@@ -395,13 +560,7 @@ foreach (['nhanxet', 'phieuthuctap', 'khoasat'] as $loai) {
                     </div>
                 </div>
             </div>
-            <?php if ($baocao_trangthai): ?>
-    <div class="col-md-12">
-        <div class="alert alert-success" style="font-size:18px;">
-            <i class="fa fa-check-circle"></i> Bạn đã nộp báo cáo tổng kết.
-        </div>
-    </div>
-<?php endif; ?>
+            
         </div>
     </div>
     <!-- Modal upload file từng loại -->
@@ -431,11 +590,21 @@ foreach (['nhanxet', 'phieuthuctap', 'khoasat'] as $loai) {
 </html>
 <script>
 $(document).ready(function() {
-    $('.upload-panel').click(function() {
-        // Nếu panel đã có file thì không cho upload nữa
-        if ($(this).css('pointer-events') === 'none') return;
+    $('.upload-panel').click(function(e) {
+        // Kiểm tra xem click có phải vào button xóa không
+        if ($(e.target).closest('button[name^="xoa_"]').length > 0) {
+            return; // Không làm gì nếu click vào nút xóa
+        }
+        
+        // Kiểm tra xem click có phải vào link download hoặc view không
+        if ($(e.target).closest('a').length > 0) {
+            return; // Không làm gì nếu click vào link
+        }
 
+        // Nếu panel đã có file thì không cho upload nữa (chỉ áp dụng cho báo cáo)
         var type = $(this).data('type');
+        if (type === 'baocao' && $(this).css('pointer-events') === 'none') return;
+
         var label = '';
         var accept = '';
         if(type === 'baocao') {

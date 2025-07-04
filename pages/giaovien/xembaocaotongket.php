@@ -2,28 +2,23 @@
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 
-// Lấy id tài khoản giáo viên đang đăng nhập
+// Kiểm tra đăng nhập và lấy ID giáo viên
 $id_gvhd = $_SESSION['user']['ID_TaiKhoan'] ?? null;
+if (!$id_gvhd) die('Bạn chưa đăng nhập!');
 
-// Nếu chưa đăng nhập thì chuyển hướng hoặc báo lỗi
-if (!$id_gvhd) {
-    die('Bạn chưa đăng nhập!');
-}
 $errorMsg = '';
 
-// Đóng/mở cho phép nộp báo cáo tổng kết
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['luu_trangthai_tongket']) && isset($_POST['id_dot'])) {
+// Xử lý đóng/mở nộp báo cáo tổng kết
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['luu_trangthai_tongket'], $_POST['id_dot'])) {
     $id_dot = (int)$_POST['id_dot'];
     $trangthai_tongket = isset($_POST['trangthai_tongket']) ? 1 : 0;
-    $stmt = $conn->prepare("SELECT ID FROM Baocaotongket WHERE ID_TaiKhoan = ? AND ID_Dot = ?");
-    $stmt->execute([$id_gvhd, $id_dot]);
-    if ($stmt->fetch()) {
-        $stmt = $conn->prepare("UPDATE Baocaotongket SET TrangThai = ? WHERE ID_TaiKhoan = ? AND ID_Dot = ?");
-        $stmt->execute([$trangthai_tongket, $id_gvhd, $id_dot]);
-    } else {
-        $stmt = $conn->prepare("INSERT INTO Baocaotongket (ID_TaiKhoan, ID_Dot, TrangThai) VALUES (?, ?, ?)");
-        $stmt->execute([$id_gvhd, $id_dot, $trangthai_tongket]);
-    }
+    
+    // Kiểm tra và cập nhật/thêm mới trạng thái
+    $stmt = $conn->prepare("INSERT INTO Baocaotongket (ID_TaiKhoan, ID_Dot, TrangThai) 
+                           VALUES (?, ?, ?) 
+                           ON DUPLICATE KEY UPDATE TrangThai = ?");
+    $stmt->execute([$id_gvhd, $id_dot, $trangthai_tongket, $trangthai_tongket]);
+    
     header("Location: " . $_SERVER['REQUEST_URI']);
     exit;
 }
@@ -72,30 +67,6 @@ foreach ($sinhviens as $sv) {
     }
 }
 
-// Xử lý tải xuống tất cả báo cáo thành file zip
-if (isset($_GET['download_all']) && $_GET['download_all'] == 1) {
-    $zip = new ZipArchive();
-    $zipName = 'baocao_tongket_' . date('Ymd_His') . '.zip';
-    $zipPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $zipName;
-    if ($zip->open($zipPath, ZipArchive::CREATE) === TRUE) {
-        foreach ($baocao_tongket as $sv_id => $bc) {
-            if ($bc && file_exists($bc['Dir'])) {
-                // Đặt tên file trong zip là đúng tên file gốc (không thêm MSSV)
-                $zip->addFile($bc['Dir'], $bc['TenFile']);
-            }
-        }
-        $zip->close();
-        header('Content-Type: application/zip');
-        header('Content-Disposition: attachment; filename="' . $zipName . '"');
-        header('Content-Length: ' . filesize($zipPath));
-        readfile($zipPath);
-        unlink($zipPath);
-        exit;
-    } else {
-        $errorMsg = "Không thể tạo file zip!";
-    }
-}
-
 // Lấy tất cả các đợt mà giáo viên này đang hướng dẫn sinh viên, trạng thái >= 3
 $stmt = $conn->prepare("
     SELECT dt.ID, dt.TenDot, dt.TrangThai
@@ -110,6 +81,7 @@ $stmt = $conn->prepare("
 $stmt->execute([$id_gvhd]);
 $dots = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+// Khởi tạo biến $ds_sinhvien_theo_dot
 $ds_sinhvien_theo_dot = [];
 foreach ($dots as $dot) {
     $stmt = $conn->prepare("
@@ -119,6 +91,96 @@ foreach ($dots as $dot) {
     ");
     $stmt->execute([$id_gvhd, $dot['ID']]);
     $ds_sinhvien_theo_dot[$dot['ID']] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// Xử lý tải xuống tất cả báo cáo thành file zip
+if (isset($_GET['download_all']) && $_GET['download_all'] == 1) {
+    $zip = new ZipArchive();
+    $zipName = 'baocao_tongket_' . date('Ymd_His') . '.zip';
+    $zipPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $zipName;
+    
+    if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) === TRUE) {
+        $added_files = 0; // Track if any files were added
+        $student_count = 0; // Track number of students with complete submissions
+        
+        // Lấy danh sách sinh viên từ tất cả các đợt
+        foreach ($ds_sinhvien_theo_dot as $dot_id => $sinhviens) {
+            $dot_info = array_filter($dots, function($d) use ($dot_id) { return $d['ID'] == $dot_id; });
+            $dot_info = reset($dot_info);
+            $dot_name = $dot_info ? preg_replace('/[^a-zA-Z0-9_-]/', '', $dot_info['TenDot']) : "Dot-$dot_id";
+            
+            foreach ($sinhviens as $sv) {
+                // Kiểm tra xem sinh viên đã nộp đủ 4 loại file chưa
+                $loai_files = ['Baocao', 'khoasat', 'phieuthuctap', 'nhanxet'];
+                $file_count = 0;
+                $file_data = [];
+                
+                foreach ($loai_files as $loai) {
+                    $stmt = $conn->prepare("SELECT TenFile, Dir FROM file WHERE ID_SV = ? AND Loai = ? AND TrangThai = 1 ORDER BY ID DESC LIMIT 1");
+                    $stmt->execute([$sv['ID_TaiKhoan'], $loai]);
+                    $file = $stmt->fetch(PDO::FETCH_ASSOC);
+                    
+                    if ($file && !empty($file['Dir']) && file_exists($file['Dir'])) {
+                        $file_count++;
+                        $file_data[$loai] = $file;
+                    }
+                }
+                
+                // Chỉ thêm sinh viên có đủ 4 loại file vào ZIP
+                if ($file_count === 4) {
+                    $student_count++;
+                    // Tạo folder cho mỗi sinh viên - chỉ sử dụng MSSV
+                    $folder_name = $sv['MSSV'];
+                    $folder_path = $dot_name . '/' . $folder_name;
+                    
+                    // Create empty directory entry in ZIP for this student
+                    $zip->addEmptyDir($folder_path);
+                    
+                    // Thêm 4 loại file vào ZIP
+                    foreach ($loai_files as $loai) {
+                        $file = $file_data[$loai];
+                        $file_name = $loai . '_' . $file['TenFile'];
+                        // Read file contents instead of directly adding the file
+                        $file_contents = file_get_contents($file['Dir']);
+                        if ($file_contents !== false) {
+                            $zip->addFromString($folder_path . '/' . $file_name, $file_contents);
+                            $added_files++;
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Close ZIP before sending to browser
+        $zip->close();
+        
+        if ($student_count > 0 && $added_files > 0 && file_exists($zipPath)) {
+            // Set appropriate headers and send the file
+            header('Content-Type: application/zip');
+            header('Content-Disposition: attachment; filename="' . $zipName . '"');
+            header('Content-Length: ' . filesize($zipPath));
+            header('Pragma: no-cache');
+            header('Expires: 0');
+            
+            // Read file in chunks to handle large files
+            $handle = fopen($zipPath, 'rb');
+            if ($handle) {
+                while (!feof($handle)) {
+                    echo fread($handle, 8192);
+                    flush();
+                }
+                fclose($handle);
+            }
+            
+            // Delete temp file
+            @unlink($zipPath);
+            exit;
+        } else {
+            $errorMsg = "Không có sinh viên nào đã nộp đủ 4 loại file!";
+        }
+    } else {
+        $errorMsg = "Không thể tạo file zip!";
+    }
 }
 
 $baocao_tongket = [];
@@ -503,15 +565,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['diem_baocao'], $_POST
                                                                     <td><?= $stt++ ?></td>
                                                                     <td><?= htmlspecialchars($sv['MSSV']) ?></td>
                                                                     <td>
-                                                                        <?php if ($baocao_tongket[$dot['ID']][$sv['ID_TaiKhoan']]['TenFile']): ?>
-                                                                            <span class="text-success">Đã nộp</span>
-                                                                        <?php else: ?>
-                                                                            <span class="text-muted">Chưa nộp</span>
-                                                                        <?php endif; ?>
+                                                                        <?php
+                                                                        $loai_files = ['Baocao', 'khoasat', 'phieuthuctap', 'nhanxet'];
+                                                                        $total_files = 0;
+                                                                        foreach ($loai_files as $loai) {
+                                                                            $stmt_check = $conn->prepare("SELECT COUNT(*) FROM file WHERE ID_SV = ? AND Loai = ? AND TrangThai = 1");
+                                                                            $stmt_check->execute([$sv['ID_TaiKhoan'], $loai]);
+                                                                            if ($stmt_check->fetchColumn() > 0) $total_files++;
+                                                                        }
+                                                                        echo $total_files > 0 
+                                                                            ? "<span class='text-success'>Đã nộp {$total_files}/4</span>" 
+                                                                            : "<span class='text-danger'>Chưa nộp 0/4</span>";
+                                                                        ?>
                                                                     </td>
                                                                     <td>
-                                                                        <?php if ($baocao_tongket[$dot['ID']][$sv['ID_TaiKhoan']]['TenFile']): ?>
-                                                                            <a href="/datn/download.php?file=<?= urlencode(basename($baocao_tongket[$dot['ID']][$sv['ID_TaiKhoan']]['Dir'])) ?>"
+                                                                        <?php if ($total_files === 4): ?>
+                                                                            <a href="/datn/pages/giaovien/download_student.php?id_sv=<?= $sv['ID_TaiKhoan'] ?>&id_dot=<?= $dot['ID'] ?>" 
                                                                                class="btn btn-success btn-xs" title="Tải xuống báo cáo">
                                                                                 <i class="fa fa-download"></i> Tải xuống
                                                                             </a>
