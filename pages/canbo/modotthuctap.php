@@ -1,7 +1,5 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_login.php';
-
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
 $idTaiKhoan = $_SESSION['user_id'];
@@ -15,7 +13,7 @@ $hoTen = $stmt->fetchColumn();
 function getAllInternships($conn)
 {
     $stmt = $conn->prepare("
-        SELECT d.ID, d.TenDot, d.Nam, d.Loai, d.NguoiQuanLy, cb.Ten AS TenNguoiQuanLy,
+        SELECT d.ID, d.TenDot, d.Nam, d.Bac, d.NguoiQuanLy, cb.Ten AS TenNguoiQuanLy,
                d.ThoiGianBatDau, d.ThoiGianKetThuc, d.NguoiMoDot, d.TrangThai
         FROM DOTTHUCTAP d
         LEFT JOIN CanBoKhoa cb ON d.NguoiQuanLy = cb.ID_TaiKhoan
@@ -31,16 +29,16 @@ function countSimilar($conn, $tendot)
     $stmt->execute(['tendot' => $tendot . '%']);
     return $stmt->fetchColumn();
 }
-function saveInternship($conn, $tendot, $loai, $namHoc, $thoigianbatdau, $thoigianketthuc, $nguoiquanly, $nguoitao)
+function saveInternship($conn, $tendot, $bac, $namHoc, $thoigianbatdau, $thoigianketthuc, $nguoiquanly, $nguoitao)
 {
     $stmt = $conn->prepare("INSERT INTO DOTTHUCTAP (
-        TENDOT, NAM, LOAI, NGUOIQUANLY, THOIGIANBATDAU, THOIGIANKETTHUC, NGUOIMODOT, TRANGTHAI
-    ) VALUES (:tendot, :nam, :loai, :nguoiquanly, :thoigianbatdau, :thoigianketthuc, :nguoimodot, 1)");
+        TENDOT, NAM,BAC , NGUOIQUANLY, THOIGIANBATDAU, THOIGIANKETTHUC, NGUOIMODOT, TRANGTHAI
+    ) VALUES (:tendot, :nam, :bac, :nguoiquanly, :thoigianbatdau, :thoigianketthuc, :nguoimodot, 1)");
 
     if ($stmt->execute([
         'tendot' => $tendot,
         'nam' => $namHoc,
-        'loai' => $loai,
+        'bac' => $bac,
         'nguoiquanly' => $nguoiquanly,
         'thoigianbatdau' => $thoigianbatdau,
         'thoigianketthuc' => $thoigianketthuc,
@@ -55,21 +53,21 @@ $successMessage = "";
 $notification = "";
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     var_dump($_POST['NguoiQuanLy']);
-    $loai = $_POST['loai'];
+    $bac = $_POST['bac'];
     $namHoc = $_POST['namhoc'];
     $nguoitao = $idTaiKhoan;
     $nguoiQuanLy = intval($_POST['NguoiQuanLy']);
     $thoigianbatdau = $_POST['thoigianbatdau'];
     $thoigianketthuc = $_POST['thoigianketthuc'];
-    if ($loai == "" || $namHoc == "" || $thoigianbatdau == "" || $thoigianketthuc == "" || $nguoiQuanLy == "") {
+    if ($bac == "" || $namHoc == "" || $thoigianbatdau == "" || $thoigianketthuc == "" || $nguoiQuanLy == "") {
         $notification = "Vui lòng điền tất cả các trường.";
     } else {
-        $tendot = ($loai === 'Cao đẳng' ? 'CĐTH' : 'CĐNTH') . substr($namHoc, -2) . $lastWord;
+        $tendot = ($bac === 'Cao đẳng ngành' ? 'CĐTH' : 'CĐNTH') . substr($namHoc, -2);
 
         $count = countSimilar($conn, $tendot);
         $tendot = $tendot . '-' . ($count + 1);
 
-        $idDot = saveInternship($conn, $tendot, $loai, $namHoc, $thoigianbatdau, $thoigianketthuc, $nguoiQuanLy, $nguoitao);
+        $idDot = saveInternship($conn, $tendot, $bac, $namHoc, $thoigianbatdau, $thoigianketthuc, $nguoiQuanLy, $nguoitao);
         if ($idDot) {
             session_start();
             $_SESSION['success'] = "Đợt thực tập $tendot được mở thành công!";
@@ -85,6 +83,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 $danhSachDotThucTap = getAllInternships($conn);
 $canbokhoa = $conn->query("SELECT ID_TaiKhoan,Ten FROM canbokhoa where TrangThai=1")->fetchAll();
+
+if (isset($_SESSION['deleted'])) {
+    $successMessage = $_SESSION['deleted'];
+    unset($_SESSION['deleted']);
+}
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -105,14 +108,16 @@ $canbokhoa = $conn->query("SELECT ID_TaiKhoan,Ten FROM canbokhoa where TrangThai
         <div id="page-wrapper">
             <div class="container-fluid">
                 <div class="page-header">
+
                     <h1>
                         Quản lý Đợt Thực Tập
                     </h1>
+                    </h1><?php if (!empty($successMessage)): ?>
+                        <div id="noti" class="alert alert-success">
+                            <?= $successMessage ?>
+                        </div>
+                    <?php endif; ?>
                     <button id="btnShowFormMoDot" class="btn btn-primary btn-lg mt-3">Mở đợt thực tập mới</button>
-                    <? if (isset($_GET['msg']) && $_GET['msg'] === 'deleted'): ?>
-                        <div id="noti" class="alert alert-success text-center">Đã xóa đợt thực tập thành công.</div>
-                    <?php endif;
-                    ?>
                 </div>
                 <div class="row">
                     <div class="form-container" id="formMoDotContainer" style="display:none;">
@@ -140,10 +145,10 @@ $canbokhoa = $conn->query("SELECT ID_TaiKhoan,Ten FROM canbokhoa where TrangThai
                                 </div>
                                 <div class="col-lg-6">
                                     <div class="form-group">
-                                        <label>Loại</label>
-                                        <select id="loai" name="loai" class="form-control">
-                                            <option value="Cao đẳng">Cao đẳng</option>
+                                        <label>Bậc</label>
+                                        <select id="bac" name="bac" class="form-control">
                                             <option value="Cao đẳng ngành">Cao đẳng ngành</option>
+                                            <option value="Cao đẳng nghề">Cao đẳng nghề</option>
                                         </select>
                                     </div>
                                     <div class="form-group">
@@ -200,7 +205,7 @@ $canbokhoa = $conn->query("SELECT ID_TaiKhoan,Ten FROM canbokhoa where TrangThai
                                                     <th>#</th>
                                                     <th>Tên đợt</th>
                                                     <th>Năm</th>
-                                                    <th>Loại</th>
+                                                    <th>Bậc</th>
                                                     <th>Thời gian bắt đầu</th>
                                                     <th>Thời gian kết thúc</th>
                                                     <th>Người quản lý</th>
@@ -236,7 +241,7 @@ $canbokhoa = $conn->query("SELECT ID_TaiKhoan,Ten FROM canbokhoa where TrangThai
                                                         <td><?= $i++ ?></td>
                                                         <td><?= htmlspecialchars($dot['TenDot']) ?></td>
                                                         <td><?= htmlspecialchars($dot['Nam']) ?></td>
-                                                        <td><?= htmlspecialchars($dot['Loai']) ?></td>
+                                                        <td><?= htmlspecialchars($dot['Bac']) ?></td>
                                                         <td><?= htmlspecialchars($dot['ThoiGianBatDau']) ?></td>
                                                         <td><?= htmlspecialchars($dot['ThoiGianKetThuc']) ?></td>
                                                         <td><?= htmlspecialchars($dot['TenNguoiQuanLy']) ?></td>
@@ -327,7 +332,7 @@ $canbokhoa = $conn->query("SELECT ID_TaiKhoan,Ten FROM canbokhoa where TrangThai
             form.addEventListener('submit', function (e) {
                 e.preventDefault();
 
-                const loai = document.getElementById('loai').value;
+                const bac = document.getElementById('bac').value;
                 const nam = document.getElementById('namhoc').value;
                 const nguoiquanlySelect = document.getElementById('NguoiQuanLy');
                 const nguoiquanly = nguoiquanlySelect.options[nguoiquanlySelect.selectedIndex].text;
@@ -350,7 +355,7 @@ $canbokhoa = $conn->query("SELECT ID_TaiKhoan,Ten FROM canbokhoa where TrangThai
                 Swal.fire({
                     title: 'Xác nhận mở đợt?',
                     html: `
-                <p><strong>Loại:</strong> ${loai}</p>
+                <p><strong>Bậc:</strong> ${bac}</p>
                 <p><strong>Năm học:</strong> ${nam}</p>
                 <p><strong>Thời gian bắt đầu:</strong> ${startInput.value}</p>
                 <p><strong>Thời gian kết thúc:</strong> ${endInput.value}</p>

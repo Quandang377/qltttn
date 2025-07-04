@@ -274,6 +274,7 @@ if (
         document.addEventListener("DOMContentLoaded", function () {
             const forms = document.querySelectorAll("form");
             forms.forEach(form => {
+            if (form.id === "menuSearchForm") return;
                 form.addEventListener("submit", function (e) {
                     e.preventDefault(); // Ngăn submit mặc định
                     Swal.fire({

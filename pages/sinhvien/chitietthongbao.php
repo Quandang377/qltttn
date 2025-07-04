@@ -8,7 +8,9 @@ if (!isset($_GET['id'])) {
 
 $id = intval($_GET['id']);
 
-$idTaiKhoan = $_SESSION['user']['ID_TaiKhoan'];
+$idTaiKhoan = $_SESSION['user']['ID_TaiKhoan'] ?? null;
+
+if($idTaiKhoan){
 $stmt = $conn->prepare("SELECT ID_Dot FROM SinhVien WHERE ID_TaiKhoan = ?");
 $stmt->execute([$idTaiKhoan]);
 $idDot = $stmt->fetchColumn();
@@ -48,6 +50,25 @@ $thongbao_khac = $stmt_khac->fetchAll(PDO::FETCH_ASSOC);
 $stmt = $conn->prepare("SELECT ID_ThongBao FROM ThongBao_Xem WHERE ID_TaiKhoan = ?");
 $stmt->execute([$idTaiKhoan]);
 $daXem = array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'ID_ThongBao');
+}
+else
+{
+  $stmt = $conn->prepare("SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.NGAYDANG, tb.TRANGTHAI
+    FROM THONGBAO tb
+    WHERE tb.ID = ?");
+$stmt->execute([$id]);
+$thongbao = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$thongbao) {
+  die("Không tìm thấy thông báo.");
+}
+$stmt_khac = $conn->prepare("SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.ID_TAIKHOAN, tb.NGAYDANG, tb.TRANGTHAI
+    FROM THONGBAO tb
+    WHERE tb.ID != ? AND tb.TRANGTHAI = 1
+    ORDER BY tb.NGAYDANG DESC LIMIT 20");
+$stmt_khac->execute([$id]);
+$thongbao_khac = $stmt_khac->fetchAll(PDO::FETCH_ASSOC);
+}
 ?>
 
 <!DOCTYPE html>
@@ -92,6 +113,8 @@ $daXem = array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'ID_ThongBao');
       </div>
     </div>
   </div>
+    <?php require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"; ?>
+
 </body>
 
 </html>

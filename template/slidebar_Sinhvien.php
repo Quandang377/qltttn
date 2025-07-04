@@ -1,6 +1,6 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
-
+$isLoggedIn = isset($_SESSION['user']); // 👈 chuyển lên đây
 $idTaiKhoan = $_SESSION['user']['ID_TaiKhoan'] ?? null;
 $currentPage = basename($_SERVER['PHP_SELF']);
 $currentPath = $_SERVER['REQUEST_URI'];
@@ -29,7 +29,8 @@ if ($idTaiKhoan) {
     $stmt->execute([$idDot, $idTaiKhoan]);
     $coThongBaoMoi = $stmt->fetchColumn() > 0;
 }
-$stmt = $conn->prepare("
+if ($idTaiKhoan) {
+    $stmt = $conn->prepare("
     SELECT COUNT(*) FROM KhaoSat ks
     WHERE ks.TrangThai = 1
     AND (
@@ -46,9 +47,9 @@ $stmt = $conn->prepare("
         SELECT ID_KhaoSat FROM PhanHoiKhaoSat WHERE ID_TaiKhoan = ?
     )
 ");
-$stmt->execute([$vaiTro, $idTaiKhoan, $idTaiKhoan]);
-$coKhaoSatMoi = $stmt->fetchColumn() > 0;
-
+    $stmt->execute([$vaiTro, $idTaiKhoan, $idTaiKhoan]);
+    $coKhaoSatMoi = $stmt->fetchColumn() > 0;
+}
 $stmt = $conn->query("SELECT * FROM cauhinh");
 $cauhinh = [];
 foreach ($stmt as $row) {
@@ -60,8 +61,10 @@ foreach ($stmt as $row) {
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
     .topbar {
-        background: linear-gradient(to right, <?= $cauhinh['mau_sac_giaodien'] ?? '#2563eb' ?>);
-        padding: 10px 20px;
+        background: linear-gradient(to right,
+                <?= $cauhinh['mau_sac_giaodien'] ?? '#2563eb' ?>
+            );
+        padding: 15px 15px;
         color: white;
         display: flex;
         align-items: center;
@@ -117,6 +120,7 @@ foreach ($stmt as $row) {
         color: #333;
         font-weight: 500;
         text-decoration: none;
+        height: 36px;
         padding: 8px 14px;
         border-radius: 4px;
         transition: all 0.2s ease;
@@ -153,6 +157,44 @@ foreach ($stmt as $row) {
         color: white !important;
         /* chữ trắng */
     }
+
+    .menu-toggle {
+        display: none;
+        background: none;
+        border: none;
+        font-size: 22px;
+        color: #333;
+        padding: 10px 15px;
+        cursor: pointer;
+        margin-left: 15px;
+    }
+
+    @media (max-width: 768px) {
+        .nav-bar {
+            flex-direction: column;
+            align-items: flex-start;
+            padding: 10px 15px;
+            display: none;
+        }
+
+        .nav-bar.active {
+            display: flex;
+        }
+
+        .nav-bar a,
+        .nav-bar form {
+            margin: 5px 0;
+            width: 100%;
+        }
+
+        .menu-toggle {
+            display: inline-block;
+        }
+
+        .topbar-center {
+            display: none;
+        }
+    }
 </style>
 
 <!-- Top Bar -->
@@ -167,41 +209,105 @@ foreach ($stmt as $row) {
     </div>
     <div class="topbar-right">
 
-        <a href="pages/sinhvien/thongbaomoi" title="Thông báo mới" style="color: #ffffff;">
-            <i class="fa fa-bell"></i>
-            <?php if ($coThongBaoMoi): ?><span style="color:red;">●</span><?php endif; ?>
+        <a href="<?= $isLoggedIn ? 'pages/sinhvien/thongbaomoi' : '#' ?>" class="<?= $isLoggedIn ? '' : 'guest-link' ?>"
+            title="Thông báo mới" style="color: #ffffff;">
+            <i class="fa fa-bell"></i><?php if ($coThongBaoMoi): ?><span style="color:red;">●</span><?php endif; ?>
         </a>
-        <a href="pages/sinhvien/thongtincanhan" title="Tài khoản" style="color: #ffffff;"><i class="fa fa-user"></i></a>
-        <a href="/datn/logout" title="Đăng xuất" style="color: #ffffff;"><i
-                class="fa-solid fa-arrow-right-from-bracket"></i></a>
+        <a href="<?= $isLoggedIn ? 'pages/sinhvien/thongtincanhan' : '#' ?>"
+            class="<?= $isLoggedIn ? '' : 'guest-link' ?>" title="Tài khoản" style="color: #ffffff;">
+            <i class="fa fa-user"></i>
+        </a>
+
+        <?php if ($isLoggedIn): ?>
+            <!-- Nếu đã đăng nhập, hiển thị nút Đăng xuất -->
+            <a href="/datn/logout" title="Đăng xuất" style="color: #ffffff;">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            </a>
+        <?php else: ?>
+            <!-- Nếu chưa đăng nhập, hiển thị nút Đăng nhập -->
+            <a href="/datn/login" title="Đăng nhập" style="color: #ffffff;">
+                <i class="fa-solid fa-right-to-bracket"></i>
+            </a>
+        <?php endif; ?>
         <a href="<?= $cauhinh['website_khoa'] ?? 'https://cntt.caothang.edu.vn/' ?>" title="Khoa Công Nghệ Thông Tin">
             <img src="<?= htmlspecialchars($cauhinh['logo'] ?? '/datn/uploads/Images/logo.jpg') ?>" alt="Logo"
                 style="height: 30px; margin-left: 10px; vertical-align: middle;">
         </a>
     </div>
 </div>
+<button class="menu-toggle" onclick="toggleMenu()">
+    <i class="fa fa-bars"></i>
+</button>
 
 <!-- Navigation Menu -->
 <div class="nav-bar">
     <a href="pages/sinhvien/trangchu" class="<?= strpos($currentPath, 'trangchu') !== false ? 'active' : '' ?>">Trang
         chủ</a>
-    <a href="pages/sinhvien/dangkygiaygioithieu"
-        class="<?= strpos($currentPath, 'dangkygiaygioithieu') !== false ? 'active' : '' ?>">Giấy giới thiệu</a>
-    <a href="pages/sinhvien/baocaotuan" class="<?= strpos($currentPath, 'baocaotuan') !== false ? 'active' : '' ?>">Báo
-        cáo tuần</a>
+
+    <a href="<?= $isLoggedIn ? 'pages/sinhvien/dangkygiaygioithieu' : '#' ?>"
+        class="<?= strpos($currentPath, 'dangkygiaygioithieu') !== false ? 'active' : '' ?> <?= !$isLoggedIn ? 'guest-link' : '' ?>">
+        Giấy giới thiệu
+    </a>
+
+    <a href="<?= $isLoggedIn ? 'pages/sinhvien/baocaotuan' : '#' ?>"
+        class="<?= strpos($currentPath, 'baocaotuan') !== false ? 'active' : '' ?> <?= !$isLoggedIn ? 'guest-link' : '' ?>">
+        Báo cáo tuần
+    </a>
+
     <a href="pages/sinhvien/tainguyen" class="<?= strpos($currentPath, 'tainguyen') !== false ? 'active' : '' ?>">Tài
         nguyên</a>
-    <a href="pages/sinhvien/nopketqua" class="<?= strpos($currentPath, 'nopketqua') !== false ? 'active' : '' ?>">Nộp
-        kết quả</a>
-    <a href="pages/sinhvien/khaosat" class="<?= strpos($currentPath, 'khaosat') !== false ? 'active' : '' ?>">
+
+    <a href="<?= $isLoggedIn ? 'pages/sinhvien/nopketqua' : '#' ?>"
+        class="<?= strpos($currentPath, 'nopketqua') !== false ? 'active' : '' ?> <?= !$isLoggedIn ? 'guest-link' : '' ?>">
+        Nộp kết quả
+    </a>
+
+    <a href="<?= $isLoggedIn ? 'pages/sinhvien/khaosat' : '#' ?>"
+        class="<?= strpos($currentPath, 'khaosat') !== false ? 'active' : '' ?> <?= !$isLoggedIn ? 'guest-link' : '' ?>">
         Khảo sát
         <?php if (!empty($coKhaoSatMoi)): ?>
             <span style="color:red;font-size:16px;vertical-align:middle;">●</span>
         <?php endif; ?>
     </a>
-    <form method="get" action="pages/sinhvien/timkiem.php" class="form-inline text-right" style="margin-right: -50px;">
-        <input type="text" name="q" class="form-control" placeholder="Tìm kiếm thông tin..." style="width: 300px;"
-            required>
+    <form id="menuSearchForm" class="form-inline text-right" style="margin-right: -50px;"
+        onsubmit="return submitSearchForm();">
+        <input type="text" name="q" id="searchInput" class="form-control" placeholder="Tìm kiếm thông tin..."
+            style="width: 300px;" required>
         <button type="submit" class="btn btn-primary">Tìm kiếm</button>
     </form>
 </div>
+<script>
+    function toggleMenu() {
+        const navBar = document.querySelector('.nav-bar');
+        navBar.classList.toggle('active');
+    }
+    function submitSearchForm() {
+        const keyword = document.getElementById('searchInput').value.trim();
+        if (keyword) {
+            window.location.href = '/datn/pages/sinhvien/timkiem?q=' + encodeURIComponent(keyword);
+        }
+        return false;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const guestLinks = document.querySelectorAll('.guest-link');
+
+        guestLinks.forEach(link => {
+            link.addEventListener('click', function (e) {
+                e.preventDefault();
+                Swal.fire({
+                    title: 'Yêu cầu đăng nhập',
+                    text: 'Bạn cần đăng nhập để sử dụng chức năng này.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Đăng nhập',
+                    cancelButtonText: 'Hủy'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = '/datn/login';
+                    }
+                });
+            });
+        });
+    });
+</script>

@@ -34,7 +34,6 @@ $updateStmt->execute(['today' => $today]);
 $updateStmt2 = $conn->prepare("UPDATE DOTTHUCTAP SET TRANGTHAI = 2 WHERE THOIGIANBATDAU <= :today AND TRANGTHAI != -1 AND TRANGTHAI != 0");
 $updateStmt2->execute(['today' => $today]);
 ?>
-?>
 <!DOCTYPE html>
 <html lang="vi">
 
@@ -60,8 +59,10 @@ $updateStmt2->execute(['today' => $today]);
           </div>
         </div>
         <div class="row panel-row">
+          <div class="col-lg-12">
+
           <div class="col-md-3 panel-container">
-            <a href="pages/giaovien/danhsachcongty" style="text-decoration: none; color: inherit;">
+            <a style="text-decoration: none; color: inherit;">
               <div class="panel panel-default" style="min-height: 170px;">
                 <div class="panel-heading">Tìm công ty thực tập</div>
                 <div class="panel-body">
@@ -72,7 +73,7 @@ $updateStmt2->execute(['today' => $today]);
             </a>
           </div>
           <div class="col-md-3 panel-container">
-            <a href="pages/giaovien/quanlygiaygioithieu" style="text-decoration: none; color: inherit;">
+            <a style="text-decoration: none; color: inherit;">
               <div class="panel panel-default" style="min-height: 170px;">
                 <div class="panel-heading">Xin giấy giới thiệu thực tập</div>
                 <div class="panel-body">
@@ -123,6 +124,7 @@ $updateStmt2->execute(['today' => $today]);
                 </div>
               </div>
             </div>
+          </div>
           </div>
         </div>
         <div class="row">
@@ -212,7 +214,6 @@ $updateStmt2->execute(['today' => $today]);
     renderNotifications();
   </script>
 </body>
-
 </html>
 <style>
   .panel-row {
@@ -269,9 +270,13 @@ $updateStmt2->execute(['today' => $today]);
     max-width: 100%;
     overflow-x: hidden;
   }
-
+  @media (max-width: 768px) {
+      .panel-container:not(:last-child)::after {
+    display:none;
+  }
   .row {
     margin-left: 0;
     margin-right: 0;
   }
+  
 </style>

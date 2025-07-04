@@ -1,5 +1,4 @@
 <?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_login.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
 $id_taikhoan = $_SESSION['user_id'] ?? null;
@@ -11,7 +10,7 @@ $hoTen = $stmt->fetchColumn();
 
 // Lấy các đợt thực tập do mình quản lý
 $stmt = $conn->prepare("SELECT ID, TenDot FROM DotThucTap WHERE TrangThai >= 0 AND NguoiQuanLy = ? ORDER BY ID DESC");
-$stmt->execute([$hoTen]);
+$stmt->execute([$id_taikhoan]);
 $dsDot = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -88,10 +87,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                   </div>
                   <div class="form-group">
                     <label>Nội dung thông báo</label>
-                    <textarea class="form-control" id="noidung" name="noidung" required></textarea>
+                    <script src="/datn/access/ckeditor/classic/ckeditor.js"></script>
+                    <textarea name="noidung" id="editor" style="height:500px"></textarea>
                     <script>
-                      CKEDITOR.replace('noidung', {
-                      });
+                      ClassicEditor
+                        .create(document.querySelector('#editor'))
+                        .catch(error => {
+                          console.error('Lỗi khởi tạo CKEditor:', error);
+                        });
                     </script>
 
                   </div>

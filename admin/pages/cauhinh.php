@@ -1,4 +1,6 @@
 <?php
+require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
+
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
 // Xử lý cập nhật
@@ -111,6 +113,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
     </div>
+    <?php
+
+    require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
+        ?>
     <script>
         document.querySelectorAll('.upload-config-file').forEach(input => {
             input.addEventListener('change', function () {

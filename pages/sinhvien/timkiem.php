@@ -5,6 +5,58 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/middleware/check_role.php";
 $tuKhoa = trim($_GET['q'] ?? '');
 $tuKhoaLike = '%' . $tuKhoa . '%';
 
+$mapping = [
+    'trang chủ' => 'pages/sinhvien/trangchu',
+    'trang chu' => 'pages/sinhvien/trangchu',
+    'tc' => 'pages/sinhvien/trangchu',
+    'home' => 'pages/sinhvien/trangchu',
+    'giấy giới thiệu' => 'pages/sinhvien/dangkygiaygioithieu',
+    'giay gioi thieu' => 'pages/sinhvien/dangkygiaygioithieu',
+    'ggt' => 'pages/sinhvien/dangkygiaygioithieu',
+    'báo cáo tuần' => 'pages/sinhvien/baocaotuan',
+    'bao cao tuan' => 'pages/sinhvien/baocaotuan',
+    'bao cao' => 'pages/sinhvien/baocaotuan',
+    'bc' => 'pages/sinhvien/baocaotuan',
+    'tài nguyên' => 'pages/sinhvien/tainguyen',
+    'tai nguyen' => 'pages/sinhvien/tainguyen',
+    'tn' => 'pages/sinhvien/tainguyen',
+    'nộp kết quả' => 'pages/sinhvien/nopketqua',
+    'nop ket qua' => 'pages/sinhvien/nopketqua',
+    'nkq' => 'pages/sinhvien/nopketqua',
+    'kq' => 'pages/sinhvien/nopketqua',
+    'khảo sát' => 'pages/sinhvien/khaosat',
+    'khao sat' => 'pages/sinhvien/khaosat',
+    'ks' => 'pages/sinhvien/khaosat',
+    'trang ca nhan' => 'pages/sinhvien/thongtincanhan',
+    'trang cá nhan' => 'pages/sinhvien/thongtincanhan',
+    'trang cá nhân' => 'pages/sinhvien/thongtincanhan',
+    'thông tin cá nhân' => 'pages/sinhvien/thongtincanhan',
+    'tcn' => 'pages/sinhvien/thongtincanhan',
+    'ttcn' => 'pages/sinhvien/thongtincanhan',
+    'profile' => 'pages/sinhvien/thongtincanhan',
+];
+
+// Chuyển về chữ thường không dấu để so sánh
+function bo_dau($str) {
+    $str = strtolower($str);
+    $str = preg_replace('/[àáạảãâầấậẩẫăằắặẳẵ]/u', 'a', $str);
+    $str = preg_replace('/[èéẹẻẽêềếệểễ]/u', 'e', $str);
+    $str = preg_replace('/[ìíịỉĩ]/u', 'i', $str);
+    $str = preg_replace('/[òóọỏõôồốộổỗơờớợởỡ]/u', 'o', $str);
+    $str = preg_replace('/[ùúụủũưừứựửữ]/u', 'u', $str);
+    $str = preg_replace('/[ỳýỵỷỹ]/u', 'y', $str);
+    $str = preg_replace('/[đ]/u', 'd', $str);
+    return $str;
+}
+
+$tuKhoaCheck = bo_dau($tuKhoa);
+foreach ($mapping as $tu => $url) {
+    if (strpos(bo_dau($tuKhoaCheck), bo_dau($tu)) !== false) {
+        header("Location: /datn/" . $url);
+        exit;
+    }
+}
+
 // Lấy ID đợt thực tập của sinh viên
 $idTaiKhoan = $_SESSION['user']['ID_TaiKhoan'] ?? null;
 $stmt = $conn->prepare("SELECT ID_Dot FROM sinhvien WHERE ID_TaiKhoan = ?");

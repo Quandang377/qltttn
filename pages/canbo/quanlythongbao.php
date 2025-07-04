@@ -77,18 +77,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_thongbao_id'])) {
           </div>
         </div>
         <div class="row">
-          <div class="col-lg-12">
+          <div class="col-md-10">
             <form method="get" class="form-inline" style="margin-bottom: 15px;">
-              <label for="dot_filter">Lọc theo đợt:</label>
+              <label for="dot_filter">Lọc theo đợt: </label>
               <select name="dot_filter" id="dot_filter" class="form-control" onchange="this.form.submit()">
                 <option value="">-- Tất cả --</option>
                 <?php foreach ($dsDot as $dot): ?>
-                  <option value="<?= $dot['ID'] ?>" <?= ($_GET['dot_filter'] ?? '') == $dot['ID'] ? 'selected' : '' ?>>
+                  <option value="<?= $dot['ID'] ?>" <?= (isset($_GET['dot_filter']) && $_GET['dot_filter'] == $dot['ID']) ? 'selected' : '' ?>>
                     <?= htmlspecialchars($dot['TenDot']) ?>
                   </option>
                 <?php endforeach; ?>
               </select>
             </form>
+            </div>
+            <div class="col-md-2" style="">
+          <a href="pages/canbo/taothongbao" class="fixed-button btn btn-primary btn-lg">
+            Tạo thông báo
+          </a>
+          </div>
+          </div>
+        <div class="row">
 
             <div class="panel panel-default">
               <div class="panel-heading">
@@ -144,11 +152,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_thongbao_id'])) {
             <!-- /.panel -->
           </div>
           <!-- /.col-lg-6 -->
-        </div>
-        <div style="position: fixed; bottom: 5%; right: 5%;z-index: 999;">
-          <a href="pages/canbo/taothongbao" class="fixed-button btn btn-primary btn-lg">
-            Tạo thông báo
-          </a>
         </div>
       </div>
 

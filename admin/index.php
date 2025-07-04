@@ -5,7 +5,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 // Kiểm tra quyền truy cập
 if (!isset($_SESSION['user']) || $_SESSION['user']['VaiTro'] !== 'Admin') {
-    header("Location: /datn/login");
+    header("Location: /datn/");
     exit;
 }
 

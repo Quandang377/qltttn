@@ -90,7 +90,7 @@ $dsDotThucTap = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                     onclick="moModalThem()">Thêm</button>
                             </div>
                             <div class="form-group col-sm-1">
-                                <button type="submit" class="btn btn-danger" style="min-width:70px">Xóa</button>
+                                <button type="submit" class="btn btn-danger" style="min-width:70px">Khóa</button>
                             </div>
                             <div class="col-lg-12">
                                 <ul class="nav nav-tabs" id="tabThanhVien">

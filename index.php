@@ -15,7 +15,7 @@ $splitURL = explode('/', $URL);
 if ($splitURL[0] === 'logout') {
     session_unset();
     session_destroy();
-    header("Location: " . BASE_PATH . "/login");
+    header("Location: " . BASE_PATH . "/");
     exit;
 }
 
@@ -24,29 +24,48 @@ if ($splitURL[0] === 'login') {
     exit;
 }
 
-// ==== Nếu chưa đăng nhập => về login ==== //
-if (!isset($_SESSION['user'])) {
-    header("Location: " . BASE_PATH . "/login");
-    exit;
-}
+// ==== Cho phép truy cập trang chủ sinh viên nếu chưa đăng nhập ==== //
+$publicPages = [
+    'pages/sinhvien/trangchu',
+    'pages/sinhvien/tainguyen',
+    'pages/sinhvien/chitietthongbao',
+    "pages/sinhvien/xemdanhsachcongty",
+    "pages/sinhvien/timkiem",
+];
 
-// ==== Trang chủ tương ứng vai trò ==== //
+$allowPublicAccess = in_array($URL, $publicPages);
+
+// ==== Nếu chưa đăng nhập và không phải trang public thì chuyển login ==== //
+if (!isset($_SESSION['user']) && $URL !== '' && !in_array($URL, $publicPages)) {
+    if ($URL !== '/login') {
+        header("Location: " . BASE_PATH . "/");
+        exit;
+    }
+} 
+
+// ==== Nếu truy cập root (/) thì chuyển theo vai trò ==== //
 if ($URL === '') {
-    switch ($_SESSION['user']['VaiTro']) {
-        case 'Admin':
-            header("Location: " . BASE_PATH . "/admin/pages/trangchu");
-            break;
-        case 'Cán bộ Khoa/Bộ môn':
-            header("Location: " . BASE_PATH . "/pages/canbo/trangchu");
-            break;
-        case 'Giáo viên':
-            header("Location: " . BASE_PATH . "/pages/giaovien/trangchu");
-            break;
-        case 'Sinh viên':
-            header("Location: " . BASE_PATH . "/pages/sinhvien/trangchu");
-            break;
-        default:
-            require_once '404.php';
+    if (!isset($_SESSION['user'])) {
+        // Nếu chưa login, chuyển tới trang chủ sinh viên
+        header("Location: " . BASE_PATH . "/pages/sinhvien/trangchu");
+    } else {
+        // Đã login thì điều hướng theo vai trò
+        switch ($_SESSION['user']['VaiTro']) {
+            case 'Admin':
+                header("Location: " . BASE_PATH . "/admin/pages/trangchu");
+                break;
+            case 'Cán bộ Khoa/Bộ môn':
+                header("Location: " . BASE_PATH . "/pages/canbo/trangchu");
+                break;
+            case 'Giáo viên':
+                header("Location: " . BASE_PATH . "/pages/giaovien/trangchu");
+                break;
+            case 'Sinh viên':
+                header("Location: " . BASE_PATH . "/pages/sinhvien/trangchu");
+                break;
+            default:
+                require_once '404.php';
+        }
     }
     exit;
 }
@@ -83,3 +102,4 @@ if ($splitURL[0] === 'pages') {
 
 // ==== Nếu không khớp gì cả => 404 ==== //
 require_once '404.php';
+?>

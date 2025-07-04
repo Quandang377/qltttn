@@ -4,5 +4,5 @@ session_start();
 $_SESSION = [];
 session_destroy();
 
-header("Location: /datn/login");
+header("Location: /datn");
 exit;

@@ -45,6 +45,8 @@ $updateStmt2->execute(['today' => $today]);
           </div>
         </div>
         <div class="row panel-row">
+          <div class="col-lg-12">
+
           <div class="col-md-3 panel-container">
             <a href="admin/pages/danhsachcongty" style="text-decoration: none; color: inherit;">
               <div class="panel panel-default" style="min-height: 170px;">
@@ -108,6 +110,7 @@ $updateStmt2->execute(['today' => $today]);
                 </div>
               </div>
             </div>
+          </div>
           </div>
         </div>
         <div class="row">
@@ -258,5 +261,9 @@ $updateStmt2->execute(['today' => $today]);
   .row {
     margin-left: 0;
     margin-right: 0;
+  }
+  @media (max-width: 768px) {
+      .panel-container:not(:last-child)::after {
+    display:none;
   }
 </style>

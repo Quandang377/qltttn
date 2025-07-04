@@ -2,101 +2,142 @@
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
-// Thư mục lưu file upload
 $uploadDir = $_SERVER['DOCUMENT_ROOT'] . '/datn/file/';
 if (!is_dir($uploadDir))
     mkdir($uploadDir, 0777, true);
-
-
 $maxSize = 40 * 1024 * 1024; // 40MB
-
 $msg = "";
 $idTaiKhoan = $_SESSION['user_id'] ?? $_SESSION['user']['ID_TaiKhoan'] ?? null;
 
-// Xử lý xóa file
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete') {
-    $id = intval($_POST['id']);
-    $stmt = $conn->prepare("SELECT DIR FROM file WHERE ID=?");
-    $stmt->execute([$id]);
-    $row = $stmt->fetch();
-    if ($row && file_exists($row['DIR']) && strpos($row['DIR'], '/datn/file/') !== false) {
-        unlink($row['DIR']);
-    }
-    $stmt = $conn->prepare("UPDATE file SET TrangThai=0 WHERE ID=?");
-    $stmt->execute([$id]);
-    $msg = "Xóa tài nguyên thành công!";
-}
-
-// Xử lý thêm mới
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add') {
-    $ten = trim($_POST['ten']);
-    $nguoidang = $idTaiKhoan;
-    $duongdan = "";
-    $tenfile = "";
-
-    if (isset($_FILES['duongdan']) && $_FILES['duongdan']['error'] === UPLOAD_ERR_OK && $_FILES['duongdan']['size'] <= $maxSize) {
-        $ext = strtolower(pathinfo($_FILES['duongdan']['name'], PATHINFO_EXTENSION));
-        $fileName = uniqid('file_') . '.' . $ext;
-        $targetPath = $uploadDir . $fileName;
-        if (move_uploaded_file($_FILES['duongdan']['tmp_name'], $targetPath)) {
-            $duongdan = realpath($targetPath);
-            $tenfile = $_FILES['duongdan']['name'];
-        }
-    } elseif (!empty($_POST['duongdan_link'])) {
-        $duongdan = trim($_POST['duongdan_link']);
-        $tenfile = basename($duongdan);
-    }
-
-    if ($ten && $duongdan && $nguoidang) {
-        $stmt = $conn->prepare("INSERT INTO file (TenFile, DIR, ID_SV, ID_GVHD, TrangThai, Loai, NgayNop, Ten) VALUES (?, ?, NULL, NULL, 1, 'Tainguyen', NOW(), ?)");
-        $stmt->execute([$tenfile, $duongdan, $ten]);
-        $msg = "Thêm tài nguyên thành công!";
-    } else {
-        $msg = "Vui lòng nhập đủ thông tin và chọn file hoặc nhập đường dẫn!";
-    }
-}
-
-// Xử lý sửa file
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'edit') {
-    $id = intval($_POST['id']);
-    $ten = trim($_POST['ten']);
-    $duongdan = $_POST['duongdan_old'] ?? "";
-    $tenfile = $_POST['tenfile_old'] ?? "";
-
-    // Nếu upload file mới
-    if (isset($_FILES['duongdan']) && $_FILES['duongdan']['error'] === UPLOAD_ERR_OK && $_FILES['duongdan']['size'] <= $maxSize) {
-        $ext = strtolower(pathinfo($_FILES['duongdan']['name'], PATHINFO_EXTENSION));
-        $fileName = uniqid('file_') . '.' . $ext;
-        $targetPath = $uploadDir . $fileName;
-        if (move_uploaded_file($_FILES['duongdan']['tmp_name'], $targetPath)) {
-            // Xóa file cũ nếu là file upload
-            if ($duongdan && file_exists($duongdan) && strpos($duongdan, '/datn/file/') !== false)
-                unlink($duongdan);
-            $duongdan = realpath($targetPath);
-            $tenfile = $_FILES['duongdan']['name'];
-        }
-    } elseif (!empty($_POST['duongdan_link'])) {
-        // Nếu nhập đường dẫn mới
-        if ($duongdan && file_exists($duongdan) && strpos($duongdan, '/datn/file/') !== false)
-            unlink($duongdan);
-        $duongdan = trim($_POST['duongdan_link']);
-        $tenfile = basename($duongdan);
-    }
-
-    if ($ten && $duongdan) {
-        $stmt = $conn->prepare("UPDATE file SET TenFile=?, DIR=?, Ten=? WHERE ID=?");
-        $stmt->execute([$tenfile, $duongdan, $ten, $id]);
-        $msg = "Cập nhật tài nguyên thành công!";
-    } else {
-        $msg = "Vui lòng nhập đủ thông tin và chọn file hoặc nhập đường dẫn!";
-    }
-}
-
-// Lấy danh sách tài nguyên
-$stmt = $conn->prepare("SELECT * FROM file WHERE Loai='Tainguyen' and trangthai=1 ORDER BY ID DESC");
+$stmt = $conn->prepare("
+    SELECT f.*, GROUP_CONCAT(dt.TenDot SEPARATOR ', ') AS DotThucTap
+    FROM file f
+    LEFT JOIN tainguyen_dot td ON f.ID = td.ID_File
+    LEFT JOIN dotthuctap dt ON td.ID_Dot = dt.ID
+    WHERE f.Loai='Tainguyen' AND f.TrangThai = 1
+    GROUP BY f.ID
+    ORDER BY f.ID DESC
+");
 $stmt->execute();
 $tainguyen = $stmt->fetchAll(PDO::FETCH_ASSOC);
+function respond($status, $message)
+{
+    if (isset($_POST['ajax']) && $_POST['ajax'] == '1') {
+        if (ob_get_length())
+            ob_clean(); // Xóa mọi output
+        header('Content-Type: application/json');
+        echo json_encode(['status' => $status, 'message' => $message]);
+        exit;
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? '';
+    $ten = trim($_POST['ten'] ?? '');
+    $dsDot = $_POST['ds_dot'] ?? [];
+    $duongdan = $_POST['duongdan_old'] ?? '';
+    $tenfile = $_POST['tenfile_old'] ?? '';
+
+    // THÊM
+    if ($action === 'add') {
+        if (isset($_FILES['duongdan']) && $_FILES['duongdan']['error'] === UPLOAD_ERR_OK && $_FILES['duongdan']['size'] <= $maxSize) {
+            $ext = strtolower(pathinfo($_FILES['duongdan']['name'], PATHINFO_EXTENSION));
+            $fileName = uniqid('file_') . '.' . $ext;
+            $targetPath = $uploadDir . $fileName;
+            if (move_uploaded_file($_FILES['duongdan']['tmp_name'], $targetPath)) {
+                $duongdan = realpath($targetPath);
+                $tenfile = $_FILES['duongdan']['name'];
+            }
+        } elseif (!empty($_POST['duongdan_link'])) {
+            $duongdan = trim($_POST['duongdan_link']);
+            $tenfile = basename($duongdan);
+        }
+
+        if ($ten && $duongdan) {
+            $stmt = $conn->prepare("INSERT INTO file (TenFile, DIR, ID_SV, ID_GVHD, TrangThai, Loai, NgayNop, Ten)
+                                    VALUES (?, ?, NULL, NULL, 1, 'Tainguyen', NOW(), ?)");
+            $stmt->execute([$tenfile, $duongdan, $ten]);
+            $idFile = $conn->lastInsertId();
+
+            if (!empty($dsDot)) {
+                $stmt = $conn->prepare("INSERT INTO tainguyen_dot (ID_File, ID_Dot) VALUES (?, ?)");
+                foreach ($dsDot as $idDot) {
+                    $stmt->execute([$idFile, $idDot]);
+                }
+            }
+            respond('success', 'Thêm tài nguyên thành công!');
+        } else {
+            respond('error', 'Vui lòng nhập đủ thông tin và chọn file hoặc đường dẫn!');
+        }
+        if (isset($_POST['ajax'])) {
+            header('Content-Type: application/json');
+
+            // Sau khi xử lý xong:
+            echo json_encode([
+                'status' => 'success',
+                'message' => 'Đã thêm tài nguyên thành công!'
+            ]);
+            exit;
+        }
+    }
+
+    // SỬA
+    elseif ($action === 'edit') {
+        $id = intval($_POST['id'] ?? 0);
+
+        if (isset($_FILES['duongdan']) && $_FILES['duongdan']['error'] === UPLOAD_ERR_OK && $_FILES['duongdan']['size'] <= $maxSize) {
+            $ext = strtolower(pathinfo($_FILES['duongdan']['name'], PATHINFO_EXTENSION));
+            $fileName = uniqid('file_') . '.' . $ext;
+            $targetPath = $uploadDir . $fileName;
+            if (move_uploaded_file($_FILES['duongdan']['tmp_name'], $targetPath)) {
+                if ($duongdan && file_exists($duongdan) && strpos($duongdan, '/datn/file/') !== false)
+                    unlink($duongdan);
+                $duongdan = realpath($targetPath);
+                $tenfile = $_FILES['duongdan']['name'];
+            }
+        } elseif (!empty($_POST['duongdan_link'])) {
+            if ($duongdan && file_exists($duongdan) && strpos($duongdan, '/datn/file/') !== false)
+                unlink($duongdan);
+            $duongdan = trim($_POST['duongdan_link']);
+            $tenfile = basename($duongdan);
+        }
+
+        if ($ten && $duongdan) {
+            $stmt = $conn->prepare("UPDATE file SET TenFile=?, DIR=?, Ten=? WHERE ID=?");
+            $stmt->execute([$tenfile, $duongdan, $ten, $id]);
+
+            $stmt = $conn->prepare("DELETE FROM tainguyen_dot WHERE ID_File=?");
+            $stmt->execute([$id]);
+
+            if (!empty($dsDot)) {
+                $stmt = $conn->prepare("INSERT INTO tainguyen_dot (ID_File, ID_Dot) VALUES (?, ?)");
+                foreach ($dsDot as $idDot) {
+                    $stmt->execute([$id, $idDot]);
+                }
+            }
+
+            respond('success', 'Cập nhật tài nguyên thành công!');
+        } else {
+            respond('error', 'Vui lòng nhập đủ thông tin!');
+        }
+    }
+
+    // XÓA
+    elseif ($action === 'delete') {
+        $id = intval($_POST['id']);
+        $stmt = $conn->prepare("SELECT DIR FROM file WHERE ID=?");
+        $stmt->execute([$id]);
+        $row = $stmt->fetch();
+        if ($row && file_exists($row['DIR']) && strpos($row['DIR'], '/datn/file/') !== false) {
+            unlink($row['DIR']);
+        }
+        $stmt = $conn->prepare("UPDATE file SET TrangThai=0 WHERE ID=?");
+        $stmt->execute([$id]);
+        respond('success', 'Xóa tài nguyên thành công!');
+    }
+}
 ?>
+
 <!DOCTYPE html>
 <html lang="vi">
 
@@ -139,6 +180,16 @@ $tainguyen = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                     <input type="radio" name="chon_kieu" value="link"> Nhập đường dẫn
                                 </label>
                             </div>
+                            <div class="form-group" style="margin:5px">
+                                <button type="button" class="btn btn-info btn-md" data-toggle="modal"
+                                    data-target="#modalChonDot">
+                                    Chọn đợt
+                                </button>
+                                <span id="dot-da-chon" class="ml-2 text-primary font-weight-bold">Chưa chọn</span>
+
+                            </div>
+                            <div id="dot-container"></div>
+
                         </div>
                         <input type="hidden" name="action" value="add">
                         <div class="form-group">
@@ -152,6 +203,7 @@ $tainguyen = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <input type="text" name="duongdan_link" class="form-control" id="input-link"
                                 placeholder="Nhập đường dẫn tới file (Google Drive, ...)">
                         </div>
+
                         <button type="submit" class="btn btn-success">Thêm mới</button>
 
                     </form>
@@ -162,26 +214,37 @@ $tainguyen = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <th>#</th>
                                 <th>Tên tài nguyên</th>
                                 <th>File</th>
+                                <th>Áp dụng cho đợt</th>
                                 <th>Thao tác</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($tainguyen as $i => $row): ?>
+                            <?php
+                            foreach ($tainguyen as $i => $row): ?>
                                 <tr>
                                     <td><?= $i + 1 ?></td>
                                     <td><?= htmlspecialchars($row['Ten']) ?></td>
                                     <td>
                                         <?= htmlspecialchars($row['TenFile']) ?>
                                     </td>
+                                    <td><?= htmlspecialchars($row['DotThucTap']) ?></td>
                                     <td>
-                                        <button class="btn btn-xs btn-warning"
-                                            onclick="editRow(<?= htmlspecialchars(json_encode($row)) ?>)">Sửa</button>
-                                        <form method="post" style="display:inline;"
-                                            onsubmit="return confirm('Xác nhận xóa?')">
-                                            <input type="hidden" name="action" value="delete">
-                                            <input type="hidden" name="id" value="<?= $row['ID'] ?>">
-                                            <button type="submit" class="btn btn-xs btn-danger">Xóa</button>
-                                        </form>
+                                        <?php
+
+                                        $stmtDot = $conn->prepare("SELECT ID_Dot FROM tainguyen_dot WHERE ID_File = ?");
+                                        $stmtDot->execute([$row['ID']]);
+                                        $dotIDs = $stmtDot->fetchAll(PDO::FETCH_COLUMN);
+                                        $row['DotIDs'] = $dotIDs;
+                                        $row['DuongDan'] = $row['DIR'];
+                                        ?>
+                                        <button class="btn btn-xs btn-warning btn-edit"
+                                            data-row='<?= json_encode($row, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>'>
+                                            Sửa
+                                        </button>
+
+                                        <button class="btn btn-xs btn-danger"
+                                            onclick="deleteTaiNguyen(<?= $row['ID'] ?>)">Xóa</button>
+
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -214,6 +277,19 @@ $tainguyen = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                             placeholder="Nhập đường dẫn tới file (Google Drive, ...)">
                                     </div>
                                     <div id="file-link"></div>
+                                    <div class="form-group">
+                                        <label>Các đợt thực tập áp dụng:</label>
+                                        <select multiple class="form-control" name="ds_dot[]" id="edit-ds-dot" size="6">
+                                            <?php
+                                            $stmt = $conn->query("SELECT ID, TenDot FROM DotThucTap WHERE TrangThai >= 0 ORDER BY ID DESC");
+                                            while ($dot = $stmt->fetch(PDO::FETCH_ASSOC)):
+                                                ?>
+                                                <option value="<?= $dot['ID'] ?>"><?= htmlspecialchars($dot['TenDot']) ?>
+                                                </option>
+                                            <?php endwhile; ?>
+                                        </select>
+                                        <small class="text-muted">Giữ Ctrl (hoặc Cmd) để chọn nhiều đợt</small>
+                                    </div>
                                 </div>
                                 <div class="modal-footer">
                                     <button type="button" class="btn btn-default" data-dismiss="modal">Hủy</button>
@@ -266,14 +342,192 @@ $tainguyen = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 $(this).val('');
             }
         });
-        function editRow(row) {
-            $('#edit-id').val(row.ID);
-            $('#edit-ten').val(row.Ten);
-            $('#edit-duongdan-old').val(row.DIR);
-            $('#edit-tenfile-old').val(row.TenFile);
-            $('#edit-link').val('');
-            $('#file-link').html(row.TenFile ? 'File hiện tại: <b>' + row.TenFile + '</b>' : '');
-            $('#editModal').modal('show');
+        function syncDotInputs() {
+            const selectedOptions = $('#selectDot option:selected');
+            const dotContainer = $('#dot-container');
+            dotContainer.empty();
+
+            selectedOptions.each(function () {
+                const dotId = $(this).val();
+                dotContainer.append(`<input type="hidden" name="ds_dot[]" value="${dotId}">`);
+            });
+        }
+        $(document).ready(function () {
+            $('#btnLuuDot').on('click', function () {
+                const selectedOptions = $('#selectDot option:selected');
+                const dotContainer = $('#dot-container');
+                const selectedNames = [];
+
+                dotContainer.empty(); // Xóa các input hidden cũ
+                selectedOptions.each(function () {
+                    const dotId = $(this).val();
+                    const dotName = $(this).text();
+                    selectedNames.push(dotName);
+                    // Thêm input hidden để gửi qua form
+                    dotContainer.append(`<input type="hidden" name="ds_dot[]" value="${dotId}">`);
+                });
+
+                // Hiển thị tên các đợt đã chọn bên cạnh nút
+                if (selectedNames.length > 0) {
+                    $('#dot-da-chon').text(selectedNames.join(', '));
+                } else {
+                    $('#dot-da-chon').text('Chưa chọn');
+                }
+
+                // Ẩn modal
+                $('#modalChonDot').modal('hide');
+            });
+
+            $('#form-tainguyen').on('submit', function (e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                formData.append('ajax', '1');
+
+                // Thêm ds_dot[] trực tiếp
+                $('#selectDot option:selected').each(function () {
+                    formData.append('ds_dot[]', $(this).val());
+                });
+
+                // Debug để kiểm tra
+                for (var pair of formData.entries()) {
+                    console.log(pair[0] + ': ' + pair[1]);
+                }
+
+                $.ajax({
+                    url: '',
+                    method: 'POST',
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function (res) {
+                        if (res && res.status && res.message) {
+                            Swal.fire({
+                                icon: res.status === 'success' ? 'success' : 'error',
+                                title: res.status === 'success' ? 'Thành công' : 'Lỗi',
+                                text: res.message
+                            }).then(() => {
+                                if (res.status === 'success') {
+                                    location.reload();
+                                }
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Lỗi không xác định',
+                                text: 'Phản hồi không hợp lệ từ server!'
+                            });
+                            console.log(res);
+                        }
+                    }
+                });
+            });
+
+            // AJAX sửa tài nguyên
+            $('#editForm').on('submit', function (e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                formData.append('ajax', '1');
+
+                // ❌ Đừng thêm lại ds_dot nữa nếu đã có sẵn hidden input
+                // $('#edit-ds-dot option:selected').each(function () {
+                //     formData.append('ds_dot[]', $(this).val());
+                // });
+
+                $.ajax({
+                    url: '',
+                    method: 'POST',
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function (res) {
+                        if (res.status === 'success') {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Thành công',
+                                text: res.message,
+                                timer: 2000,
+                                showConfirmButton: false
+                            }).then(() => {
+                                $('#editModal').modal('hide');
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Lỗi',
+                                text: res.message
+                            });
+                        }
+                    },
+                    error: () => {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi',
+                            text: 'Lỗi cập nhật!'
+                        });
+                    }
+                });
+            });
+
+
+            // Gán dữ liệu khi ấn "Sửa"
+            $('.btn-edit').on('click', function () {
+                const data = $(this).data('row');
+                $('#edit-id').val(data.ID);
+                $('#edit-ten').val(data.Ten);
+                $('#edit-duongdan-old').val(data.DuongDan);
+                $('#edit-tenfile-old').val(data.TenFile);
+                $('#edit-link').val(data.Link || '');
+
+                $('#edit-ds-dot option').prop('selected', false);
+                if (data.DotIDs && Array.isArray(data.DotIDs)) {
+                    data.DotIDs.forEach(id => {
+                        $('#edit-ds-dot option[value="' + id + '"]').prop('selected', true);
+                    });
+                }
+
+                $('#editModal').modal('show');
+            });
+        });
+        // AJAX xóa tài nguyên
+        function deleteTaiNguyen(id) {
+            Swal.fire({
+                title: 'Bạn có chắc chắn?',
+                text: 'Tài nguyên sẽ bị xóa và không thể khôi phục!',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Xóa',
+                cancelButtonText: 'Hủy',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.post('', { action: 'delete', id: id, ajax: 1 }, function (res) {
+                        if (res.status === 'success') {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Đã xóa',
+                                text: res.message,
+                                timer: 2000,
+                                showConfirmButton: false
+                            }).then(() => {
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Lỗi',
+                                text: res.message
+                            });
+                        }
+                    }).fail(() => {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi',
+                            text: 'Lỗi khi xóa!'
+                        });
+                    });
+                }
+            });
         }
         const alertBox = document.getElementById('notificationAlert');
         if (alertBox) {
@@ -283,7 +537,35 @@ $tainguyen = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 setTimeout(() => alertBox.remove(), 500);
             }, 2000);
         }
+
     </script>
+    <!-- Modal Chọn Đợt -->
+    <div class="modal fade" id="modalChonDot" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Chọn các đợt thực tập áp dụng</h5>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <select multiple class="form-control" id="selectDot" size="8">
+                        <?php
+                        $stmt = $conn->query("SELECT ID, TenDot FROM DotThucTap WHERE TrangThai >= 0 ORDER BY ID DESC");
+                        while ($dot = $stmt->fetch(PDO::FETCH_ASSOC)):
+                            ?>
+                            <option value="<?= $dot['ID'] ?>"><?= htmlspecialchars($dot['TenDot']) ?></option>
+                        <?php endwhile; ?>
+                    </select>
+                    <small class="text-muted">Giữ Ctrl (hoặc Cmd trên Mac) để chọn nhiều đợt</small>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
+                    <button type="button" class="btn btn-primary" id="btnLuuDot">Lưu lựa chọn</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </body>
 
 </html>

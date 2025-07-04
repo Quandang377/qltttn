@@ -64,7 +64,7 @@ $dsDot = $stmt->fetchAll(PDO::FETCH_ASSOC);
           </div>
         </div>
         <div class="row">
-          <div class="col-lg-12">
+          <div class="col-md-10">
             <form method="get" class="form-inline" style="margin-bottom: 15px;">
               <label for="dot_filter">Lọc theo đợt: </label>
               <select name="dot_filter" id="dot_filter" class="form-control" onchange="this.form.submit()">
@@ -76,6 +76,13 @@ $dsDot = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <?php endforeach; ?>
               </select>
             </form>
+            </div>
+            <div class="col-md-2" style="">
+          <a href="admin/pages/taothongbao" class="fixed-button btn btn-primary btn-lg">
+            Tạo thông báo
+          </a>
+          </div>
+        </div>
             <div class="panel panel-default">
               <div class="panel-heading">
                 Danh sách thông báo
@@ -128,11 +135,7 @@ $dsDot = $stmt->fetchAll(PDO::FETCH_ASSOC);
           </div>
           <!-- /.col-lg-6 -->
         </div>
-        <div style="position: fixed; bottom: 5%; right: 5%; z-index: 999;">
-          <a href="admin/pages/taothongbao" class="fixed-button btn btn-primary btn-lg">
-            Tạo thông báo
-          </a>
-        </div>
+        
       </div>
 
     </div>

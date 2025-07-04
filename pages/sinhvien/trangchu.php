@@ -1,7 +1,8 @@
 <?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
-$idTaiKhoan = $_SESSION['user']['ID_TaiKhoan'];
+$idTaiKhoan = $_SESSION['user']['ID_TaiKhoan'] ?? null;
+
 $stmt = $conn->prepare("SELECT sv.ID_Dot, dt.TrangThai 
     FROM SinhVien sv 
     LEFT JOIN DotThucTap dt ON sv.ID_Dot = dt.ID 
@@ -12,7 +13,18 @@ $idDot = $row['ID_Dot'] ?? null;
 $trangThaiDot = $row['TrangThai'] ?? null;
 
 $thongbaos = [];
-if ($idDot) {
+if ($idTaiKhoan == null) {
+  $stmt = $conn->prepare("
+    SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.NGAYDANG, tb.ID_Dot, dt.TenDot
+    FROM THONGBAO tb
+    LEFT JOIN DotThucTap dt ON tb.ID_Dot = dt.ID
+    WHERE tb.TRANGTHAI = 1
+    ORDER BY tb.NGAYDANG DESC
+    LIMIT 10
+");
+  $stmt->execute();
+  $thongbaos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} elseif ($idDot) {
   $stmt = $conn->prepare("
         SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.NGAYDANG, tb.ID_Dot, dt.TenDot
         FROM THONGBAO tb
@@ -31,7 +43,8 @@ $stmt = $conn->prepare("SELECT dt.TrangThai
 $stmt->execute([$idTaiKhoan]);
 $trangThaiDot = $stmt->fetchColumn();
 
-$panelActive = 0;
+$panelActive = -1;
+if($idTaiKhoan){
 if ($trangThaiDot == 1)
   $panelActive = 0;
 elseif ($trangThaiDot == 3)
@@ -40,6 +53,7 @@ elseif ($trangThaiDot == 2)
   $panelActive = 2;
 elseif ($trangThaiDot == 0)
   $panelActive = 3;
+}
 $today = date('Y-m-d');
 $updateStmt = $conn->prepare("UPDATE DOTTHUCTAP SET TRANGTHAI = 0 WHERE THOIGIANKETTHUC <= :today AND TRANGTHAI = 2");
 $updateStmt->execute(['today' => $today]);
@@ -55,10 +69,13 @@ $updateStmt2->execute(['today' => $today]);
   <?php
   require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php";
   ?>
+  <style>
+
+  </style>
 </head>
 
 <body>
-  
+
   <div id="wrapper">
     <?php
     require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_SinhVien.php";
@@ -71,67 +88,72 @@ $updateStmt2->execute(['today' => $today]);
           </div>
         </div>
         <div class="row panel-row">
-          <div class="col-md-3 panel-container">
-            <a href="pages/sinhvien/xemdanhsachcongty" style="text-decoration: none; color: inherit;">
-              <div class="panel panel-default <?= $panelActive === 0 ? 'panel-success' : '' ?>" <?= $panelActive === 0 ? 'data-toggle="tooltip" title="Giai đoạn hiện tại"' : '' ?> style="min-height: 170px;">
-                <div class="panel-heading">Tìm công ty thực tập</div>
-                <div class="panel-body">
-                  <p>&bull; Xem danh sách công ty từ các khóa trước</p>
-                  <p>&bull; Tìm trên các trang web</p>
+          <div class="col-lg-12">
+            <div class="col-md-3 panel-container">
+              <a href="pages/sinhvien/xemdanhsachcongty" style="text-decoration: none; color: inherit;">
+                <div class="panel panel-default <?= $panelActive === 0 ? 'panel-success' : '' ?>" <?= $panelActive === 0 ? 'data-toggle="tooltip" title="Giai đoạn hiện tại"' : '' ?> style="min-height: 170px;">
+                  <div class="panel-heading">Tìm công ty thực tập</div>
+                  <div class="panel-body">
+                    <p>&bull; Xem danh sách công ty từ các khóa trước</p>
+                    <p>&bull; Tìm trên các trang web</p>
+                  </div>
                 </div>
-              </div>
-            </a>
-          </div>
-          <div class="col-md-3 panel-container">
-            <a <?= ($trangThaiDot != 3) ? '' : 'href="pages/sinhvien/dangkygiaygioithieu"' ?>  style="text-decoration: none; color: inherit;">
-              <div class="panel panel-default <?= $panelActive === 1 ? 'panel-success' : '' ?>" <?= $panelActive === 1 ? 'data-toggle="tooltip" title="Giai đoạn hiện tại"' : '' ?> style="min-height: 170px;">
-                <div class="panel-heading">Xin giấy giới thiệu thực tập</div>
-                <div class="panel-body">
-                  <p>&bull; Gửi thông tin đăng ký xin giấy giới thiệu thực tập</p>
+              </a>
+            </div>
+            <div class="col-md-3 panel-container">
+              <a <?= ($trangThaiDot != 3) ? '' : 'href="pages/sinhvien/dangkygiaygioithieu"' ?>
+                style="text-decoration: none; color: inherit;">
+                <div class="panel panel-default <?= $panelActive === 1 ? 'panel-success' : '' ?>" <?= $panelActive === 1 ? 'data-toggle="tooltip" title="Giai đoạn hiện tại"' : '' ?> style="min-height: 170px;">
+                  <div class="panel-heading">Xin giấy giới thiệu thực tập</div>
+                  <div class="panel-body">
+                    <p>&bull; Gửi thông tin đăng ký xin giấy giới thiệu thực tập</p>
+                  </div>
                 </div>
-              </div>
-            </a>
-          </div>
-          <div class="col-md-3 panel-container">
-            <a <?= ($trangThaiDot != 2) ? '' : 'href="pages/sinhvien/baocaotuan"' ?>  style="text-decoration: none; color: inherit;">
-              <div class="panel panel-default <?= $panelActive === 2 ? 'panel-success' : '' ?>" <?= $panelActive === 2 ? 'data-toggle="tooltip" title="Giai đoạn hiện tại"' : '' ?> style="min-height: 170px;">
-                <div class="panel-heading">Thực tập, báo cáo tuần</div>
-                <div class="panel-body">
-                  <p>&bull; Bắt dầu thực tập, gửi báo cáo hằng tuần cho giáo viên hướng dẫn</p>
+              </a>
+            </div>
+            <div class="col-md-3 panel-container">
+              <a <?= ($trangThaiDot != 2) ? '' : 'href="pages/sinhvien/baocaotuan"' ?>
+                style="text-decoration: none; color: inherit;">
+                <div class="panel panel-default <?= $panelActive === 2 ? 'panel-success' : '' ?>" <?= $panelActive === 2 ? 'data-toggle="tooltip" title="Giai đoạn hiện tại"' : '' ?> style="min-height: 170px;">
+                  <div class="panel-heading">Thực tập, báo cáo tuần</div>
+                  <div class="panel-body">
+                    <p>&bull; Bắt dầu thực tập, gửi báo cáo hằng tuần cho giáo viên hướng dẫn</p>
+                  </div>
                 </div>
-              </div>
-            </a>
-          </div>
-          <div class="col-md-3 ">
-            <a href="#" data-toggle="modal" data-target="#detailModal" style="text-decoration: none; color: inherit;">
-              <div class="panel panel-default <?= $panelActive === 3 ? 'panel-success' : '' ?>" <?= $panelActive === 3 ? 'data-toggle="tooltip" title="Giai đoạn hiện tại"' : '' ?> style="min-height: 170px;">
-                <div class="panel-heading">Chấm điểm kết thúc</div>
-                <div class="panel-body">
-                  <p>&bull; Phiếu chấm điểm...</p>
-                  <p>&bull; Nhận xét thực tập...</p>
-                  <p>&bull; Quyển báo cáo...</p>
+              </a>
+            </div>
+            <div class="col-md-3 ">
+              <a href="#" data-toggle="modal" data-target="#detailModal" style="text-decoration: none; color: inherit;">
+                <div class="panel panel-default <?= $panelActive === 3 ? 'panel-success' : '' ?>" <?= $panelActive === 3 ? 'data-toggle="tooltip" title="Giai đoạn hiện tại"' : '' ?> style="min-height: 170px;">
+                  <div class="panel-heading">Chấm điểm kết thúc</div>
+                  <div class="panel-body">
+                    <p>&bull; Phiếu chấm điểm...</p>
+                    <p>&bull; Nhận xét thực tập...</p>
+                    <p>&bull; Quyển báo cáo...</p>
+                  </div>
                 </div>
-              </div>
-            </a>
-          </div>
-          <div class="modal fade" id="detailModal" tabindex="-1" role="dialog">
-            <div class="modal-dialog">
-              <div class="modal-content">
-                <div class="modal-header">
-                  <h4 class="modal-title">Chấm điểm kết thúc</h4>
-                </div>
-                <div class="modal-body">
-                  <ul>
-                    <li>Phiếu chấm điểm thực tập tốt nghiệp (có điểm và chữ ký của Cán bộ hướng dẫn của công ty, kèm
-                      mộc)</li>
-                    <li>Phiếu khảo sát thực tập</li>
-                    <li>Nhận xét thực tập (đính kèm trong báo cáo, kèm mộc)</li>
-                    <li>Quyển báo cáo theo quy định</li>
-                  </ul>
-                </div>
-                <div class="modal-footer">
-                  <button class="btn btn-default" data-dismiss="modal">Đóng</button>
-                  <a <?= ($trangThaiDot != 0) ? 'disabled' : '' ?>  href="pages/sinhvien/nopketqua" class="btn btn-primary">Đến nộp</a>
+              </a>
+            </div>
+            <div class="modal fade" id="detailModal" tabindex="-1" role="dialog">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h4 class="modal-title">Chấm điểm kết thúc</h4>
+                  </div>
+                  <div class="modal-body">
+                    <ul>
+                      <li>Phiếu chấm điểm thực tập tốt nghiệp (có điểm và chữ ký của Cán bộ hướng dẫn của công ty, kèm
+                        mộc)</li>
+                      <li>Phiếu khảo sát thực tập</li>
+                      <li>Nhận xét thực tập (đính kèm trong báo cáo, kèm mộc)</li>
+                      <li>Quyển báo cáo theo quy định</li>
+                    </ul>
+                  </div>
+                  <div class="modal-footer">
+                    <button class="btn btn-default" data-dismiss="modal">Đóng</button>
+                    <a <?= ($panelActive != 3) ? 'disabled' : '' ?> href="pages/sinhvien/nopketqua"
+                      class="btn btn-primary">Đến nộp</a>
+                  </div>
                 </div>
               </div>
             </div>
@@ -176,8 +198,8 @@ $updateStmt2->execute(['today' => $today]);
         list.forEach(tb => {
           const html = `
     <div class="row" style="margin-bottom: 15px; border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
-      <div class="col-md-2 text-center">
-        <a href="pages/sinhvien/chitietthongbao.php?id=${tb.ID}">
+      <div class="col-sm-2 text-center">
+        <a href="pages/sinhvien/chitietthongbao?id=${tb.ID}">
           <img src="/datn/uploads/Images/ThongBao.jpg" alt="${tb.TIEUDE}" style="width: 100px; height: 70px; object-fit: cover;">
         </a>
       </div>
@@ -226,19 +248,19 @@ $updateStmt2->execute(['today' => $today]);
     });
 
     renderNotifications();
-    document.addEventListener('click', function(e) {
-  if (e.target.classList.contains('thongbao-link')) {
-    e.preventDefault();
-    const id = e.target.getAttribute('data-id');
-    fetch('pages/sinhvien/ajax_danhdau_thongbao.php', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-      body: 'idThongBao=' + encodeURIComponent(id)
-    }).then(() => {
-      window.location.href = 'pages/sinhvien/chitietthongbao.php?id=' + id;
+    document.addEventListener('click', function (e) {
+      if (e.target.classList.contains('thongbao-link')) {
+        e.preventDefault();
+        const id = e.target.getAttribute('data-id');
+        fetch('pages/sinhvien/ajax_danhdau_thongbao.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'idThongBao=' + encodeURIComponent(id)
+        }).then(() => {
+          window.location.href = 'pages/sinhvien/chitietthongbao?id=' + id;
+        });
+      }
     });
-  }
-});
   </script>
 </body>
 
@@ -302,5 +324,15 @@ $updateStmt2->execute(['today' => $today]);
   .row {
     margin-left: 0;
     margin-right: 0;
+  }
+
+  @media (max-width: 768px) {
+    .panel-container:not(:last-child)::after {
+      display: none;
+    }
+
+    .thongbao-link {
+      text-alight: center;
+    }
   }
 </style>

@@ -12,10 +12,11 @@ use PHPMailer\PHPMailer\Exception;
 $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 $id = $_POST['id_dot'] ?? $_GET['id'] ?? null;
-if (!$id) die("Không tìm thấy ID đợt thực tập.");
+if (!$id)
+    die("Không tìm thấy ID đợt thực tập.");
 // Lấy thông tin đợt thực tập
-   $stmt = $conn->prepare("
-    SELECT d.ID, d.TenDot, d.Loai, d.Nam, d.NguoiMoDot, d.NguoiQuanLy, d.ThoiGianBatDau, d.ThoiGianKetThuc, d.TrangThai,
+$stmt = $conn->prepare("
+    SELECT d.ID, d.TenDot, d.Bac, d.Nam, d.NguoiMoDot, d.NguoiQuanLy, d.ThoiGianBatDau, d.ThoiGianKetThuc, d.TrangThai,
         COALESCE(cb1.Ten, ad1.Ten) AS TenNguoiMoDot,
         COALESCE(cb2.Ten, ad2.Ten) AS TenNguoiQuanLy
     FROM DOTTHUCTAP d
@@ -31,6 +32,29 @@ $dot = $stmt->fetch();
 if (!$dot) {
     die("Không tìm thấy đợt thực tập.");
 }
+
+$stmt = $conn->prepare("SELECT COUNT(*) FROM sinhvien WHERE ID_Dot = :id");
+$stmt->execute(['id' => $id]);
+$tongSinhVien = $stmt->fetchColumn();
+
+// Tổng số giáo viên trong đợt (dựa vào dot_giaovien)
+$stmt = $conn->prepare("SELECT COUNT(*) FROM dot_giaovien WHERE ID_Dot = :id");
+$stmt->execute(['id' => $id]);
+$tongGVHD = $stmt->fetchColumn();
+
+// Lấy giáo viên thuộc đợt từ bảng dot_giaovien
+$stmt = $conn->prepare("
+        SELECT GV.ID_TaiKhoan, GV.Ten, COUNT(SV.ID_TaiKhoan) AS SoLuong
+        FROM dot_giaovien DG
+        INNER JOIN giaovien GV ON DG.ID_GVHD = GV.ID_TaiKhoan
+        LEFT JOIN sinhvien SV ON GV.ID_TaiKhoan = SV.ID_GVHD AND SV.ID_Dot = DG.ID_Dot
+        WHERE DG.ID_Dot = :id
+        GROUP BY GV.ID_TaiKhoan, GV.Ten
+        ORDER BY SoLuong
+    ");
+$stmt->execute(['id' => $id]);
+$dsGiaoVien = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
 // Nếu xuất Excel
 if (isset($_GET['export_excel']) && $_GET['export_excel'] == 1) {
     ob_clean(); // Dọn sạch output buffer   
@@ -48,100 +72,128 @@ if (isset($_GET['export_excel']) && $_GET['export_excel'] == 1) {
     $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Chuẩn bị dữ liệu (giả định biến $data chứa danh sách SV, $dot là đợt)
-$spreadsheet = new Spreadsheet();
-$sheet = $spreadsheet->getActiveSheet();
+    $spreadsheet = new Spreadsheet();
+    $sheet = $spreadsheet->getActiveSheet();
 
-// ======= Tiêu đề chính =======
-$sheet->mergeCells('A1:G1');
-$sheet->setCellValue('A1', 'DANH SÁCH GV HƯỚNG DẪN THỰC TẬP TỐT NGHIỆP ' . ($dot['TenDot'] ?? ''));
-$sheet->getStyle('A1')->getFont()->setBold(true)->setSize(16);
-$sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+    // ======= Tiêu đề chính =======
+    $sheet->mergeCells('A1:G1');
+    $sheet->setCellValue('A1', 'DANH SÁCH GV HƯỚNG DẪN THỰC TẬP TỐT NGHIỆP ' . ($dot['TenDot'] ?? ''));
+    $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(16);
+    $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-// ======= Header bảng =======
-$headers = ['STT', 'Mã SV', 'Họ Tên', 'Ngày Sinh', 'Lớp', 'Họ Tên GVHD'];
-$sheet->fromArray($headers, NULL, 'A3');
-$sheet->getStyle('A3:G3')->getFont()->setBold(true);
-$sheet->getStyle('A3:G3');
+    // ======= Header bảng =======
+    $headers = ['STT', 'Mã SV', 'Họ Tên', 'Ngày Sinh', 'Lớp', 'Họ Tên GVHD'];
+    $sheet->fromArray($headers, NULL, 'A3');
+    $sheet->getStyle('A3:G3')->getFont()->setBold(true);
+    $sheet->getStyle('A3:G3');
+    $sheet->getPageSetup()->setRowsToRepeatAtTopByStartAndEnd(3, 3);
 
-// ======= Nội dung dữ liệu =======
-$rowIndex = 4;
-$stt = 1;
-foreach ($data as $row) {
-    // Giả sử bạn đã tách "Họ" và "Tên" riêng từ $row['TenSV'] trước đó
-    $sheet->setCellValue('A' . $rowIndex, $stt++);
-    $sheet->setCellValueExplicit('B' . $rowIndex, $row['MSSV'], \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
-    $sheet->setCellValue('C' . $rowIndex, $row['TenSV']);
-    $sheet->setCellValue('D' . $rowIndex, date('d/m/Y', strtotime($row['NgaySinh'])));
-    $sheet->setCellValue('E' . $rowIndex, $row['Lop']);
-    $sheet->setCellValue('F' . $rowIndex, $row['TenGVHD']);
-    $rowIndex++;
-}
 
-// ======= Kẻ khung viền bảng =======
-$styleArray = [
-    'borders' => [
-        'allBorders' => [
-            'borderStyle' => Border::BORDER_THIN,
-            'color' => ['argb' => '000000'],
+    // ======= Nội dung dữ liệu =======
+    $rowIndex = 4;
+    $stt = 1;
+    foreach ($data as $row) {
+        // Giả sử bạn đã tách "Họ" và "Tên" riêng từ $row['TenSV'] trước đó
+        $sheet->setCellValue('A' . $rowIndex, $stt++);
+        $sheet->setCellValueExplicit('B' . $rowIndex, $row['MSSV'], \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+        $sheet->setCellValue('C' . $rowIndex, $row['TenSV']);
+        $sheet->setCellValue('D' . $rowIndex, date('d/m/Y', strtotime($row['NgaySinh'])));
+        $sheet->setCellValue('E' . $rowIndex, $row['Lop']);
+        $sheet->setCellValue('F' . $rowIndex, $row['TenGVHD']);
+        $rowIndex++;
+    }
+    $row = $rowIndex + 1;
+    // ===== GVHD VÀ SỐ LƯỢNG SV =====
+    $row++; // Dòng trống
+    $sheet->setCellValue("A$row", "GVHD VÀ SỐ LƯỢNG SV");
+    $sheet->mergeCells("A$row:C$row");
+    $sheet->getStyle("A$row")->getFont()->setBold(true);
+    $sheet->getStyle("A$row")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+    $row++;
+
+    // ===== Header GVHD =====
+    $sheet->fromArray(['STT', 'Tên GVHD', 'Số SV Hướng Dẫn'], NULL, "A$row");
+    $sheet->getStyle("A$row:C$row")->getFont()->setBold(true);
+    $sheet->getStyle("A$row:C$row")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+    $gvStart = $row;
+    $row++;
+
+    // ===== Dữ liệu GVHD =====
+    $stt = 1;
+    foreach ($dsGiaoVien as $gv) {
+        $sheet->setCellValue("A$row", $stt++);
+        $sheet->setCellValue("B$row", $gv['Ten']);
+        $sheet->setCellValue("C$row", $gv['SoLuong']);
+        $row++;
+    }
+
+    // ===== Kẻ bảng viền GVHD =====
+    $sheet->getStyle("A$gvStart:C" . ($row - 1))->applyFromArray([
+        'borders' => [
+            'allBorders' => ['borderStyle' => Border::BORDER_THIN]
         ],
-    ],
-];
-$sheet->getStyle('A3:G' . ($rowIndex - 1))->applyFromArray($styleArray);
+    ]);
 
-// ======= Căn chỉnh và tự động co dãn cột =======
-foreach (range('A', 'G') as $col) {
-    $sheet->getColumnDimension($col)->setAutoSize(true);
-    $sheet->getStyle($col . '3:' . $col . ($rowIndex - 1))->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+    // ===== Auto size lại cột nếu cần =====
+    foreach (range('A', 'F') as $col) {
+        $sheet->getColumnDimension($col)->setAutoSize(true);
+    }
+
+    // ======= Kẻ khung viền bảng =======
+    $styleArray = [
+        'borders' => [
+            'allBorders' => [
+                'borderStyle' => Border::BORDER_THIN,
+                'color' => ['argb' => '000000'],
+            ],
+        ],
+    ];
+    $sheet->getStyle('A3:G' . ($rowIndex - 1))->applyFromArray($styleArray);
+
+
+    // ======= Căn chỉnh và tự động co dãn cột =======
+    foreach (range('A', 'G') as $col) {
+        $sheet->getColumnDimension($col)->setAutoSize(true);
+        $sheet->getStyle($col . '3:' . $col . ($rowIndex - 1))->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+    }
+    $sheet->getStyle('C4:C' . ($rowIndex - 1))->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT); // Tên SV
+    $sheet->getStyle('F4:F' . ($rowIndex - 1))->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT); // Tên GVHD
+
+    // Ẩn cột thừa nếu có (G trở đi)
+    foreach (range('G', 'Z') as $col) {
+        $sheet->getColumnDimension($col)->setVisible(false);
+    }
+    // Căn chỉnh lề trang
+    $sheet->getPageMargins()->setTop(0.5)->setBottom(0.5)->setLeft(0.3)->setRight(0.3);
+    $sheet->getPageSetup()->setHorizontalCentered(true);
+    // ======= Xuất file Excel =======
+    header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    header('Content-Disposition: attachment;filename="DS_GVHD_TTTN_' . ($dot['TenDot'] ?? 'dot') . '.xlsx"');
+    header('Cache-Control: max-age=0');
+
+    $writer = new Xlsx($spreadsheet);
+    $writer->save('php://output');
+    exit;
 }
-$sheet->getStyle('C4:C' . ($rowIndex - 1))->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT); // Tên SV
-$sheet->getStyle('F4:F' . ($rowIndex - 1))->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT); // Tên GVHD
 
-// ======= Cấu hình in vừa trang =======
-$sheet->getPageSetup()
-    ->setOrientation(\PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::ORIENTATION_LANDSCAPE)
-    ->setFitToPage(true)
-    ->setFitToWidth(1)
-    ->setFitToHeight(0);
-$sheet->getPageSetup()->setPrintArea('A1:F' . ($rowIndex - 1));
 
-// Ẩn cột thừa nếu có (G trở đi)
-foreach (range('G', 'Z') as $col) {
-    $sheet->getColumnDimension($col)->setVisible(false);
-}
-// Căn chỉnh lề trang
-$sheet->getPageMargins()->setTop(0.5)->setBottom(0.5)->setLeft(0.3)->setRight(0.3);
-$sheet->getPageSetup()->setHorizontalCentered(true);
-// ======= Xuất file Excel =======
-header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-header('Content-Disposition: attachment;filename="DS_GVHD_TTTN_' . ($dot['TenDot'] ?? 'dot') . '.xlsx"');
-header('Cache-Control: max-age=0');
-
-$writer = new Xlsx($spreadsheet);
-$writer->save('php://output');
-exit;
-}
-
-$stmt = $conn->prepare("SELECT COUNT(*) FROM sinhvien WHERE ID_Dot = :id");
+// Thống kê số SV hoàn thành và chưa hoàn thành
+$stmt = $conn->prepare("SELECT 
+    SUM(CASE WHEN T.TrangThai = 1 THEN 1 ELSE 0 END) AS DaHoanThanh,
+    SUM(CASE WHEN T.TrangThai != 1 OR T.TrangThai IS NULL THEN 1 ELSE 0 END) AS ChuaHoanThanh
+FROM sinhvien SV
+LEFT JOIN tongket T ON SV.ID_TaiKhoan = T.IDSV
+WHERE SV.ID_Dot = :id");
 $stmt->execute(['id' => $id]);
-$tongSinhVien = $stmt->fetchColumn();
+$tkTrangThai = $stmt->fetch(PDO::FETCH_ASSOC);
 
-// Tổng số giáo viên trong đợt (dựa vào dot_giaovien)
-$stmt = $conn->prepare("SELECT COUNT(*) FROM dot_giaovien WHERE ID_Dot = :id");
+// Thống kê xếp loại
+$stmt = $conn->prepare("SELECT SV.XepLoai, COUNT(*) AS SoLuong
+FROM sinhvien SV
+WHERE SV.ID_Dot = :id AND SV.XepLoai IS NOT NULL AND SV.XepLoai <> ''
+GROUP BY SV.XepLoai");
 $stmt->execute(['id' => $id]);
-$tongGVHD = $stmt->fetchColumn();
-
-    // Lấy giáo viên thuộc đợt từ bảng dot_giaovien
-    $stmt = $conn->prepare("
-        SELECT GV.ID_TaiKhoan, GV.Ten, COUNT(SV.ID_TaiKhoan) AS SoLuong
-        FROM dot_giaovien DG
-        INNER JOIN giaovien GV ON DG.ID_GVHD = GV.ID_TaiKhoan
-        LEFT JOIN sinhvien SV ON GV.ID_TaiKhoan = SV.ID_GVHD AND SV.ID_Dot = DG.ID_Dot
-        WHERE DG.ID_Dot = :id
-        GROUP BY GV.ID_TaiKhoan, GV.Ten
-        ORDER BY SoLuong
-    ");
-$stmt->execute(['id' => $id]);
-$dsGiaoVien = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$tkXepLoai = $stmt->fetchAll(PDO::FETCH_ASSOC);
 if (isset($_GET['export_excel']) && $_GET['export_excel'] == 2) {
     ob_clean();
     header_remove();
@@ -151,103 +203,112 @@ if (isset($_GET['export_excel']) && $_GET['export_excel'] == 2) {
     $sheet->setTitle("ThongKeDot");
 
     ob_clean();
-header_remove();
+    header_remove();
 
-$spreadsheet = new Spreadsheet();
-$sheet = $spreadsheet->getActiveSheet();
-$sheet->setTitle("ThongKeDot");
-// ===== Tiêu đề =====
-$row = 1;
-$sheet->setCellValue("A$row", "THỐNG KÊ ĐỢT: " . $dot['TenDot']);
-$sheet->mergeCells("A$row:B$row");
-$sheet->getStyle("A$row")->getFont()->setBold(true)->setSize(14);
-$sheet->getStyle("A$row")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-$row++;
+    $spreadsheet = new Spreadsheet();
+    $sheet = $spreadsheet->getActiveSheet();
+    $sheet->setTitle("ThongKeDot");
+    $row = 1;
 
-// ===== Thông tin đợt =====
-$infoFields = [
-    "Loại:" => $dot['Loai'],
-    "Năm:" => $dot['Nam'],
-    "Người quản lý:" => $dot['TenNguoiQuanLy'],
-    "Người mở đợt:" => $dot['TenNguoiMoDot'],
-    "Thời gian bắt đầu:" => $dot['ThoiGianBatDau'],
-    "Thời gian kết thúc:" => $dot['ThoiGianKetThuc'],
-    "Trạng thái:" => match($dot['TrangThai']) {
-        1 => 'Đang chuẩn bị',
-        2 => 'Đã bắt đầu',
-        3 => 'Hoàn tất phân công',
-        default => 'Đã kết thúc'
-    },
-    "Tổng sinh viên:" => $tongSinhVien,
-    "Tổng GVHD:" => $tongGVHD
-];
+    // ===== TIÊU ĐỀ =====
+    $sheet->setCellValue("B$row", "THỐNG KÊ ĐỢT: " . $dot['TenDot']);
+    $sheet->mergeCells("B$row:C$row");
+    $sheet->getStyle("B$row")->getFont()->setBold(true)->setSize(14);
+    $sheet->getStyle("B$row")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-$infoStartRow = $row;
-foreach ($infoFields as $label => $value) {
-    $sheet->setCellValue("A$row", $label);
-    $sheet->setCellValue("B$row", $value);
+    // Tiêu đề Xếp loại
+    $sheet->setCellValue("E$row", "THỐNG KÊ XẾP LOẠI SINH VIÊN");
+    $sheet->mergeCells("E$row:G$row");
+    $sheet->getStyle("E$row")->getFont()->setBold(true);
+    $sheet->getStyle("E$row")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
     $row++;
-}
-$infoEndRow = $row - 1;
 
-// ===== Border cho bảng thông tin đợt =====
-$sheet->getStyle("A$infoStartRow:B$infoEndRow")->applyFromArray([
-    'borders' => [
-        'allBorders' => [
-            'borderStyle' => Border::BORDER_THIN,
-            'color' => ['argb' => '000000'],
-        ],
-    ],
-]);
+    // ===== THÔNG TIN ĐỢT =====
+    $infoFields = [
+        "Bậc:" => $dot['Bac'],
+        "Năm:" => $dot['Nam'],
+        "Người quản lý:" => $dot['TenNguoiQuanLy'],
+        "Người mở đợt:" => $dot['TenNguoiMoDot'],
+        "Thời gian bắt đầu:" => $dot['ThoiGianBatDau'],
+        "Thời gian kết thúc:" => $dot['ThoiGianKetThuc'],
+        "Trạng thái:" => match ($dot['TrangThai']) {
+            1 => 'Đang chuẩn bị',
+            2 => 'Đã bắt đầu',
+            3 => 'Hoàn tất phân công',
+            default => 'Đã kết thúc'
+        },
+        "Tổng sinh viên:" => $tongSinhVien,
+        "Sinh viên đã hoàn thành:" => $tkTrangThai['DaHoanThanh'],
+        "Sinh viên chưa hoàn thành:" => $tkTrangThai['ChuaHoanThanh'],
+        "Tổng GVHD:" => $tongGVHD,
+    ];
+    $infoStart = $row;
 
-$row += 2; // Dòng trống
+    foreach ($infoFields as $label => $value) {
+        $sheet->setCellValue("B$row", $label);
+        $sheet->setCellValue("C$row", $value);
+        $row++;
+    }
+    $infoEnd = $row - 1;
+    $sheet->getStyle("B$infoStart:C$infoEnd")->applyFromArray([
+        'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
+    ]);
 
-// ===== Tiêu đề bảng GVHD =====
-$sheet->setCellValue("A$row", "GVHD VÀ SỐ LƯỢNG SV");
-$sheet->mergeCells("A$row:C$row");
-$sheet->getStyle("A$row")->getFont()->setBold(true);
-$sheet->getStyle("A$row")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-$row++;
+    // ===== XẾP LOẠI =====
+    $sheet->fromArray(['STT', 'Xếp loại', 'Số lượng'], NULL, "E" . ($infoStart));
+    $sheet->getStyle("E$infoStart:F$infoStart")->getFont()->setBold(true);
+    $sheet->getStyle("F$infoStart:G$infoStart")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+    $xlRow = $infoStart + 1;
+    $stt = 1;
+    foreach ($tkXepLoai as $xl) {
+        $sheet->setCellValue("E$xlRow", $stt++);
+        $sheet->setCellValue("F$xlRow", $xl['XepLoai']);
+        $sheet->setCellValue("G$xlRow", $xl['SoLuong']);
+        $xlRow++;
+    }
+    $sheet->getStyle("E$infoStart:G" . ($xlRow - 1))->applyFromArray([
+        'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
+    ]);
 
-// ===== Header bảng GVHD =====
-$sheet->fromArray(['STT', 'Tên GVHD', 'Số SV Hướng Dẫn'], NULL, "A$row");
-$sheet->getStyle("A$row:C$row")->getFont()->setBold(true);
-$sheet->getStyle("A$row:C$row")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-$tableStart = $row;
-$row++;
+    $row = max($row, $xlRow) + 2;
 
-// ===== Dữ liệu GVHD =====
-$stt = 1;
-foreach ($dsGiaoVien as $gv) {
-    $sheet->setCellValue("A$row", $stt++);
-    $sheet->setCellValue("B$row", $gv['Ten']);
-    $sheet->setCellValue("C$row", $gv['SoLuong']);
+    // ===== TIÊU ĐỀ GVHD =====
+    $sheet->setCellValue("A$row", "GVHD VÀ SỐ LƯỢNG SV");
+    $sheet->mergeCells("A$row:C$row");
+    $sheet->getStyle("A$row")->getFont()->setBold(true);
+    $sheet->getStyle("A$row")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
     $row++;
-}
-$tableEnd = $row - 1;
 
-// ===== Border cho bảng GVHD =====
-$sheet->getStyle("A$tableStart:C$tableEnd")->applyFromArray([
-    'borders' => [
-        'allBorders' => [
-            'borderStyle' => Border::BORDER_THIN,
-            'color' => ['argb' => '000000'],
-        ],
-    ],
-]);
+    // ===== HEADER GVHD =====
+    $sheet->fromArray(['STT', 'Tên GVHD', 'Số SV Hướng Dẫn'], NULL, "A$row");
+    $sheet->getStyle("A$row:C$row")->getFont()->setBold(true);
+    $sheet->getStyle("A$row:C$row")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+    $gvStart = $row;
+    $row++;
 
-// ===== Căn chỉnh cột và xuất =====
-foreach (range('A', 'C') as $col) {
-    $sheet->getColumnDimension($col)->setAutoSize(true);
-}
+    $stt = 1;
+    foreach ($dsGiaoVien as $gv) {
+        $sheet->setCellValue("A$row", $stt++);
+        $sheet->setCellValue("B$row", $gv['Ten']);
+        $sheet->setCellValue("C$row", $gv['SoLuong']);
+        $row++;
+    }
+    $sheet->getStyle("A$gvStart:C" . ($row - 1))->applyFromArray([
+        'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
+    ]);
 
-header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-header('Content-Disposition: attachment; filename="ThongKe_Dot_' . $dot['TenDot'] . '.xlsx"');
-header('Cache-Control: max-age=0');
+    // ===== Auto size columns =====
+    foreach (range('A', 'F') as $col) {
+        $sheet->getColumnDimension($col)->setAutoSize(true);
+    }
 
-$writer = new Xlsx($spreadsheet);
-$writer->save('php://output');
-exit;
+    // ===== Xuất file =====
+    header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    header('Content-Disposition: attachment; filename="ThongKe_Dot_' . $dot['TenDot'] . '.xlsx"');
+    header('Cache-Control: max-age=0');
+    $writer = new Xlsx($spreadsheet);
+    $writer->save('php://output');
+    exit;
 
 }
 
@@ -376,24 +437,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
     foreach ($giaoVienList as $gv) {
         $mail = new PHPMailer(true);
-    try {
-        // Cấu hình SMTP
-        $mail->isSMTP();
-        $mail->Host = 'smtp.gmail.com';
-        $mail->SMTPAuth = true;
-        $mail->Username = 'thanhkiet.101023@gmail.com';
-        $mail->Password = 'qxla zadq xqoq zsat'; // Mật khẩu ứng dụng
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-        $mail->Port = 465;
-        $mail->CharSet = 'UTF-8';
-        // Người gửi và người nhận
-        $mail->setFrom('thanhkiet.101023@gmail.com', name: 'Khoa Công Nghệ Thông Tin');
-        $mail->addAddress($gv['Email'], $gv['Ten']);
+        try {
+            // Cấu hình SMTP
+            $mail->isSMTP();
+            $mail->Host = 'smtp.gmail.com';
+            $mail->SMTPAuth = true;
+            $mail->Username = 'thanhkiet.101023@gmail.com';
+            $mail->Password = 'qxla zadq xqoq zsat'; // Mật khẩu ứng dụng
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+            $mail->Port = 465;
+            $mail->CharSet = 'UTF-8';
+            // Người gửi và người nhận
+            $mail->setFrom('thanhkiet.101023@gmail.com', name: 'Khoa Công Nghệ Thông Tin');
+            $mail->addAddress($gv['Email'], $gv['Ten']);
 
-        // Nội dung
-        $mail->isHTML(true);
-        $mail->Subject = 'Thông báo hoàn tất phân công hướng dẫn thực tập';
-        $mail->Body = '
+            // Nội dung
+            $mail->isHTML(true);
+            $mail->Subject = 'Thông báo hoàn tất phân công hướng dẫn thực tập';
+            $mail->Body = '
         <html>
         <body style="font-family: Arial, sans-serif; font-size:14px; line-height:1.6;">
             <p style="color:#000000;">Chào thầy/cô <strong style="color:#000000;">' . htmlspecialchars($gv['Ten']) . '</strong>,</p>
@@ -404,11 +465,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         </body>
         </html>';
 
-        $mail->send();
-        file_put_contents('mail_debug.log', "Đã gửi tới: " . $gv['Email'] . PHP_EOL, FILE_APPEND);
-    } catch (Exception $e) {
-        error_log("Gửi mail thất bại tới {$gv['Email']}: {$mail->ErrorInfo}");
-    }
+            $mail->send();
+            file_put_contents('mail_debug.log', "Đã gửi tới: " . $gv['Email'] . PHP_EOL, FILE_APPEND);
+        } catch (Exception $e) {
+            error_log("Gửi mail thất bại tới {$gv['Email']}: {$mail->ErrorInfo}");
+        }
     }
 
     echo json_encode(['status' => 'OK', 'message' => 'Đã hoàn tất phân công và gửi thông báo đến giáo viên.']);
@@ -516,57 +577,59 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'info' && isset($_GET['id'])) {
 if (isset($_GET['ajax_tab']) && $_GET['ajax_tab'] == 'gv') {
     ?>
     <div class="panel panel-default">
-    <div class="panel-heading">
-        <div class="row" style="margin-bottom: 15px;">
-            <div class="col-md-4">
-                Danh sách giáo viên hướng dẫn
+        <div class="panel-heading">
+            <div class="row" style="margin-bottom: 15px;">
+                <div class="col-md-4">
+                    Danh sách giáo viên hướng dẫn
+                </div>
+                <div class="col-md-8" style="text-align: right;">
+                    <button onclick="window.location.href='pages/canbo/chitietdot?id=<?= $id ?>&export_excel=1'"
+                        class="btn btn-success">
+                        <i class="fa fa-file-excel-o"></i> Xuất danh sách phân công
+                    </button>
+                    <button onclick="window.location.href='pages/canbo/chitietdot?id=<?= $id ?>&export_excel=2'"
+                        class="btn btn-success">
+                        <i class="fa fa-file-excel-o"></i> Xuất thống kê
+                    </button>
+                </div>
             </div>
-            <div class="col-md-8" style="text-align: right;">
-                <button onclick="window.location.href='pages/canbo/chitietdot?id=<?= $id ?>&export_excel=1'" class="btn btn-success">
-                    <i class="fa fa-file-excel-o"></i> Xuất danh sách phân công
-                </button>
-                <button onclick="window.location.href='pages/canbo/chitietdot?id=<?= $id ?>&export_excel=2'" class="btn btn-success">
-                    <i class="fa fa-file-excel-o"></i> Xuất thống kê
-                </button>
-            </div>
-    </div>
-</div>
-    <div class="panel-body">
-        <div class="table-responsive">
-            <table id="table-gv" class="table">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Họ tên giáo viên</th>
-                        <th style="text-align: center;">Số sinh viên được phân công</th>
-                        <th style="text-align: right;">Xem danh sách sinh viên</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($dsGiaoVien as $idx => $gv): ?>
+        </div>
+        <div class="panel-body">
+            <div class="table-responsive">
+                <table id="table-gv" class="table">
+                    <thead>
                         <tr>
-                            <td><?= $idx + 1 ?></td>
-                            <td data-id="<?= $gv['ID_TaiKhoan'] ?>"><?= htmlspecialchars($gv['Ten']) ?></td>
-                            <td style="text-align: center;"><?= $gv['SoLuong'] ?></td>
-                            <td style="text-align: right;">
-                                <button type="button" class="btn btn-info btn-xs"
-                                    onclick="xemSinhVienGV(<?= $gv['ID_TaiKhoan'] ?>, '<?= htmlspecialchars(addslashes($gv['Ten'])) ?>')">
-                                    Xem sinh viên
-                                </button>
-                                <button type="button" class="btn btn-danger btn-xs btn-xoa-gv-dot"
-                                    data-id="<?= $gv['ID_TaiKhoan'] ?>" <?= $gv['SoLuong'] > 0 ? 'disabled title="Không thể xóa: Giáo viên đã có sinh viên!"' : 'title="Xóa giáo viên khỏi đợt"' ?>>
-                                    <i class="fa fa-trash"></i>
-                                </button>
-                            </td>
+                            <th>#</th>
+                            <th>Họ tên giáo viên</th>
+                            <th style="text-align: center;">Số sinh viên được phân công</th>
+                            <th style="text-align: right;">Xem danh sách sinh viên</th>
                         </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($dsGiaoVien as $idx => $gv): ?>
+                            <tr>
+                                <td><?= $idx + 1 ?></td>
+                                <td data-id="<?= $gv['ID_TaiKhoan'] ?>"><?= htmlspecialchars($gv['Ten']) ?></td>
+                                <td style="text-align: center;"><?= $gv['SoLuong'] ?></td>
+                                <td style="text-align: right;">
+                                    <button type="button" class="btn btn-info btn-xs"
+                                        onclick="xemSinhVienGV(<?= $gv['ID_TaiKhoan'] ?>, '<?= htmlspecialchars(addslashes($gv['Ten'])) ?>')">
+                                        Xem sinh viên
+                                    </button>
+                                    <button type="button" class="btn btn-danger btn-xs btn-xoa-gv-dot"
+                                        data-id="<?= $gv['ID_TaiKhoan'] ?>" <?= $gv['SoLuong'] > 0 ? 'disabled title="Không thể xóa: Giáo viên đã có sinh viên!"' : 'title="Xóa giáo viên khỏi đợt"' ?>>
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
-</div>
-<?php
-exit;
+    <?php
+    exit;
 }
 
 // AJAX: Trả về nội dung tab sinh viên
@@ -584,57 +647,57 @@ if (isset($_GET['ajax_tab']) && $_GET['ajax_tab'] == 'sv') {
         WHERE DG.ID_Dot = :id
         ORDER BY GV.Ten
     ");
-$stmt->execute(['id' => $id]);
-$giaoVienTrongDot = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $stmt->execute(['id' => $id]);
+    $giaoVienTrongDot = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
-?>
-<div class="panel panel-default">
-    <div class="panel-heading">
-        <b>Danh sách sinh viên</b>
-        <div class="pull-right" style="min-width:220px;">
-            <select id="filterGVHD" class="form-control input-sm">
-                <option value="all">-- Tất cả --</option>
-                <option value="">-- Chưa có giáo viên hướng dẫn --</option>
-            </select>
+    ?>
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <b>Danh sách sinh viên</b>
+            <div class="pull-right" style="min-width:220px;">
+                <select id="filterGVHD" class="form-control input-sm">
+                    <option value="all">-- Tất cả --</option>
+                    <option value="">-- Chưa có giáo viên hướng dẫn --</option>
+                </select>
+            </div>
+        </div>
+        <div class="panel-body">
+            <table class="table table-striped" id="table-dssv">
+                <thead>
+                    <tr>
+                        <th>STT</th>
+                        <th>MSSV</th>
+                        <th>Họ tên</th>
+                        <th>Lớp</th>
+                        <th>Giáo viên hướng dẫn</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($dsSinhVienAll as $idx => $sv): ?>
+                        <tr>
+                            <td><?= $idx + 1 ?></td>
+                            <td><?= htmlspecialchars($sv['MSSV']) ?></td>
+                            <td><?= htmlspecialchars($sv['Ten']) ?></td>
+                            <td><?= htmlspecialchars($sv['Lop']) ?></td>
+                            <td data-id="<?= $sv['ID_GVHD'] ?>">
+                                <select class="form-control select-gvhd" data-mssv="<?= $sv['ID_TaiKhoan'] ?>"
+                                    <?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?>>
+                                    <option value="">-- Chưa có --</option>
+                                    <?php foreach ($giaoVienTrongDot as $gv): ?>
+                                        <option value="<?= $gv['ID_TaiKhoan'] ?>" <?= ($sv['ID_GVHD'] == $gv['ID_TaiKhoan']) ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($gv['Ten']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
         </div>
     </div>
-    <div class="panel-body">
-        <table class="table table-striped" id="table-dssv">
-            <thead>
-                <tr>
-                    <th>STT</th>
-                    <th>MSSV</th>
-                    <th>Họ tên</th>
-                    <th>Lớp</th>
-                    <th>Giáo viên hướng dẫn</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($dsSinhVienAll as $idx => $sv): ?>
-                    <tr>
-                        <td><?= $idx + 1 ?></td>
-                        <td><?= htmlspecialchars($sv['MSSV']) ?></td>
-                        <td><?= htmlspecialchars($sv['Ten']) ?></td>
-                        <td><?= htmlspecialchars($sv['Lop']) ?></td>
-                        <td data-id="<?= $sv['ID_GVHD'] ?>">
-                            <select class="form-control select-gvhd" data-mssv="<?= $sv['ID_TaiKhoan'] ?>"
-                                <?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?>>
-                                <option value="">-- Chưa có --</option>
-                                <?php foreach ($giaoVienTrongDot as $gv): ?>
-                                    <option value="<?= $gv['ID_TaiKhoan'] ?>" <?= ($sv['ID_GVHD'] == $gv['ID_TaiKhoan']) ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($gv['Ten']) ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
-</div>
-<?php exit;
+    <?php exit;
 }
 
 // Xử lý chuyển giáo viên hướng dẫn (AJAX)
@@ -709,138 +772,147 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     exit;
 }
 ?>
-    <!DOCTYPE html>
-    <html lang="vi">
+<!DOCTYPE html>
+<html lang="vi">
 
-    <head>
-        <meta charset="UTF-8">
-        <title><?= htmlspecialchars($dot['TenDot']) ?></title>
-        <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php"; ?>
-        <style>
-            @media (max-width: 900px) {
-                .dot-info-row {
-                    flex-direction: column;
-                    gap: 0;
-                }
-
-                .dot-header {
-                    padding: 18px 8px 8px 8px;
-                }
+<head>
+    <meta charset="UTF-8">
+    <title><?= htmlspecialchars($dot['TenDot']) ?></title>
+    <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php"; ?>
+    <style>
+        @media (max-width: 900px) {
+            .dot-info-row {
+                flex-direction: column;
+                gap: 0;
             }
 
-            td.success {
-                background: rgb(189, 255, 231) !important;
-                transition: background 0.5s;
+            .dot-header {
+                padding: 18px 8px 8px 8px;
             }
-        </style>
-    </head>
+        }
 
-    <body>
-        <div id="wrapper">
-            <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_CanBo.php"; ?>
-            <div id="page-wrapper">
-                <div class="container-fluid">
-                    <div class="dot-header panel panel-default" style="padding:24px 18px 10px 18px;">
-                        <h1 class="panel-title" style="font-size:2rem; font-weight:bold; margin-bottom:18px;">
-                            <?= htmlspecialchars($dot['TenDot']) ?>
-                        </h1>
-                        <div class="row" style="margin-bottom:10px;">
-                            <div class="col-sm-4 col-xs-12">
-                                <p><b>Loại:</b> <?= htmlspecialchars($dot['Loai']) ?></p>
-                                <p><b>Năm:</b> <?= htmlspecialchars($dot['Nam']) ?></p>
-                                <p><b>Người quản lý:</b> <?= htmlspecialchars($dot['TenNguoiQuanLy']) ?></p>
-                                <p><b>Người mở đợt:</b> <?= htmlspecialchars($dot['TenNguoiMoDot']) ?></p>
+        td.success {
+            background: rgb(189, 255, 231) !important;
+            transition: background 0.5s;
+        }
 
-                            </div>
-                            <div class="col-sm-4 col-xs-12">
-                                <p><b>Thời gian bắt đầu:</b> <?= htmlspecialchars($dot['ThoiGianBatDau']) ?></p>
-                                <p><b>Thời gian kết thúc:</b> <?= htmlspecialchars($dot['ThoiGianKetThuc']) ?></p>
-                                <p><b>Trạng thái:</b>
-                                    <?php
-                                    if ($dot['TrangThai'] == 1)
-                                        echo 'Đang chuẩn bị';
-                                    elseif ($dot['TrangThai'] == 2)
-                                        echo 'Đã bắt đầu';
-                                    elseif ($dot['TrangThai'] == 3)
-                                        echo 'Hoàn tất phân công';
-                                    else
-                                        echo 'Đã kết thúc';
-                                    ?>
-                                </p>
-                            </div>
-                            <div class="col-sm-4 col-xs-12">
-                                <p><b>Tổng sinh viên:</b> <?= $tongSinhVien ?></p>
-                                <div id="infoBox">
-                                    <p><b>Tổng GVHD:</b> <span id="infoTongGVHD"><?= $tongGVHD ?></span></p>
-                                    <p><b>Sinh viên chưa có GVHD:</b> <span
-                                            id="infoSVDaCoGVHD"><?= $soSVDaCoGVHD ?></span>
-                                    </p>
-                                    <p><b>GVHD chưa được phân công:</b> <span
-                                            id="infoGVChuaCoSV"><?= $soGVChuaCoSV ?></span></p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="dot-actions" style="margin-top:12px;">
-                            <button onclick="window.location='pages/canbo/importexcel?id=<?= $id ?>';"
-                                class="btn btn-primary btn-md" title="Import danh sách sinh viên"<?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?>>Import sinh
-                                viên</button>
-                            <button type="button" class="btn btn-primary btn-md" id="btnMoModalThemGV " title="Thêm giáo viên cho đợt thực tập"
-                                <?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?>>
-                                Thêm giáo viên
-                            </button>
-                            <button type="button" id="btnAutoPhanCong" class="btn btn-success btn-md" title="Phân công đều các sinh viên còn lại"
-                                <?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?>>
-                                Phân công tự động
-                            </button>
-                            <button type="button" class="btn btn-success" id="btnHoanTat" <?= ($tongSinhVien < 1 || $tongGVHD < 1) || $dot['TrangThai'] != 1 ? 'disabled' : '' ?>
-                                title="Hoàn tất phân công, cho phép đăng ký phiếu giới thiệu, gửi mail cho các giáo viên">
-                                Hoàn tất phân công
-                            </button>
-                            <button onclick="window.location='pages/canbo/chinhsuadot?id=<?= $id ?>';"
-                                class="btn btn-warning btn-md" <?= $dot['TrangThai'] == 0 ? 'disabled' : '' ?>>Chỉnh
-                                sửa</button>
-                            <button
-                                onclick="if(confirm('Bạn có chắc muốn xóa đợt này?')) window.location='pages/canbo/xoadot?id=<?= $id ?>';"
-                                class="btn btn-danger btn-md" <?= ($tongSinhVien > 0 || $tongGVHD > 0||$dot['TrangThai'] !=1) ? 'disabled title="Không thể xóa: Đợt đã có sinh viên hoặc giáo viên."' : '' ?>>Xóa đợt</button>
+        #page-wrapper {
+            margin-top: 50px;
+        }
 
-                        </div>
-                    </div>
+        .btn {
+            margin: 1px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="wrapper">
+        <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_CanBo.php"; ?>
+        <div id="page-wrapper">
+            <div class="container-fluid">
+                <div class="dot-header panel panel-default" style="padding:24px 18px 10px 18px;">
                     <?php if (!empty($successMessage)): ?>
                         <div id="successAlert" class="alert alert-success">
                             <?= $successMessage ?>
                         </div>
                     <?php endif; ?>
-                    <ul class="nav nav-tabs" id="tabDotThucTap">
-                        <li class="active"><a href="#tab-gv" data-toggle="tab" data-tab="gv">Giáo viên hướng dẫn</a>
-                        </li>
-                        <li><a href="#tab-sv" data-toggle="tab" data-tab="sv">Sinh viên</a></li>
-                    </ul>
-                    <div class="tab-content"
-                        style="background:#fff; border:1px solid #ddd; border-top:0; padding:18px;">
-                        <div class="tab-pane fade in active" id="tab-gv">
-                            <div id="tabGVContent">
-                                <!-- Nội dung giáo viên sẽ được load AJAX -->
-                            </div>
+                    <h1 class="panel-title" style="font-size:2rem; font-weight:bold; margin-bottom:18px;">
+                        <?= htmlspecialchars($dot['TenDot']) ?>
+                    </h1>
+                    <div class="row" style="margin-bottom:10px;">
+                        <div class="col-sm-4 col-xs-12">
+                            <p><b>Bậc:</b> <?= htmlspecialchars($dot['Bac']) ?></p>
+                            <p><b>Năm:</b> <?= htmlspecialchars($dot['Nam']) ?></p>
+                            <p><b>Người quản lý:</b> <?= htmlspecialchars($dot['TenNguoiQuanLy']) ?></p>
+                            <p><b>Người mở đợt:</b> <?= htmlspecialchars($dot['TenNguoiMoDot']) ?></p>
+
                         </div>
-                        <div class="tab-pane fade" id="tab-sv">
-                            <div id="tabSVContent">
-                                <!-- Nội dung sinh viên sẽ được load AJAX -->
+                        <div class="col-sm-4 col-xs-12">
+                            <p><b>Thời gian bắt đầu:</b> <?= htmlspecialchars($dot['ThoiGianBatDau']) ?></p>
+                            <p><b>Thời gian kết thúc:</b> <?= htmlspecialchars($dot['ThoiGianKetThuc']) ?></p>
+                            <p><b>Trạng thái:</b>
+                                <?php
+                                if ($dot['TrangThai'] == 1)
+                                    echo 'Đang chuẩn bị';
+                                elseif ($dot['TrangThai'] == 2)
+                                    echo 'Đã bắt đầu';
+                                elseif ($dot['TrangThai'] == 3)
+                                    echo 'Hoàn tất phân công';
+                                else
+                                    echo 'Đã kết thúc';
+                                ?>
+                            </p>
+                        </div>
+                        <div class="col-sm-4 col-xs-12">
+                            <p><b>Tổng sinh viên:</b> <?= $tongSinhVien ?></p>
+                            <div id="infoBox">
+                                <p><b>Tổng GVHD:</b> <span id="infoTongGVHD"><?= $tongGVHD ?></span></p>
+                                <p><b>Sinh viên chưa có GVHD:</b> <span id="infoSVDaCoGVHD"><?= $soSVDaCoGVHD ?></span>
+                                </p>
+                                <p><b>GVHD chưa được phân công:</b> <span
+                                        id="infoGVChuaCoSV"><?= $soGVChuaCoSV ?></span></p>
                             </div>
                         </div>
                     </div>
+                    <div class="dot-actions" style="margin-top:12px;">
+                        <button onclick="window.location='pages/canbo/importexcel?id=<?= $id ?>';"
+                            class="btn btn-primary btn-md" title="Import danh sách sinh viên" <?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?>>Import sinh
+                            viên</button>
+                        <button type="button" class="btn btn-primary btn-md" id="btnMoModalThemGV "
+                            title="Thêm giáo viên cho đợt thực tập" <?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?>>
+                            Thêm giáo viên
+                        </button>
+                        <button type="button" id="btnAutoPhanCong" class="btn btn-success btn-md"
+                            title="Phân công đều các sinh viên còn lại" <?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?>>
+                            Phân công tự động
+                        </button>
+                        <button type="button" class="btn btn-success" id="btnHoanTat" <?= ($tongSinhVien < 1 || $tongGVHD < 1) || $dot['TrangThai'] != 1 ? 'disabled' : '' ?>
+                            title="Hoàn tất phân công, cho phép đăng ký phiếu giới thiệu, gửi mail cho các giáo viên">
+                            Hoàn tất phân công
+                        </button>
+                        <button onclick="window.location='pages/canbo/chinhsuadot?id=<?= $id ?>';"
+                            class="btn btn-warning btn-md" <?= $dot['TrangThai'] == 0 ? 'disabled' : '' ?>>Chỉnh
+                            sửa</button>
+                        <button
+                            onclick="if(confirm('Bạn có chắc muốn xóa đợt này?')) window.location='pages/canbo/xoadot?id=<?= $id ?>';"
+                            class="btn btn-danger btn-md" <?= ($tongSinhVien > 0 || $tongGVHD > 0 || $dot['TrangThai'] != 1) ? 'disabled title="Không thể xóa: Đợt đã có sinh viên hoặc giáo viên."' : '' ?>>Xóa
+                            đợt</button>
+
+                    </div>
                 </div>
-                <?php require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php" ?>
-                <script>
-                    var allGiaoVien = <?= json_encode($allGiaoVien) ?>;
-                    function xemSinhVienGV(idGV, tenGV) {
-                        $.get(window.location.pathname, {
-                            ajax: 1,
-                            id: <?= json_encode($id) ?>,
-                            id_gv: idGV
-                        }, function (res) {
-                            let html = `<h4>Giáo viên: ${tenGV}</h4>`;
-                            if (res.ds && res.ds.length > 0) {
-                                html += `<table class="table table-striped"><thead>
+
+                <ul class="nav nav-tabs" id="tabDotThucTap">
+                    <li class="active"><a href="#tab-gv" data-toggle="tab" data-tab="gv">Giáo viên hướng dẫn</a>
+                    </li>
+                    <li><a href="#tab-sv" data-toggle="tab" data-tab="sv">Sinh viên</a></li>
+                </ul>
+                <div class="tab-content" style="background:#fff; border:1px solid #ddd; border-top:0; padding:18px;">
+                    <div class="tab-pane fade in active" id="tab-gv">
+                        <div id="tabGVContent">
+                            <!-- Nội dung giáo viên sẽ được load AJAX -->
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="tab-sv">
+                        <div id="tabSVContent">
+                            <!-- Nội dung sinh viên sẽ được load AJAX -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php" ?>
+        <script>
+            var allGiaoVien = <?= json_encode($allGiaoVien) ?>;
+            function xemSinhVienGV(idGV, tenGV) {
+                $.get(window.location.pathname, {
+                    ajax: 1,
+                    id: <?= json_encode($id) ?>,
+                    id_gv: idGV
+                }, function (res) {
+                    let html = `<h4>Giáo viên: ${tenGV}</h4>`;
+                    if (res.ds && res.ds.length > 0) {
+                        html += `<table class="table table-striped"><thead>
                             <tr>
                                 <th>STT</th>
                                 <th>MSSV</th>
@@ -848,364 +920,363 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                 <th>Lớp</th>
                                 <th>Chuyển GVHD</th>
                             </tr></thead><tbody>`;
-                                res.ds.forEach(function (sv, idx) {
-                                    let select = `<select class="form-control select-gvhd-modal" data-mssv="${sv.ID_TaiKhoan}" <?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?>>`;
-                                    select += `<option value="">-- Phân công sau --</option>`;
-                                    allGiaoVien.forEach(function (gv) {
-                                        select += `<option value="${gv.ID_TaiKhoan}" ${sv.ID_GVHD == gv.ID_TaiKhoan ? 'selected' : ''}>${gv.Ten}</option>`;
-                                    });
-                                    select += `</select>`;
-                                    html += `<tr>
+                        res.ds.forEach(function (sv, idx) {
+                            let select = `<select class="form-control select-gvhd-modal" data-mssv="${sv.ID_TaiKhoan}" <?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?>>`;
+                            select += `<option value="">-- Phân công sau --</option>`;
+                            allGiaoVien.forEach(function (gv) {
+                                select += `<option value="${gv.ID_TaiKhoan}" ${sv.ID_GVHD == gv.ID_TaiKhoan ? 'selected' : ''}>${gv.Ten}</option>`;
+                            });
+                            select += `</select>`;
+                            html += `<tr>
                                 <td>${idx + 1}</td>
                                 <td>${sv.MSSV}</td>
                                 <td>${sv.Ten}</td>
                                 <td>${sv.Lop}</td>
                                 <td>${select}</td>
                             </tr>`;
-                                });
-                                html += `</tbody></table>`;
-                            } else {
-                                html += `<div class="alert alert-warning">Chưa có sinh viên nào được phân công cho giáo viên này.</div>`;
-                            }
-                            $('#modalDanhSachSVBody').html(html);
-                            $('#modalDanhSachSV').modal('show');
-                        }, 'json');
+                        });
+                        html += `</tbody></table>`;
+                    } else {
+                        html += `<div class="alert alert-warning">Chưa có sinh viên nào được phân công cho giáo viên này.</div>`;
                     }
-                    // Xử lý chuyển giáo viên hướng dẫn (cả ngoài bảng và trong modal)
-                    $(document).on('change', '.select-gvhd, .select-gvhd-modal', function () {
-                        var id_sv = $(this).data('mssv');
-                        var id_gv = $(this).val();
-                        var id_dot = <?= json_encode($id) ?>;
-                        var select = this;
-                        if (id_gv === "") id_gv = null;
-                        $.ajax({
-                            url: window.location.href,
-                            method: 'POST',
-                            dataType: 'json',
-                            data: {
-                                action: 'chuyen_gv',
-                                mssv: id_sv,
-                                gvhdMoi: id_gv,
-                                id_dot: id_dot
-                            },
-                            success: function (res) {
-                                $(select).closest('td').addClass('success');
-                                setTimeout(function () {
-                                    $(select).closest('td').removeClass('success');
-                                }, 1000);
+                    $('#modalDanhSachSVBody').html(html);
+                    $('#modalDanhSachSV').modal('show');
+                }, 'json');
+            }
+            // Xử lý chuyển giáo viên hướng dẫn (cả ngoài bảng và trong modal)
+            $(document).on('change', '.select-gvhd, .select-gvhd-modal', function () {
+                var id_sv = $(this).data('mssv');
+                var id_gv = $(this).val();
+                var id_dot = <?= json_encode($id) ?>;
+                var select = this;
+                if (id_gv === "") id_gv = null;
+                $.ajax({
+                    url: window.location.href,
+                    method: 'POST',
+                    dataType: 'json',
+                    data: {
+                        action: 'chuyen_gv',
+                        mssv: id_sv,
+                        gvhdMoi: id_gv,
+                        id_dot: id_dot
+                    },
+                    success: function (res) {
+                        $(select).closest('td').addClass('success');
+                        setTimeout(function () {
+                            $(select).closest('td').removeClass('success');
+                        }, 1000);
 
-                                // Cập nhật số lượng sinh viên hướng dẫn ở bảng table-gv
-                                if (res.gvhdCu) {
-                                    var rowCu = $('#table-gv tbody tr').filter(function () {
-                                        return $(this).find('td').eq(1).data('id') == res.gvhdCu;
-                                    });
-                                    if (rowCu.length) {
-                                        rowCu.find('td').eq(2).text(res.soLuongCu);
-                                    }
-                                }
-                                if (res.gvhdMoi) {
-                                    var rowMoi = $('#table-gv tbody tr').filter(function () {
-                                        return $(this).find('td').eq(1).data('id') == res.gvhdMoi;
-                                    });
-                                    if (rowMoi.length) {
-                                        rowMoi.find('td').eq(2).text(res.soLuongMoi);
-                                    }
-                                }
-                                // Gọi cập nhật info ngay sau khi chuyển GVHD thành công
-                                reloadInfoBox();
-                                loadTabGV();
-                            },
-                            error: function (xhr) {
-                                alert("Cập nhật thất bại: " + xhr.responseText);
+                        // Cập nhật số lượng sinh viên hướng dẫn ở bảng table-gv
+                        if (res.gvhdCu) {
+                            var rowCu = $('#table-gv tbody tr').filter(function () {
+                                return $(this).find('td').eq(1).data('id') == res.gvhdCu;
+                            });
+                            if (rowCu.length) {
+                                rowCu.find('td').eq(2).text(res.soLuongCu);
+                            }
+                        }
+                        if (res.gvhdMoi) {
+                            var rowMoi = $('#table-gv tbody tr').filter(function () {
+                                return $(this).find('td').eq(1).data('id') == res.gvhdMoi;
+                            });
+                            if (rowMoi.length) {
+                                rowMoi.find('td').eq(2).text(res.soLuongMoi);
+                            }
+                        }
+                        // Gọi cập nhật info ngay sau khi chuyển GVHD thành công
+                        reloadInfoBox();
+                        loadTabGV();
+                    },
+                    error: function (xhr) {
+                        alert("Cập nhật thất bại: " + xhr.responseText);
+                    }
+                });
+            });
+            $('#btnAutoPhanCong').on('click', function () {
+                Swal.fire({
+                    title: 'Xác nhận phân công tự động?',
+                    text: 'Xác nhận phân công đều các sinh viên còn lại cho các giáo viên?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Xác nhận',
+                    cancelButtonText: 'Huỷ',
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.post(window.location.pathname, {
+                            action: 'auto_phancong',
+                            id_dot: <?= json_encode($id) ?>
+                        }, function (res) {
+                            console.log('Kết quả AJAX:', res); // Thêm dòng này để debug
+                            if (res.trim() === 'OK') {
+                                Swal.fire('Thành công!', 'Phân công tự động thành công!', 'success').then(() => {
+                                    reloadInfoBox();
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire('Lỗi', res, 'error');
                             }
                         });
-                    });
-                    $('#btnAutoPhanCong').on('click', function () {
+                    }
+                });
+            });
+            $('#btnHoanTat').on('click', function () {
+                Swal.fire({
+                    title: 'Xác nhận hoàn tất?',
+                    text: 'Sau khi hoàn tất, bạn sẽ không thể phân công lại!',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Xác nhận',
+                    cancelButtonText: 'Huỷ'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Hiển thị loading
                         Swal.fire({
-                            title: 'Xác nhận phân công tự động?',
-                            text: 'Xác nhận phân công đều các sinh viên còn lại cho các giáo viên?',
-                            icon: 'question',
-                            showCancelButton: true,
-                            confirmButtonText: 'Xác nhận',
-                            cancelButtonText: 'Huỷ',
-                            confirmButtonColor: '#3085d6',
-                            cancelButtonColor: '#d33'
-                        }).then((result) => {
-                            if (result.isConfirmed) {
+                            title: 'Đang gửi mail cho các giáo viên...',
+                            html: 'Vui lòng chờ trong giây lát...',
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+
+                                // Gửi request sau khi loading đã hiển thị
                                 $.post(window.location.pathname, {
-                                    action: 'auto_phancong',
+                                    action: 'hoan_tat',
                                     id_dot: <?= json_encode($id) ?>
                                 }, function (res) {
-                                    console.log('Kết quả AJAX:', res); // Thêm dòng này để debug
-                                    if (res.trim() === 'OK') {
-                                        Swal.fire('Thành công!', 'Phân công tự động thành công!', 'success').then(() => {
-                                            reloadInfoBox();
+                                    Swal.close(); // Tắt loading khi có phản hồi
+
+                                    if (res && res.status === 'OK') {
+                                        Swal.fire('Thành công!', 'Đã hoàn tất phân công!', 'success').then(() => {
                                             location.reload();
                                         });
                                     } else {
-                                        Swal.fire('Lỗi', res, 'error');
-                                    }
-                                });
-                            }
-                        });
-                    });
-                    $('#btnHoanTat').on('click', function () {
-                    Swal.fire({
-                        title: 'Xác nhận hoàn tất?',
-                        text: 'Sau khi hoàn tất, bạn sẽ không thể phân công lại!',
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonText: 'Xác nhận',
-                        cancelButtonText: 'Huỷ'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            // Hiển thị loading
-                            Swal.fire({
-                                title: 'Đang gửi mail cho các giáo viên...',
-                                html: 'Vui lòng chờ trong giây lát...',
-                                allowOutsideClick: false,
-                                didOpen: () => {
-                                    Swal.showLoading();
-
-                                    // Gửi request sau khi loading đã hiển thị
-                                    $.post(window.location.pathname, {
-                                        action: 'hoan_tat',
-                                        id_dot: <?= json_encode($id) ?>
-                                    }, function (res) {
-                                        Swal.close(); // Tắt loading khi có phản hồi
-
-                                        if (res && res.status === 'OK') {
-                                            Swal.fire('Thành công!', 'Đã hoàn tất phân công!', 'success').then(() => {
-                                                location.reload();
-                                            });
-                                        } else {
-                                            Swal.fire('Lỗi', res && res.message ? res.message : 'Có lỗi xảy ra!', 'error');
-                                        }
-                                    }, 'json');
-                                }
-                            });
-                        }
-                    });
-                });
-
-
-                    // AJAX load tab
-                    function loadTabGV() {
-                        $('#tabGVContent').html('<div class="text-center"><i class="fa fa-spinner fa-spin"></i> Đang tải...</div>');
-                        $.get(window.location.pathname, { ajax_tab: 'gv', id: <?= json_encode($id) ?> }, function (html) {
-                            $('#tabGVContent').html(html);
-                            $('#table-gv').DataTable({
-                                pageLength: 10,
-                                language: {
-                                    url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json"
-                                }
-                            });
-                        });
-                    }
-                    function loadTabSV() {
-                        $('#tabSVContent').html('<div class="text-center"><i class="fa fa-spinner fa-spin"></i> Đang tải...</div>');
-                        $.get(window.location.pathname, { ajax_tab: 'sv', id: <?= json_encode($id) ?> }, function (html) {
-                            $('#tabSVContent').html(html);
-                            var table = $('#table-dssv').DataTable({
-                                pageLength: 15,
-                                language: {
-                                    url: "/datn/assets/datatables/vi.json"
-                                }
-                            });
-
-                            // Custom filter theo ID giáo viên hướng dẫn
-                            $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
-                                var selectedId = $('#filterGVHD').val();
-                                if (settings.nTable.id !== 'table-dssv') return true;
-                                if (selectedId === 'all') return true; // Hiển thị tất cả
-                                var td = table.row(dataIndex).node();
-                                var gvId = $($(td).find('td[data-id]')).data('id');
-                                if (!selectedId) {
-                                    // Lọc sinh viên chưa có GVHD
-                                    return !gvId;
-                                }
-                                return gvId == selectedId;
-                            });
-
-                            $('#filterGVHD').on('change', function () {
-                                table.draw();
-                            });
-
-                            // Mặc định chọn "Tất cả"
-                            $('#filterGVHD').val('all');
-                            table.draw();
-                        });
-                    }
-
-                    // Khi chuyển tab
-                    $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
-                        var tab = $(e.target).data('tab');
-                        if (tab === 'gv') loadTabGV();
-                        if (tab === 'sv') loadTabSV();
-                    });
-
-                    // Tải tab đầu tiên khi vào trang
-                    $(function () { loadTabGV(); });
-                    $(document).ready(function () {
-
-                        $('#btnMoModalThemGV').on('click', function () {
-                            // Reset form mỗi lần mở
-                            $('#formThemGV')[0].reset();
-                            $('#modalThemGV').modal('show');
-                        });
-                        $('#formThemGV').on('submit', function (e) {
-                            e.preventDefault();
-
-                            var idDot = <?= json_encode($id) ?>;
-                            var gvCoSan = $('#chonGVCoSan').val() || [];
-                            var tenGVmoi = $('#tenGVmoi').val().trim();
-                            var taiKhoanGVmoi = $('#taiKhoanGVmoi').val().trim();
-                            var matKhauGVmoi = $('#matKhauGVmoi').val();
-
-                            if (gvCoSan.length === 0 && (!tenGVmoi || !taiKhoanGVmoi || !matKhauGVmoi)) {
-                                Swal.fire('Vui lòng chọn giáo viên hoặc nhập thông tin giáo viên mới!', '', 'warning');
-                                return;
-                            }
-
-                            // Kiểm tra tài khoản phải là email nếu nhập giáo viên mới
-                            if (tenGVmoi && taiKhoanGVmoi && matKhauGVmoi) {
-                                var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                                if (!emailPattern.test(taiKhoanGVmoi)) {
-                                    Swal.fire('Tài khoản phải là một địa chỉ email hợp lệ!', '', 'warning');
-                                    return;
-                                }
-                            }
-                            $.ajax({
-                                url: window.location.pathname,
-                                method: 'POST',
-                                dataType: 'json',
-                                data: {
-                                    action: 'them_gv_dot',
-                                    id_dot: idDot,
-                                    gvCoSan: gvCoSan,
-                                    tenGVmoi: tenGVmoi,
-                                    taiKhoanGVmoi: taiKhoanGVmoi,
-                                    matKhauGVmoi: matKhauGVmoi
-                                },
-                                success: function (res) {
-                                    if (res.success) {
-                                        Swal.fire('Thành công!', res.message, 'success').then(() => {
-                                            reloadInfoBox();
-                                            location.reload();
-                                        });
-                                    } else {
-                                        Swal.fire('Lỗi', res.message, 'error');
-                                    }
-                                },
-                                error: function () {
-                                    Swal.fire('Lỗi', 'Không thể thêm giáo viên.', 'error');
-                                }
-                            });
-                        });
-                        $('#btnShowFormGVmoi').on('click', function () {
-                            $('#formGVmoiBox').slideDown(200);
-                            $('#chonGVCoSan').attr('size', 6); // thu nhỏ lại khi hiện form
-                            $(this).hide();
-                        });
-                        $('#btnHideFormGVmoi').on('click', function () {
-                            $('#formGVmoiBox').slideUp(200);
-                            $('#chonGVCoSan').attr('size', 20); // kéo dài lại khi ẩn form
-                            $('#btnShowFormGVmoi').show();
-                        });
-                        // Khi mở modal thì reset về trạng thái ẩn form
-                        $('#modalThemGV').on('show.bs.modal', function () {
-                            $('#formGVmoiBox').hide();
-                            $('#btnShowFormGVmoi').show();
-                            $('#chonGVCoSan').attr('size', 20);
-                        });
-                    });
-                    function reloadInfoBox() {
-                        $.get(window.location.pathname, { ajax: 'info', id: <?= json_encode($id) ?> }, function (res) {
-                            $('#infoTongGVHD').text(res.tongGVHD);
-                            $('#infoSVDaCoGVHD').text(res.soSVDaCoGVHD);
-                            $('#infoGVChuaCoSV').text(res.soGVChuaCoSV);
-                        }, 'json');
-                    }
-                    // Xử lý xóa giáo viên khỏi đợt
-                    $(document).on('click', '.btn-xoa-gv-dot', function () {
-                        var idGV = $(this).data('id');
-                        var idDot = <?= json_encode($id) ?>;
-                        var btn = this;
-                        Swal.fire({
-                            title: 'Xác nhận xóa?',
-                            text: 'Bạn chắc chắn muốn xóa giáo viên này khỏi đợt? (Chỉ xóa nếu chưa có sinh viên được phân công)',
-                            icon: 'warning',
-                            showCancelButton: true,
-                            confirmButtonText: 'Xóa',
-                            cancelButtonText: 'Hủy'
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                $.post(window.location.pathname, {
-                                    action: 'xoa_gv_dot',
-                                    id_dot: idDot,
-                                    id_gv: idGV
-                                }, function (res) {
-                                    if (res.success) {
-                                        Swal.fire('Đã xóa!', '', 'success');
-                                        loadTabGV();
-                                        reloadInfoBox();
-                                        location.reload();
-                                    } else {
-                                        Swal.fire('Lỗi', res.message, 'error');
+                                        Swal.fire('Lỗi', res && res.message ? res.message : 'Có lỗi xảy ra!', 'error');
                                     }
                                 }, 'json');
                             }
                         });
-                    });
+                    }
+                });
+            });
 
-                    // Alert tự ẩn
-                    window.addEventListener('DOMContentLoaded', () => {
-                        const alertBox = document.getElementById('successAlert');
-                        if (alertBox) {
-                            setTimeout(() => {
-                                alertBox.style.transition = 'opacity 0.5s ease';
-                                alertBox.style.opacity = '0';
-                                setTimeout(() => alertBox.remove(), 500);
-                            }, 2000);
+
+            // AJAX load tab
+            function loadTabGV() {
+                $('#tabGVContent').html('<div class="text-center"><i class="fa fa-spinner fa-spin"></i> Đang tải...</div>');
+                $.get(window.location.pathname, { ajax_tab: 'gv', id: <?= json_encode($id) ?> }, function (html) {
+                    $('#tabGVContent').html(html);
+                    $('#table-gv').DataTable({
+                        pageLength: 10,
+                        language: {
+                            url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json"
                         }
                     });
-                </script>
-            </div>
-            <!-- Modal xem sinh viên của giáo viên -->
-            <div class="modal fade" id="modalDanhSachSV" tabindex="-1" role="dialog"
-                aria-labelledby="modalDanhSachSVLabel">
-                <div class="modal-dialog modal-lg" role="document">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h4 class="modal-title" id="modalDanhSachSVLabel">Danh sách sinh viên</h4>
-                        </div>
-                        <div class="modal-body" id="modalDanhSachSVBody">
-                            <!-- Nội dung sẽ được JS đổ vào -->
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-default" data-dismiss="modal">Đóng</button>
-                        </div>
-                    </div>
+                });
+            }
+            function loadTabSV() {
+                $('#tabSVContent').html('<div class="text-center"><i class="fa fa-spinner fa-spin"></i> Đang tải...</div>');
+                $.get(window.location.pathname, { ajax_tab: 'sv', id: <?= json_encode($id) ?> }, function (html) {
+                    $('#tabSVContent').html(html);
+                    var table = $('#table-dssv').DataTable({
+                        pageLength: 15,
+                        language: {
+                            url: "/datn/assets/datatables/vi.json"
+                        }
+                    });
+
+                    // Custom filter theo ID giáo viên hướng dẫn
+                    $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
+                        var selectedId = $('#filterGVHD').val();
+                        if (settings.nTable.id !== 'table-dssv') return true;
+                        if (selectedId === 'all') return true; // Hiển thị tất cả
+                        var td = table.row(dataIndex).node();
+                        var gvId = $($(td).find('td[data-id]')).data('id');
+                        if (!selectedId) {
+                            // Lọc sinh viên chưa có GVHD
+                            return !gvId;
+                        }
+                        return gvId == selectedId;
+                    });
+
+                    $('#filterGVHD').on('change', function () {
+                        table.draw();
+                    });
+
+                    // Mặc định chọn "Tất cả"
+                    $('#filterGVHD').val('all');
+                    table.draw();
+                });
+            }
+
+            // Khi chuyển tab
+            $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+                var tab = $(e.target).data('tab');
+                if (tab === 'gv') loadTabGV();
+                if (tab === 'sv') loadTabSV();
+            });
+
+            // Tải tab đầu tiên khi vào trang
+            $(function () { loadTabGV(); });
+            $(document).ready(function () {
+
+                $('#btnMoModalThemGV').on('click', function () {
+                    // Reset form mỗi lần mở
+                    $('#formThemGV')[0].reset();
+                    $('#modalThemGV').modal('show');
+                });
+                $('#formThemGV').on('submit', function (e) {
+                    e.preventDefault();
+
+                    var idDot = <?= json_encode($id) ?>;
+                    var gvCoSan = $('#chonGVCoSan').val() || [];
+                    var tenGVmoi = $('#tenGVmoi').val().trim();
+                    var taiKhoanGVmoi = $('#taiKhoanGVmoi').val().trim();
+                    var matKhauGVmoi = $('#matKhauGVmoi').val();
+
+                    if (gvCoSan.length === 0 && (!tenGVmoi || !taiKhoanGVmoi || !matKhauGVmoi)) {
+                        Swal.fire('Vui lòng chọn giáo viên hoặc nhập thông tin giáo viên mới!', '', 'warning');
+                        return;
+                    }
+
+                    // Kiểm tra tài khoản phải là email nếu nhập giáo viên mới
+                    if (tenGVmoi && taiKhoanGVmoi && matKhauGVmoi) {
+                        var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                        if (!emailPattern.test(taiKhoanGVmoi)) {
+                            Swal.fire('Tài khoản phải là một địa chỉ email hợp lệ!', '', 'warning');
+                            return;
+                        }
+                    }
+                    $.ajax({
+                        url: window.location.pathname,
+                        method: 'POST',
+                        dataType: 'json',
+                        data: {
+                            action: 'them_gv_dot',
+                            id_dot: idDot,
+                            gvCoSan: gvCoSan,
+                            tenGVmoi: tenGVmoi,
+                            taiKhoanGVmoi: taiKhoanGVmoi,
+                            matKhauGVmoi: matKhauGVmoi
+                        },
+                        success: function (res) {
+                            if (res.success) {
+                                Swal.fire('Thành công!', res.message, 'success').then(() => {
+                                    reloadInfoBox();
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire('Lỗi', res.message, 'error');
+                            }
+                        },
+                        error: function () {
+                            Swal.fire('Lỗi', 'Không thể thêm giáo viên.', 'error');
+                        }
+                    });
+                });
+                $('#btnShowFormGVmoi').on('click', function () {
+                    $('#formGVmoiBox').slideDown(200);
+                    $('#chonGVCoSan').attr('size', 6); // thu nhỏ lại khi hiện form
+                    $(this).hide();
+                });
+                $('#btnHideFormGVmoi').on('click', function () {
+                    $('#formGVmoiBox').slideUp(200);
+                    $('#chonGVCoSan').attr('size', 20); // kéo dài lại khi ẩn form
+                    $('#btnShowFormGVmoi').show();
+                });
+                // Khi mở modal thì reset về trạng thái ẩn form
+                $('#modalThemGV').on('show.bs.modal', function () {
+                    $('#formGVmoiBox').hide();
+                    $('#btnShowFormGVmoi').show();
+                    $('#chonGVCoSan').attr('size', 20);
+                });
+            });
+            function reloadInfoBox() {
+                $.get(window.location.pathname, { ajax: 'info', id: <?= json_encode($id) ?> }, function (res) {
+                    $('#infoTongGVHD').text(res.tongGVHD);
+                    $('#infoSVDaCoGVHD').text(res.soSVDaCoGVHD);
+                    $('#infoGVChuaCoSV').text(res.soGVChuaCoSV);
+                }, 'json');
+            }
+            // Xử lý xóa giáo viên khỏi đợt
+            $(document).on('click', '.btn-xoa-gv-dot', function () {
+                var idGV = $(this).data('id');
+                var idDot = <?= json_encode($id) ?>;
+                var btn = this;
+                Swal.fire({
+                    title: 'Xác nhận xóa?',
+                    text: 'Bạn chắc chắn muốn xóa giáo viên này khỏi đợt? (Chỉ xóa nếu chưa có sinh viên được phân công)',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Xóa',
+                    cancelButtonText: 'Hủy'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.post(window.location.pathname, {
+                            action: 'xoa_gv_dot',
+                            id_dot: idDot,
+                            id_gv: idGV
+                        }, function (res) {
+                            if (res.success) {
+                                Swal.fire('Đã xóa!', '', 'success');
+                                loadTabGV();
+                                reloadInfoBox();
+                                location.reload();
+                            } else {
+                                Swal.fire('Lỗi', res.message, 'error');
+                            }
+                        }, 'json');
+                    }
+                });
+            });
+
+            // Alert tự ẩn
+            window.addEventListener('DOMContentLoaded', () => {
+                const alertBox = document.getElementById('successAlert');
+                if (alertBox) {
+                    setTimeout(() => {
+                        alertBox.style.transition = 'opacity 0.5s ease';
+                        alertBox.style.opacity = '0';
+                        setTimeout(() => alertBox.remove(), 500);
+                    }, 2000);
+                }
+            });
+        </script>
+    </div>
+    <!-- Modal xem sinh viên của giáo viên -->
+    <div class="modal fade" id="modalDanhSachSV" tabindex="-1" role="dialog" aria-labelledby="modalDanhSachSVLabel">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="modalDanhSachSVLabel">Danh sách sinh viên</h4>
+                </div>
+                <div class="modal-body" id="modalDanhSachSVBody">
+                    <!-- Nội dung sẽ được JS đổ vào -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Đóng</button>
                 </div>
             </div>
-            <!-- Modal Thêm Giáo Viên vào Đợt -->
-            <div class="modal fade" id="modalThemGV" tabindex="-1" role="dialog" aria-labelledby="modalThemGVLabel">
-                <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                        <form id="formThemGV">
-                            <div class="modal-header">
-                                <h4 class="modal-title" id="modalThemGVLabel">Thêm giáo viên vào đợt thực tập</h4>
-                            </div>
-                            <div class="modal-body">
-                                <input type="hidden" name="id_dot" value="<?= htmlspecialchars($id) ?>">
-                                <div class="form-group">
-                                    <label for="chonGVCoSan"><b>Chọn giáo viên cho đợt (giữ Ctrl hoặc Shift để chọn
-                                            nhiều):</b></label>
-                                    <select multiple class="form-control" id="chonGVCoSan" name="gvCoSan[]" size="20"
-                                        style="min: height 250;;">
-                                        <?php
-                                        // Lấy danh sách giáo viên chưa có trong đợt này
-                                        $stmt = $conn->prepare("
+        </div>
+    </div>
+    <!-- Modal Thêm Giáo Viên vào Đợt -->
+    <div class="modal fade" id="modalThemGV" tabindex="-1" role="dialog" aria-labelledby="modalThemGVLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <form id="formThemGV">
+                    <div class="modal-header">
+                        <h4 class="modal-title" id="modalThemGVLabel">Thêm giáo viên vào đợt thực tập</h4>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="id_dot" value="<?= htmlspecialchars($id) ?>">
+                        <div class="form-group">
+                            <label for="chonGVCoSan"><b>Chọn giáo viên cho đợt (giữ Ctrl hoặc Shift để chọn
+                                    nhiều):</b></label>
+                            <select multiple class="form-control" id="chonGVCoSan" name="gvCoSan[]" size="20"
+                                style="min: height 250;;">
+                                <?php
+                                // Lấy danh sách giáo viên chưa có trong đợt này
+                                $stmt = $conn->prepare("
                                         SELECT GV.ID_TaiKhoan, GV.Ten
                                         FROM GiaoVien GV
                                         WHERE GV.TrangThai = 1
@@ -1214,56 +1285,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                         )
                                         ORDER BY GV.Ten
                                     ");
-                                        $stmt->execute(['id_dot' => $id]);
-                                        $giaoVienChuaCoTrongDot = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                                        if (count($giaoVienChuaCoTrongDot) === 0): ?>
-                                            <option disabled>Đã hết giáo viên để thêm</option>
-                                        <?php else:
-                                            foreach ($giaoVienChuaCoTrongDot as $gv): ?>
-                                                <option value="<?= $gv['ID_TaiKhoan'] ?>"><?= htmlspecialchars($gv['Ten']) ?>
-                                                </option>
-                                            <?php endforeach;
-                                        endif; ?>
-                                    </select>
-                                </div>
-                                <div class="text-center" style="margin: 10px 0;">
-                                    <button type="button" class="btn btn-link" id="btnShowFormGVmoi">
-                                        <i class="fa fa-plus"></i> Thêm giáo viên mới
-                                    </button>
-                                </div>
-                                <div id="formGVmoiBox" style="display:none; margin-top:10px;">
-                                    <hr>
-                                    <div class="form-group">
-                                        <label>Họ tên giáo viên mới</label>
-                                        <input type="text" class="form-control" id="tenGVmoi" name="tenGVmoi"
-                                            placeholder="Nhập tên giáo viên mới">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Tài khoản (email)</label>
-                                        <input type="text" class="form-control" id="taiKhoanGVmoi" name="taiKhoanGVmoi"
-                                            placeholder="Nhập email">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Mật khẩu</label>
-                                        <input type="password" class="form-control" id="matKhauGVmoi"
-                                            name="matKhauGVmoi" placeholder="Nhập mật khẩu">
-                                    </div>
-                                    <div class="text-center">
-                                        <button type="button" class="btn btn-link" id="btnHideFormGVmoi">
-                                            <i class="fa fa-chevron-up"></i> Ẩn nhập giáo viên mới
-                                        </button>
-                                    </div>
-                                </div>
+                                $stmt->execute(['id_dot' => $id]);
+                                $giaoVienChuaCoTrongDot = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                                if (count($giaoVienChuaCoTrongDot) === 0): ?>
+                                    <option disabled>Đã hết giáo viên để thêm</option>
+                                <?php else:
+                                    foreach ($giaoVienChuaCoTrongDot as $gv): ?>
+                                        <option value="<?= $gv['ID_TaiKhoan'] ?>"><?= htmlspecialchars($gv['Ten']) ?>
+                                        </option>
+                                    <?php endforeach;
+                                endif; ?>
+                            </select>
+                        </div>
+                        <div class="text-center" style="margin: 10px 0;">
+                            <button type="button" class="btn btn-link" id="btnShowFormGVmoi">
+                                <i class="fa fa-plus"></i> Thêm giáo viên mới
+                            </button>
+                        </div>
+                        <div id="formGVmoiBox" style="display:none; margin-top:10px;">
+                            <hr>
+                            <div class="form-group">
+                                <label>Họ tên giáo viên mới</label>
+                                <input type="text" class="form-control" id="tenGVmoi" name="tenGVmoi"
+                                    placeholder="Nhập tên giáo viên mới">
                             </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-default" data-dismiss="modal">Đóng</button>
-                                <button type="submit" class="btn btn-primary">Thêm vào đợt</button>
+                            <div class="form-group">
+                                <label>Tài khoản (email)</label>
+                                <input type="text" class="form-control" id="taiKhoanGVmoi" name="taiKhoanGVmoi"
+                                    placeholder="Nhập email">
                             </div>
-                        </form>
+                            <div class="form-group">
+                                <label>Mật khẩu</label>
+                                <input type="password" class="form-control" id="matKhauGVmoi" name="matKhauGVmoi"
+                                    placeholder="Nhập mật khẩu">
+                            </div>
+                            <div class="text-center">
+                                <button type="button" class="btn btn-link" id="btnHideFormGVmoi">
+                                    <i class="fa fa-chevron-up"></i> Ẩn nhập giáo viên mới
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Đóng</button>
+                        <button type="submit" class="btn btn-primary">Thêm vào đợt</button>
+                    </div>
+                </form>
             </div>
+        </div>
+    </div>
 
-    </body>
+</body>
 
-    </html>
+</html>

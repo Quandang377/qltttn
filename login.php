@@ -92,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <button type="submit" class="btn btn-primary btn-login">Đăng nhập</button>
                     </form>
                     <div class="footer-text">
-                        © <?= date('Y') ?>- Hệ thống quản lý thực tập
+                        © 2025- Hệ thống quản lý thực tập
                     </div>
                 </div>
             </div>

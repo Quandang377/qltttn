@@ -1,5 +1,8 @@
-<?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_login.php';
+<?php 
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
 $id_taikhoan = $_SESSION['user_id'] ?? null;
@@ -9,6 +12,8 @@ $stmt->execute();
 $dsDot = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  file_put_contents('debug_post.log', print_r($_POST, true));
+
   $tieude = $_POST['tieude'] ?? '';
   $noidung = $_POST['noidung'] ?? '';
   $id_dot = $_POST['id_dot'] ?? null;
@@ -82,12 +87,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                   </div>
                   <div class="form-group">
                     <label>Nội dung thông báo</label>
-                    <textarea class="form-control" id="noidung" name="noidung" required></textarea>
+                    <textarea class="form-control" id="editor" name="noidung"></textarea>
                     <script>
-                      CKEDITOR.replace('noidung', {
-                      });
+                      ClassicEditor
+                        .create(document.querySelector('#editor'))
+                        .catch(error => {
+                          console.error('Lỗi khởi tạo CKEditor:', error);
+                        });
                     </script>
-
                   </div>
                   <div class="form-group text-center">
                     <button type="submit" class="btn btn-primary btn-lg mt-3">Đăng tải</button>

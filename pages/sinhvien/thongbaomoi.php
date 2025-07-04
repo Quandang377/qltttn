@@ -7,7 +7,6 @@ $stmt = $conn->prepare("SELECT ID_Dot FROM SinhVien WHERE ID_TaiKhoan = ?");
 $stmt->execute([$idTaiKhoan]);
 $idDot = $stmt->fetchColumn();
 
-
 $stmt = $conn->prepare("
     SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.ID_TAIKHOAN, tb.NGAYDANG, tb.TRANGTHAI, tb.ID_Dot, dt.TenDot
     FROM THONGBAO tb
@@ -68,7 +67,7 @@ function renderNotifications() {
     setTimeout(() => {
         const start = currentPage * pageSize;
         const end = start + pageSize;
-        const list = thongbao_moi.slice(start, end); // ✅ Sửa biến này
+        const list = thongbao_moi.slice(start, end);
         container.innerHTML = '';
 
         if (list.length === 0) {
