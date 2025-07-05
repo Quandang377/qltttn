@@ -6,12 +6,14 @@
 <html lang="vi">
 
 <head>
-    <meta charset="UTF-8">
-    <title>Tài nguyên</title>
     <?php
     require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php";
     require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
+
     ?>
+    <meta charset="UTF-8">
+    <title>Tài nguyên</title>
+   
     <style>
     #page-wrapper {
         padding: 30px;
@@ -97,11 +99,12 @@
 </head>
 
 <body>
+    <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_Sinhvien.php"; ?>
+
     <div id="wrapper">
         <div id="page-wrapper">
             <div class="container-fluid">
                 <h1 class="page-header">Tài nguyên</h1>
-<<<<<<< HEAD
                 
                 <?php
                 try {
@@ -183,64 +186,6 @@
                     }
                 }
                 ?>
-=======
-                <div class="row">
-                    <?php
-                   
-                    // Lấy tài nguyên loại Tainguyen, trạng thái hiển thị
-                    $stmt = $conn->prepare("
-                        SELECT f.*, 
-                            COALESCE(sv.Ten) AS TenNguoiDung
-                        FROM file f
-                        LEFT JOIN SinhVien sv ON f.ID_SV = sv.ID_TaiKhoan
-                       
-                        WHERE f.Loai='Tainguyen' AND f.TrangThai=1
-                        ORDER BY f.NgayNop DESC
-                    ");
-                    $stmt->execute();
-                    $tainguyen = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                    if (empty($tainguyen)) {
-                        echo '<div class="col-md-12"><div class="alert alert-info">Chưa có tài nguyên nào.</div></div>';
-                    }
-                    foreach ($tainguyen as $row):
-                        // Xác định link file hoặc link ngoài
-                        $isFile = strpos($row['DIR'], '/datn/file/') !== false || strpos($row['DIR'], '\\datn\\file\\') !== false;
-                        $fileUrl = $isFile ? '/datn/file/' . basename($row['DIR']) : $row['DIR'];
-                        ?>
-                        <div class="col-md-3 col-sm-6">
-                            <div class="panel panel-tainguyen">
-                                <div style="display: flex; align-items: center;">
-                                    <i class="fa fa-file-o fa-fw"></i>
-                                    <div>
-                                        <div class="ten-tainguyen"><?= htmlspecialchars($row['Ten']) ?></div>
-                                        <div class="tenfile"><?= htmlspecialchars($row['TenFile']) ?></div>
-                                        <a href="javascript:void(0)"
-                                            onclick="xemFileOnline('<?= htmlspecialchars($fileUrl) ?>')"
-                                            class="btn btn-xs btn-info">Xem</a>
-                                        <a href="<?= htmlspecialchars($fileUrl) ?>" download class="btn btn-xs btn-success"
-                                            style="margin-left: 5px;">
-                                            Tải xuống
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-                <div class="modal fade" id="modalXemFile" tabindex="-1" role="dialog">
-                    <div class="modal-dialog" style="width:90%;max-width:900px;" role="document">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h4 class="modal-title">Xem tài nguyên</h4>
-                            </div>
-                            <div class="modal-body" id="xemFileBody" style="min-height:500px;text-align:center"></div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-default" data-dismiss="modal">Đóng</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
->>>>>>> e2493fb9eccefe43493535a26cd6705d9a037692
             </div>
         </div>
     </div>
