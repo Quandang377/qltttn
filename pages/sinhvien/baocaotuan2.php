@@ -718,6 +718,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_task_id'])) {
         overflow-y: auto;
     }
 }
+
+.task-badge.low-progress {
+    background-color: #fdecea;
+    color: #e53935;
+    border-left: 3px solidrgb(73, 0, 243);
+}
+.task-badge.mid-progress {
+    background-color: #fff4e5;
+    color: #ff9800;
+    border-left: 3px solid #ff9800;
+}
+.task-badge.completed {
+    background-color: #e6f4ea;
+    color: #1e8e3e;
+    border-left: 3px solid #1e8e3e;
+}
     </style>
 </head>
 <body>
@@ -807,13 +823,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_task_id'])) {
                         <div class="progress-panel" id="progress-panel">
                             <div class="progress-panel-header">
                                 <div class="progress-panel-title" id="progress-task-name">Tên công việc</div>
-                                <div class="progress-panel-time" id="progress-task-time">7:00 - 8:00</div>
                             </div>
                             <div class="progress-panel-description" id="progress-task-description">
-                                Mô tả công việc sẽ hiển thị ở đây...
                             </div>
                             <div>
-                                <div class="progress-panel-label">Cập nhật tiến độ:</div>
                                 <div class="progress-panel-value" id="progress-value-display">0%</div>
                                 <div class="progress-panel-slider">
                                     <input type="range" min="0" max="100" value="0" class="slider" id="progress-slider">
@@ -872,64 +885,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_task_id'])) {
             </div>
         </div>
     </div>
-    <!-- Task List Modal -->
-<div class="modal fade" id="tasks-modal" tabindex="-1" role="dialog" aria-labelledby="tasks-modal-label" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="tasks-modal-date">Công việc ngày </h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="row">
-                    <div class="col-12">
-                        <div style="display: flex; gap: 18px; flex-direction: column;">
-                            <div class="task-list-container modal-task-container">
-                                <div class="task-list-header">
-                                    Danh sách công việc
-                                </div>
-                                <ul class="task-list" id="modal-task-list">
-                                    <!-- Tasks will be loaded here dynamically -->
-                                    <li class="task-list-item text-muted">Đang tải...</li>
-                                </ul>
-                            </div>
-
-                            <div class="progress-panel" id="modal-progress-panel">
-                                <div class="progress-panel-header">
-                                    <div class="progress-panel-title" id="modal-progress-task-name">Tên công việc</div>
-                                    <div class="progress-panel-time" id="modal-progress-task-time"></div>
-                                </div>
-                                <div class="progress-panel-description" id="modal-progress-task-description">
-                                    Mô tả công việc sẽ hiển thị ở đây...
-                                </div>
-                                <div>
-                                    <div class="progress-panel-label">Cập nhật tiến độ:</div>
-                                    <div class="progress-panel-value" id="modal-progress-value-display">0%</div>
-                                    <div class="progress-panel-slider">
-                                        <input type="range" min="0" max="100" value="0" class="slider" id="modal-progress-slider">
-                                    </div>
-                                    <div class="progress-panel-buttons">
-                                        <button class="btn btn-sm btn-outline-secondary" id="modal-btn-edit-task">
-                                            <i class="fa fa-edit"></i> Sửa
-                                        </button>
-                                        <button class="btn btn-sm btn-primary" id="modal-btn-update-progress">
-                                            <i class="fa fa-save"></i> Cập nhật
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
-            </div>
-        </div>
-    </div>
-</div>
     <form id="change-date-form" method="get" style="display:none;">
         <input type="hidden" name="date" id="change-date-input" value="<?php echo htmlspecialchars($selectedDate); ?>">
     </form>
@@ -1085,46 +1040,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_task_id'])) {
                     // Check if there are tasks for this date and add badges
                     if (calendarTasksData && calendarTasksData[formattedDate]) {
                         const taskData = calendarTasksData[formattedDate];
-                        const taskCount = taskData.total;
-                        const completedCount = taskData.completed;
                         const tasks = taskData.tasks || [];
-                        
+
                         cell.classList.add('has-tasks');
-                        
-                        // Create container for badges
+
                         const badgesContainer = document.createElement('div');
                         badgesContainer.className = 'task-badges';
-                        
-                        // If there are too many tasks, show summary
-                        if (taskCount > 2) {
-                            // Show the first task with name
-                            if (tasks.length > 0) {
-                                const firstTask = tasks[0];
-                                const firstBadge = document.createElement('div');
-                                firstBadge.className = 'task-badge' + (firstTask.progress == 100 ? ' completed' : '');
-                                firstBadge.textContent = firstTask.name;
-                                firstBadge.title = firstTask.name + (firstTask.progress == 100 ? ' (Hoàn thành)' : ` (${firstTask.progress}%)`);
-                                badgesContainer.appendChild(firstBadge);
-                            }
-                            
-                            // Show summary badge for remaining tasks
-                            const remainingCount = taskCount - 1;
-                            if (remainingCount > 0) {
-                                const summaryBadge = document.createElement('div');
-                                summaryBadge.className = 'task-badge-summary';
-                                summaryBadge.textContent = `+${remainingCount} công việc khác (${completedCount}/${taskCount} hoàn thành)`;
-                                summaryBadge.title = `${completedCount} trong ${taskCount} công việc đã hoàn thành`;
-                                badgesContainer.appendChild(summaryBadge);
-                            }
-                        } else {
-                            // Show each task individually (up to 2)
+
+                        if (tasks.length <= 5) {
                             tasks.forEach(task => {
                                 const badge = document.createElement('div');
-                                badge.className = 'task-badge' + (task.progress == 100 ? ' completed' : '');
+                                let progressClass = 'task-badge';
+
+                                if (task.progress >= 100) {
+                                    progressClass += ' completed';
+                                } else if (task.progress >= 50) {
+                                    progressClass += ' mid-progress';
+                                } else {
+                                    progressClass += ' low-progress';
+                                }
+
+                                badge.className = progressClass;
                                 badge.textContent = task.name;
-                                badge.title = task.name + (task.progress == 100 ? ' (Hoàn thành)' : ` (${task.progress}%)`);
+                                badge.title = `${task.name} (${task.progress}%)`;
                                 badgesContainer.appendChild(badge);
                             });
+                        } else {
+                            const firstFour = tasks.slice(0, 4);
+                            firstFour.forEach(task => {
+                                const badge = document.createElement('div');
+                                let progressClass = 'task-badge';
+
+                                if (task.progress >= 100) {
+                                    progressClass += ' completed';
+                                } else if (task.progress >= 50) {
+                                    progressClass += ' mid-progress';
+                                } else {
+                                    progressClass += ' low-progress';
+                                }
+
+                                badge.className = progressClass;
+                                badge.textContent = task.name;
+                                badge.title = `${task.name} (${task.progress}%)`;
+                                badgesContainer.appendChild(badge);
+                            });
+                            const remainingCount = tasks.length - 4;
+                            const extraBadge = document.createElement('div');
+                            extraBadge.className = 'task-badge';
+                            extraBadge.textContent = `+${remainingCount} công việc khác`;
+                            extraBadge.title = `Có ${remainingCount} công việc khác`;
+                            badgesContainer.appendChild(extraBadge);
                         }
                         
                         cell.appendChild(badgesContainer);
@@ -1297,46 +1262,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_task_id'])) {
                     // Check if there are tasks for this date and add badges
                     if (calendarTasksData && calendarTasksData[formattedDate]) {
                         const taskData = calendarTasksData[formattedDate];
-                        const taskCount = taskData.total;
-                        const completedCount = taskData.completed;
                         const tasks = taskData.tasks || [];
-                        
+
                         cell.classList.add('has-tasks');
-                        
-                        // Create container for badges
+
                         const badgesContainer = document.createElement('div');
                         badgesContainer.className = 'task-badges';
-                        
-                        // If there are too many tasks, show summary
-                        if (taskCount > 2) {
-                            // Show the first task with name
-                            if (tasks.length > 0) {
-                                const firstTask = tasks[0];
-                                const firstBadge = document.createElement('div');
-                                firstBadge.className = 'task-badge' + (firstTask.progress == 100 ? ' completed' : '');
-                                firstBadge.textContent = firstTask.name;
-                                firstBadge.title = firstTask.name + (firstTask.progress == 100 ? ' (Hoàn thành)' : ` (${firstTask.progress}%)`);
-                                badgesContainer.appendChild(firstBadge);
-                            }
-                            
-                            // Show summary badge for remaining tasks
-                            const remainingCount = taskCount - 1;
-                            if (remainingCount > 0) {
-                                const summaryBadge = document.createElement('div');
-                                summaryBadge.className = 'task-badge-summary';
-                                summaryBadge.textContent = `+${remainingCount} công việc khác (${completedCount}/${taskCount} hoàn thành)`;
-                                summaryBadge.title = `${completedCount} trong ${taskCount} công việc đã hoàn thành`;
-                                badgesContainer.appendChild(summaryBadge);
-                            }
-                        } else {
-                            // Show each task individually (up to 2)
+
+                        if (tasks.length <= 5) {
                             tasks.forEach(task => {
                                 const badge = document.createElement('div');
-                                badge.className = 'task-badge' + (task.progress == 100 ? ' completed' : '');
+                                let progressClass = 'task-badge';
+
+                                if (task.progress >= 100) {
+                                    progressClass += ' completed';
+                                } else if (task.progress >= 50) {
+                                    progressClass += ' mid-progress';
+                                } else {
+                                    progressClass += ' low-progress';
+                                }
+
+                                badge.className = progressClass;
                                 badge.textContent = task.name;
-                                badge.title = task.name + (task.progress == 100 ? ' (Hoàn thành)' : ` (${task.progress}%)`);
+                                badge.title = `${task.name} (${task.progress}%)`;
                                 badgesContainer.appendChild(badge);
                             });
+                        } else {
+                            const firstFour = tasks.slice(0, 4);
+                            firstFour.forEach(task => {
+                                const badge = document.createElement('div');
+                                let progressClass = 'task-badge';
+
+                                if (task.progress >= 100) {
+                                    progressClass += ' completed';
+                                } else if (task.progress >= 50) {
+                                    progressClass += ' mid-progress';
+                                } else {
+                                    progressClass += ' low-progress';
+                                }
+
+                                badge.className = progressClass;
+                                badge.textContent = task.name;
+                                badge.title = `${task.name} (${task.progress}%)`;
+                                badgesContainer.appendChild(badge);
+                            });
+                            const remainingCount = tasks.length - 4;
+                            const extraBadge = document.createElement('div');
+                            extraBadge.className = 'task-badge';
+                            extraBadge.textContent = `+${remainingCount} công việc khác`;
+                            extraBadge.title = `Có ${remainingCount} công việc khác`;
+                            badgesContainer.appendChild(extraBadge);
                         }
                         
                         cell.appendChild(badgesContainer);
@@ -1438,7 +1413,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_task_id'])) {
 }
     // Cập nhật % khi kéo slider trong panel
     document.getElementById('progress-slider').addEventListener('input', function() {
-        document.getElementById('progress-value-display').textContent = this.value + '%';
+        document.getElementById('progress-value_display').textContent = this.value + '%';
     });
     // Khi nhấn "Cập nhật tiến độ"
     document.getElementById('btn-update-progress').addEventListener('click', function() {
