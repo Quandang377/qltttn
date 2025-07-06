@@ -253,8 +253,7 @@ if (isset($_GET['ajax'])) {
                         $conn->rollBack();
                         $_SESSION['error'] = "Đã xảy ra lỗi khi phản hồi: " . $e->getMessage();
                     }
-
-                    header("Location: " . $_SERVER['REQUEST_URI']);
+                    header("Location: /datn/pages/giaovien/khaosat" );
                     exit;
                 }
                 $stmt = $conn->prepare("SELECT ks.ID, ks.TieuDe, ks.ThoiGianTao,
