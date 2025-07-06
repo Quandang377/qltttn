@@ -24,10 +24,12 @@ function getLettersByStatus() {
         // Optimized query - lấy tất cả trong một lần và group theo status
         $stmt = $conn->prepare("
             SELECT 
-                g.ID, g.TenCty, g.DiaChi, g.IdSinhVien, g.TrangThai,
-                s.Ten AS TenSinhVien, s.MSSV
-            FROM GiayGioiThieu g
-            LEFT JOIN SinhVien s ON g.IdSinhVien = s.ID_TaiKhoan
+                g.ID, g.TenCty, g.DiaChi, g.IdSinhVien, g.TrangThai, g.id_dot,
+                s.Ten AS TenSinhVien, s.MSSV,
+                d.TenDot, d.ThoiGianBatDau, d.ThoiGianKetThuc
+            FROM giaygioithieu g
+            LEFT JOIN sinhvien s ON g.IdSinhVien = s.ID_TaiKhoan
+            LEFT JOIN dotthuctap d ON g.id_dot = d.ID
             ORDER BY g.TrangThai ASC, g.ID DESC
         ");
         $stmt->execute();
@@ -488,6 +490,16 @@ $printedList = $letters['printed'];
                                         <i class="fa fa-user"></i>
                                         <?php echo htmlspecialchars($letter['TenSinhVien']); ?> 
                                         (<?php echo htmlspecialchars($letter['MSSV']); ?>)
+                                        <?php if ($letter['TenDot']): ?>
+                                            <br><i class="fa fa-calendar"></i>
+                                            <small>Đợt: <?php echo htmlspecialchars($letter['TenDot']); ?></small>
+                                            <?php if ($letter['ThoiGianBatDau'] && $letter['ThoiGianKetThuc']): ?>
+                                                <br><small style="color: #6b7280;">
+                                                    <?php echo date('d/m/Y', strtotime($letter['ThoiGianBatDau'])); ?> - 
+                                                    <?php echo date('d/m/Y', strtotime($letter['ThoiGianKetThuc'])); ?>
+                                                </small>
+                                            <?php endif; ?>
+                                        <?php endif; ?>
                                     </div>
                                     
                                     <div class="card-actions">
@@ -534,6 +546,16 @@ $printedList = $letters['printed'];
                                         <i class="fa fa-user"></i>
                                         <?php echo htmlspecialchars($letter['TenSinhVien']); ?> 
                                         (<?php echo htmlspecialchars($letter['MSSV']); ?>)
+                                        <?php if ($letter['TenDot']): ?>
+                                            <br><i class="fa fa-calendar"></i>
+                                            <small>Đợt: <?php echo htmlspecialchars($letter['TenDot']); ?></small>
+                                            <?php if ($letter['ThoiGianBatDau'] && $letter['ThoiGianKetThuc']): ?>
+                                                <br><small style="color: #6b7280;">
+                                                    <?php echo date('d/m/Y', strtotime($letter['ThoiGianBatDau'])); ?> - 
+                                                    <?php echo date('d/m/Y', strtotime($letter['ThoiGianKetThuc'])); ?>
+                                                </small>
+                                            <?php endif; ?>
+                                        <?php endif; ?>
                                     </div>
                                     
                                     <div class="card-actions">
@@ -579,6 +601,16 @@ $printedList = $letters['printed'];
                                         <i class="fa fa-user"></i>
                                         <?php echo htmlspecialchars($letter['TenSinhVien']); ?> 
                                         (<?php echo htmlspecialchars($letter['MSSV']); ?>)
+                                        <?php if ($letter['TenDot']): ?>
+                                            <br><i class="fa fa-calendar"></i>
+                                            <small>Đợt: <?php echo htmlspecialchars($letter['TenDot']); ?></small>
+                                            <?php if ($letter['ThoiGianBatDau'] && $letter['ThoiGianKetThuc']): ?>
+                                                <br><small style="color: #6b7280;">
+                                                    <?php echo date('d/m/Y', strtotime($letter['ThoiGianBatDau'])); ?> - 
+                                                    <?php echo date('d/m/Y', strtotime($letter['ThoiGianKetThuc'])); ?>
+                                                </small>
+                                            <?php endif; ?>
+                                        <?php endif; ?>
                                     </div>
                                     
                                     <div class="card-actions">
@@ -609,6 +641,13 @@ $printedList = $letters['printed'];
                             <h3><?php echo htmlspecialchars($letter['TenCty']); ?></h3>
                             <p><strong>Địa chỉ:</strong> <?php echo htmlspecialchars($letter['DiaChi']); ?></p>
                             <p><strong>Sinh viên:</strong> <?php echo htmlspecialchars($letter['TenSinhVien']); ?> (<?php echo htmlspecialchars($letter['MSSV']); ?>)</p>
+                            <?php if ($letter['TenDot']): ?>
+                                <p><strong>Đợt thực tập:</strong> <?php echo htmlspecialchars($letter['TenDot']); ?>
+                                <?php if ($letter['ThoiGianBatDau'] && $letter['ThoiGianKetThuc']): ?>
+                                    - <?php echo date('d/m/Y', strtotime($letter['ThoiGianBatDau'])); ?> đến <?php echo date('d/m/Y', strtotime($letter['ThoiGianKetThuc'])); ?>
+                                <?php endif; ?>
+                                </p>
+                            <?php endif; ?>
                             <p><strong>Trạng thái:</strong> Đã duyệt</p>
                         </div>
                     <?php endforeach; ?>
@@ -746,17 +785,66 @@ $printedList = $letters['printed'];
     }
 
     function approveLetter(letterId) {
-        if (confirm('Bạn có chắc chắn muốn duyệt giấy giới thiệu này?')) {
-            // TODO: Implement approval logic via AJAX
-            console.log('Approve letter:', letterId);
-            // For now, reload page
-            location.reload();
+        if (!confirm('Bạn có chắc chắn muốn duyệt giấy giới thiệu này?\n\nViệc duyệt sẽ thêm công ty vào hệ thống và không thể hoàn tác.')) {
+            return;
         }
+        
+        // Hiển thị loading
+        const btn = event.target.closest('button');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Đang xử lý...';
+        btn.disabled = true;
+        
+        // Gửi AJAX request
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/datn/pages/giaovien/approve_letter_ajax.php', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    
+                    if (response.success) {
+                        // Hiển thị thông báo thành công
+                        alert('✅ ' + response.message);
+                        
+                        // Reload trang để cập nhật dữ liệu
+                        location.reload();
+                    } else {
+                        // Hiển thị lỗi
+                        alert('❌ ' + response.message);
+                        
+                        // Khôi phục nút
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                    }
+                } catch (e) {
+                    alert('❌ Có lỗi xảy ra khi xử lý phản hồi');
+                    console.error('Parse error:', e);
+                    
+                    // Khôi phục nút
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            }
+        };
+        
+        xhr.onerror = function() {
+            alert('❌ Có lỗi kết nối');
+            
+            // Khôi phục nút
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        };
+        
+        xhr.send('letter_id=' + encodeURIComponent(letterId));
     }
 
     function printLetter(letterId) {
-        // TODO: Implement individual letter printing
-        console.log('Print letter:', letterId);
+        // Mở trang in trong tab mới
+        const printUrl = '/datn/pages/giaovien/print_letter_template.php?id=' + letterId;
+        window.open(printUrl, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
     }
 
     function handlePrintAll() {

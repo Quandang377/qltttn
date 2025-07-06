@@ -335,8 +335,22 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
             $message = '';
             $messageType = 'success';
 
-            // Giả sử lấy ID sinh viên từ session hoặc gán tạm
-            $idSinhVien = 3;
+            // Lấy ID sinh viên từ session
+            $idSinhVien = $_SESSION['user']['ID_TaiKhoan'] ?? 3;
+            
+            // Lấy thông tin đợt thực tập của sinh viên
+            $stmt = $conn->prepare("SELECT ID_Dot FROM SinhVien WHERE ID_TaiKhoan = ?");
+            $stmt->execute([$idSinhVien]);
+            $sinhVienInfo = $stmt->fetch(PDO::FETCH_ASSOC);
+            $idDot = $sinhVienInfo['ID_Dot'] ?? null;
+            
+            // Lấy thông tin chi tiết đợt thực tập
+            $dotThucTapInfo = null;
+            if ($idDot) {
+                $stmt = $conn->prepare("SELECT TenDot, ThoiGianBatDau, ThoiGianKetThuc FROM DotThucTap WHERE ID = ?");
+                $stmt->execute([$idDot]);
+                $dotThucTapInfo = $stmt->fetch(PDO::FETCH_ASSOC);
+            }
 
             if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['from_panel'])) {
                 $taxCode = trim($_POST['ma_so_thue']);
@@ -358,12 +372,12 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
                     $messageType = 'danger';
                 } else {
                     try {
-                        $stmt = $conn->prepare("INSERT INTO giaygioithieu (TenCty, MaSoThue, DiaChi, LinhVuc, Sdt, Email, IdSinhVien, TrangThai) VALUES (?, ?, ?, ?, ?, ?, ?, 0)");
-                        $stmt->execute([$name, $taxCode, $address, $field, $phone, $email, $idSinhVien]);
+                        $stmt = $conn->prepare("INSERT INTO giaygioithieu (TenCty, MaSoThue, DiaChi, LinhVuc, Sdt, Email, IdSinhVien, id_dot, TrangThai) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)");
+                        $stmt->execute([$name, $taxCode, $address, $field, $phone, $email, $idSinhVien, $idDot]);
                         $message = 'Đã gửi phiếu đăng ký thực tập, vui lòng chờ duyệt!';
                         $messageType = 'success';
                     } catch (Exception $e) {
-                        $message = 'Có lỗi xảy ra khi lưu dữ liệu!';
+                        $message = 'Có lỗi xảy ra khi lưu dữ liệu: ' . $e->getMessage();
                         $messageType = 'danger';
                     }
                 }
@@ -374,12 +388,14 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
             $stmt->execute();
             $companyList = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            // Lấy danh sách giấy giới thiệu của sinh viên
+            // Lấy danh sách giấy giới thiệu của sinh viên với thông tin đợt thực tập
             $stmt = $conn->prepare("
-                SELECT g.ID, g.TenCty, g.MaSoThue, g.DiaChi, g.Sdt, g.Email, g.LinhVuc, g.TrangThai
+                SELECT g.ID, g.TenCty, g.MaSoThue, g.DiaChi, g.Sdt, g.Email, g.LinhVuc, g.TrangThai,
+                       d.TenDot, d.ThoiGianBatDau, d.ThoiGianKetThuc
                 FROM giaygioithieu g
-                INNER JOIN congty c ON g.MaSoThue = c.MaSoThue
+                LEFT JOIN DotThucTap d ON g.id_dot = d.ID
                 WHERE g.IdSinhVien = ?
+                ORDER BY g.ID DESC
             ");
             $stmt->execute([$idSinhVien]);
             $giayList = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -387,6 +403,24 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
         <div id="page-wrapper">
             <div class="container-fluid">
                 <h1 class="page-header">Đăng ký giấy giới thiệu</h1>
+                
+                <!-- Thông tin đợt thực tập -->
+                <?php if ($dotThucTapInfo): ?>
+                    <div class="alert alert-info" style="border-radius: 12px; background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%); border: 1px solid #b8daff;">
+                        <i class="fa fa-info-circle"></i>
+                        <strong>Đợt thực tập:</strong> <?php echo htmlspecialchars($dotThucTapInfo['TenDot']); ?>
+                        <?php if ($dotThucTapInfo['ThoiGianBatDau'] && $dotThucTapInfo['ThoiGianKetThuc']): ?>
+                            | <strong>Thời gian:</strong> 
+                            <?php echo date('d/m/Y', strtotime($dotThucTapInfo['ThoiGianBatDau'])); ?> - 
+                            <?php echo date('d/m/Y', strtotime($dotThucTapInfo['ThoiGianKetThuc'])); ?>
+                        <?php endif; ?>
+                    </div>
+                <?php else: ?>
+                    <div class="alert alert-warning" style="border-radius: 12px; background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%); border: 1px solid #ffeaa7;">
+                        <i class="fa fa-exclamation-triangle"></i>
+                        <strong>Chưa có đợt thực tập:</strong> Bạn chưa được phân công vào đợt thực tập nào. Vui lòng liên hệ giáo viên hướng dẫn.
+                    </div>
+                <?php endif; ?>
 
                 <!-- Modal thông báo tuyệt đẹp -->
                 <div class="modal fade" id="notifyModal" tabindex="-1" role="dialog" aria-labelledby="notifyModalLabel" aria-hidden="true">
@@ -689,9 +723,24 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
         pageGiay.forEach(giay => {
             const div = document.createElement('div');
             div.className = 'giay-panel mb-2';
+            
+            // Hiển thị thông tin đợt thực tập nếu có
+            let dotInfo = '';
+            if (giay.TenDot) {
+                dotInfo = `<div style="font-size: 13px; color: #6c757d; margin-top: 4px;">
+                    <i class="fa fa-calendar"></i> ${giay.TenDot}`;
+                if (giay.ThoiGianBatDau && giay.ThoiGianKetThuc) {
+                    const startDate = new Date(giay.ThoiGianBatDau).toLocaleDateString('vi-VN');
+                    const endDate = new Date(giay.ThoiGianKetThuc).toLocaleDateString('vi-VN');
+                    dotInfo += `<br><small>${startDate} - ${endDate}</small>`;
+                }
+                dotInfo += `</div>`;
+            }
+            
             div.innerHTML = `
                 <div class="tencty">${giay.TenCty}</div>
                 <div class="trangthai">Trạng thái: ${trangThaiMap[giay.TrangThai] || '<span class="badge badge-secondary">Không xác định</span>'}</div>
+                ${dotInfo}
             `;
             list.appendChild(div);
         });

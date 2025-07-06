@@ -492,8 +492,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['duyet']) && $id) {
         });
         
         function printLetter() {
-            // TODO: Implement letter printing functionality
-            alert('Chức năng in giấy giới thiệu sẽ được phát triển trong phiên bản tiếp theo.');
+            // Lấy ID giấy giới thiệu từ form
+            const letterId = <?php echo json_encode($giay['ID'] ?? 0); ?>;
+            if (letterId) {
+                const printUrl = '/datn/pages/giaovien/print_letter_template.php?id=' + letterId;
+                window.open(printUrl, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
+            } else {
+                alert('Không thể in giấy giới thiệu này!');
+            }
         }
     </script>
 </body>
