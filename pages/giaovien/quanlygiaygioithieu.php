@@ -24,11 +24,14 @@ function getLettersByStatus() {
         // Optimized query - lấy tất cả trong một lần và group theo status
         $stmt = $conn->prepare("
             SELECT 
-                g.ID, g.TenCty, g.DiaChi, g.IdSinhVien, g.TrangThai, g.id_dot,
+                g.ID, g.TenCty, g.DiaChi, g.IdSinhVien, g.TrangThai, g.id_dot, 
+                g.id_nguoinhan, g.ngay_nhan, g.ghi_chu,
                 s.Ten AS TenSinhVien, s.MSSV,
+                sn.Ten AS TenNguoiNhan, sn.MSSV AS MSSVNguoiNhan,
                 d.TenDot, d.ThoiGianBatDau, d.ThoiGianKetThuc
             FROM giaygioithieu g
             LEFT JOIN sinhvien s ON g.IdSinhVien = s.ID_TaiKhoan
+            LEFT JOIN sinhvien sn ON g.id_nguoinhan = sn.ID_TaiKhoan
             LEFT JOIN dotthuctap d ON g.id_dot = d.ID
             ORDER BY g.TrangThai ASC, g.ID DESC
         ");
@@ -39,7 +42,8 @@ function getLettersByStatus() {
         $result = [
             'pending' => [],   // TrangThai = 0
             'approved' => [],  // TrangThai = 1  
-            'printed' => []    // TrangThai = 2
+            'printed' => [],   // TrangThai = 2
+            'received' => []   // TrangThai = 3
         ];
         
         foreach ($allLetters as $letter) {
@@ -53,13 +57,16 @@ function getLettersByStatus() {
                 case 2:
                     $result['printed'][] = $letter;
                     break;
+                case 3:
+                    $result['received'][] = $letter;
+                    break;
             }
         }
         
         return $result;
     } catch (PDOException $e) {
         error_log("Database error in getLettersByStatus: " . $e->getMessage());
-        return ['pending' => [], 'approved' => [], 'printed' => []];
+        return ['pending' => [], 'approved' => [], 'printed' => [], 'received' => []];
     }
 }
 
@@ -68,6 +75,23 @@ $letters = getLettersByStatus();
 $pendingList = $letters['pending'];
 $approvedList = $letters['approved'];
 $printedList = $letters['printed'];
+$receivedList = $letters['received'];
+
+// Hàm gộp giấy theo công ty để in
+function groupLettersByCompany($letters) {
+    $grouped = [];
+    foreach ($letters as $letter) {
+        $key = $letter['TenCty'] . '|' . $letter['id_dot'];
+        if (!isset($grouped[$key])) {
+            $grouped[$key] = [
+                'company_info' => $letter,
+                'students' => []
+            ];
+        }
+        $grouped[$key]['students'][] = $letter;
+    }
+    return $grouped;
+}
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -321,6 +345,55 @@ $printedList = $letters['printed'];
             color: #4f46e5;
         }
         
+        .status-received {
+            background: #f3e8ff;
+            color: #7c3aed;
+        }
+        
+        .received-note {
+            background: #f8fafc;
+            border-left: 3px solid #3b82f6;
+            padding: 8px 12px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        
+        /* === MODAL STYLES === */
+        .modal-content {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .modal-header {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            border-radius: 12px 12px 0 0;
+            border: none;
+        }
+        
+        .modal-title {
+            font-weight: 600;
+        }
+        
+        .close {
+            color: white;
+            opacity: 0.8;
+        }
+        
+        .close:hover {
+            color: white;
+            opacity: 1;
+        }
+        
+        .student-filter {
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 10;
+        }
+        
         .card-actions {
             display: flex;
             gap: 10px;
@@ -389,19 +462,15 @@ $printedList = $letters['printed'];
         
         /* === PRINT STYLES === */
         @media print {
-            body * { visibility: hidden; }
-            #print-section, #print-section * { visibility: visible; }
-            #print-section {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
+            .print-controls, .warning-banner {
+                display: none !important;
             }
-            .letter-card {
-                page-break-inside: avoid;
-                margin-bottom: 20px;
-                box-shadow: none;
-                border: 1px solid #ddd;
+            
+            body {
+                background: white !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                font-size: 12pt;
             }
         }
         
@@ -450,12 +519,21 @@ $printedList = $letters['printed'];
                             Đã in
                             <span class="badge"><?php echo count($printedList); ?></span>
                         </button>
+                        <button class="status-btn" data-status="received" id="btnreceived">
+                            <i class="fa fa-check-square"></i>
+                            Đã nhận
+                            <span class="badge"><?php echo count($receivedList); ?></span>
+                        </button>
                     </div>
                     
                     <input type="text" class="search-input" id="searchInput" 
                            placeholder="🔍 Tìm kiếm theo MSSV, tên sinh viên hoặc tên công ty...">
                     
                     <div class="action-buttons">
+                        <button id="printGroupedBtn" class="btn btn-primary">
+                            <i class="fa fa-print"></i>
+                            In theo công ty
+                        </button>
                         <button id="printAllBtn" class="btn btn-primary">
                             <i class="fa fa-print"></i>
                             In tất cả
@@ -614,8 +692,11 @@ $printedList = $letters['printed'];
                                     </div>
                                     
                                     <div class="card-actions">
-                                        <button type="button" class="btn btn-sm btn-success disabled">
-                                            <i class="fa fa-check"></i> Đã nhận
+                                        <button type="button" class="btn btn-sm btn-primary" onclick="viewDetails(<?php echo $letter['ID']; ?>)">
+                                            <i class="fa fa-eye"></i> Chi tiết
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-success" onclick="markAsReceived(<?php echo $letter['ID']; ?>)">
+                                            <i class="fa fa-hand-o-up"></i> Ghi nhận
                                         </button>
                                     </div>
                                 </div>
@@ -628,29 +709,148 @@ $printedList = $letters['printed'];
                             </div>
                         <?php endif; ?>
                     </div>
-                </div>
 
-                <!-- Print Section (Hidden) -->
-                <div id="print-section" style="display: none;">
-                    <div style="text-align: center; margin-bottom: 30px;">
-                        <h2>DANH SÁCH GIẤY GIỚI THIỆU ĐÃ DUYỆT</h2>
-                        <hr style="border: 1px solid #333;">
+                    <!-- Received Letters -->
+                    <div id="received-cards" class="status-section hidden">
+                        <?php if (count($receivedList) > 0): ?>
+                            <?php foreach ($receivedList as $letter): ?>
+                                <div class="letter-card fade-in" 
+                                     data-id="<?php echo $letter['ID']; ?>"
+                                     data-status="received"
+                                     data-mssv="<?php echo htmlspecialchars($letter['MSSV']); ?>"
+                                     data-student="<?php echo htmlspecialchars($letter['TenSinhVien']); ?>"
+                                     data-company="<?php echo htmlspecialchars($letter['TenCty']); ?>">
+                                    
+                                    <div class="status-badge status-received">
+                                        <i class="fa fa-check-square"></i> Đã nhận
+                                    </div>
+                                    
+                                    <div class="card-header">
+                                        <h3 class="company-name"><?php echo htmlspecialchars($letter['TenCty']); ?></h3>
+                                        <p class="company-address"><?php echo htmlspecialchars(shortAddress($letter['DiaChi'])); ?></p>
+                                    </div>
+                                    
+                                    <div class="student-info">
+                                        <i class="fa fa-user"></i>
+                                        <?php echo htmlspecialchars($letter['TenSinhVien']); ?> 
+                                        (<?php echo htmlspecialchars($letter['MSSV']); ?>)
+                                        <?php if ($letter['TenDot']): ?>
+                                            <br><i class="fa fa-calendar"></i>
+                                            <small>Đợt: <?php echo htmlspecialchars($letter['TenDot']); ?></small>
+                                            <?php if ($letter['ThoiGianBatDau'] && $letter['ThoiGianKetThuc']): ?>
+                                                <br><small style="color: #6b7280;">
+                                                    <?php echo date('d/m/Y', strtotime($letter['ThoiGianBatDau'])); ?> - 
+                                                    <?php echo date('d/m/Y', strtotime($letter['ThoiGianKetThuc'])); ?>
+                                                </small>
+                                            <?php endif; ?>
+                                        <?php endif; ?>
+                                        
+                                        <?php if ($letter['TenNguoiNhan']): ?>
+                                            <br><i class="fa fa-hand-o-up"></i>
+                                            <small style="color: #16a34a;">
+                                                Người nhận: <?php echo htmlspecialchars($letter['TenNguoiNhan']); ?> 
+                                                (<?php echo htmlspecialchars($letter['MSSVNguoiNhan']); ?>)
+                                            </small>
+                                        <?php endif; ?>
+                                        
+                                        <?php if ($letter['ngay_nhan']): ?>
+                                            <br><i class="fa fa-clock-o"></i>
+                                            <small style="color: #6b7280;">
+                                                Ngày nhận: <?php echo date('d/m/Y H:i', strtotime($letter['ngay_nhan'])); ?>
+                                            </small>
+                                        <?php endif; ?>
+                                    </div>
+                                    
+                                    <?php if ($letter['ghi_chu']): ?>
+                                        <div class="received-note">
+                                            <i class="fa fa-comment"></i>
+                                            <small><?php echo htmlspecialchars($letter['ghi_chu']); ?></small>
+                                        </div>
+                                    <?php endif; ?>
+                                    
+                                    <div class="card-actions">
+                                        <button type="button" class="btn btn-sm btn-primary" onclick="viewDetails(<?php echo $letter['ID']; ?>)">
+                                            <i class="fa fa-eye"></i> Chi tiết
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-success disabled">
+                                            <i class="fa fa-check"></i> Đã hoàn thành
+                                        </button>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="empty-state">
+                                <i class="fa fa-check-square"></i>
+                                <h3>Không có giấy giới thiệu đã nhận</h3>
+                                <p>Chưa có giấy giới thiệu nào được nhận</p>
+                            </div>
+                        <?php endif; ?>
                     </div>
-                    <?php foreach ($approvedList as $letter): ?>
-                        <div style="margin-bottom: 20px; border: 1px solid #ddd; padding: 15px;">
-                            <h3><?php echo htmlspecialchars($letter['TenCty']); ?></h3>
-                            <p><strong>Địa chỉ:</strong> <?php echo htmlspecialchars($letter['DiaChi']); ?></p>
-                            <p><strong>Sinh viên:</strong> <?php echo htmlspecialchars($letter['TenSinhVien']); ?> (<?php echo htmlspecialchars($letter['MSSV']); ?>)</p>
-                            <?php if ($letter['TenDot']): ?>
-                                <p><strong>Đợt thực tập:</strong> <?php echo htmlspecialchars($letter['TenDot']); ?>
-                                <?php if ($letter['ThoiGianBatDau'] && $letter['ThoiGianKetThuc']): ?>
-                                    - <?php echo date('d/m/Y', strtotime($letter['ThoiGianBatDau'])); ?> đến <?php echo date('d/m/Y', strtotime($letter['ThoiGianKetThuc'])); ?>
-                                <?php endif; ?>
-                                </p>
-                            <?php endif; ?>
-                            <p><strong>Trạng thái:</strong> Đã duyệt</p>
+                </div>
+                
+                <!-- Modal ghi nhận thông tin -->
+                <div id="receiveModal" class="modal fade" tabindex="-1" role="dialog">
+                    <div class="modal-dialog modal-lg" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h4 class="modal-title">
+                                    <i class="fa fa-hand-o-up"></i>
+                                    Ghi nhận thông tin nhận giấy
+                                </h4>
+                                <button type="button" class="close" data-dismiss="modal">
+                                    <span>&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="receiveForm">
+                                    <input type="hidden" id="receive_letter_id" name="letter_id">
+                                    
+                                    <!-- Thông tin công ty -->
+                                    <div class="form-group">
+                                        <label class="font-weight-bold">Thông tin công ty:</label>
+                                        <div id="company_info" class="alert alert-info">
+                                            <!-- Sẽ được load bằng JS -->
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Danh sách sinh viên cùng công ty -->
+                                    <div class="form-group">
+                                        <label class="font-weight-bold">Danh sách sinh viên cùng công ty:</label>
+                                        <div class="student-filter mb-3">
+                                            <input type="text" id="student_search" class="form-control" 
+                                                   placeholder="🔍 Tìm kiếm sinh viên theo MSSV hoặc tên...">
+                                        </div>
+                                        <div id="students_list" class="border rounded p-3" style="max-height: 300px; overflow-y: auto;">
+                                            <!-- Sẽ được load bằng JS -->
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Chọn người nhận -->
+                                    <div class="form-group">
+                                        <label for="receive_nguoinhan" class="font-weight-bold">Người đại diện nhận giấy: <span class="text-danger">*</span></label>
+                                        <select id="receive_nguoinhan" name="nguoinhan" class="form-control" required>
+                                            <option value="">-- Chọn sinh viên đại diện --</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <!-- Ghi chú -->
+                                    <div class="form-group">
+                                        <label for="receive_ghichu" class="font-weight-bold">Ghi chú:</label>
+                                        <textarea id="receive_ghichu" name="ghichu" class="form-control" rows="3" 
+                                                  placeholder="Nhập ghi chú nếu có..."></textarea>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                                    <i class="fa fa-times"></i> Hủy
+                                </button>
+                                <button type="button" class="btn btn-success" onclick="submitReceiveInfo()">
+                                    <i class="fa fa-save"></i> Lưu thông tin
+                                </button>
+                            </div>
                         </div>
-                    <?php endforeach; ?>
+                    </div>
                 </div>
             </div>
         </div>
@@ -688,6 +888,12 @@ $printedList = $letters['printed'];
 
         // Print all button
         document.getElementById('printAllBtn').addEventListener('click', handlePrintAll);
+        
+        // Print grouped button  
+        document.getElementById('printGroupedBtn').addEventListener('click', handlePrintGrouped);
+        
+        // Student search in modal
+        document.getElementById('student_search').addEventListener('input', filterStudentsInModal);
     }
 
     function switchStatus(newStatus) {
@@ -764,8 +970,16 @@ $printedList = $letters['printed'];
 
     function updatePrintButtonVisibility() {
         const printBtn = document.getElementById('printAllBtn');
-        // Chỉ hiển thị nút in cho trạng thái đã duyệt
-        printBtn.style.display = currentStatus === 'approved' ? 'inline-flex' : 'none';
+        const printGroupedBtn = document.getElementById('printGroupedBtn');
+        
+        // Hiển thị nút in cho trạng thái đã duyệt
+        if (currentStatus === 'approved') {
+            printBtn.style.display = 'inline-flex';
+            printGroupedBtn.style.display = 'inline-flex';
+        } else {
+            printBtn.style.display = 'none';
+            printGroupedBtn.style.display = 'none';
+        }
     }
 
     function viewDetails(letterId) {
@@ -841,10 +1055,246 @@ $printedList = $letters['printed'];
         xhr.send('letter_id=' + encodeURIComponent(letterId));
     }
 
+    function markAsReceived(letterId) {
+        // Load thông tin cho modal
+        loadReceiveModalData(letterId);
+        
+        // Hiển thị modal
+        $('#receiveModal').modal('show');
+    }
+    
+    function loadReceiveModalData(letterId) {
+        // Set letter ID
+        document.getElementById('receive_letter_id').value = letterId;
+        
+        // Load thông tin công ty và danh sách sinh viên
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/datn/pages/giaovien/get_company_students.php', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    
+                    if (response.success) {
+                        // Hiển thị thông tin công ty
+                        document.getElementById('company_info').innerHTML = `
+                            <strong>${response.company.TenCty}</strong><br>
+                            <small>Địa chỉ: ${response.company.DiaChi}</small><br>
+                            <small>Đợt: ${response.company.TenDot || 'Chưa xác định'}</small>
+                        `;
+                        
+                        // Hiển thị danh sách sinh viên
+                        displayStudentsList(response.students);
+                        
+                        // Populate select box
+                        populateStudentSelect(response.students);
+                    } else {
+                        alert('❌ ' + response.message);
+                    }
+                } catch (e) {
+                    alert('❌ Có lỗi xảy ra khi tải dữ liệu');
+                    console.error('Parse error:', e);
+                }
+            }
+        };
+        
+        xhr.send('letter_id=' + encodeURIComponent(letterId));
+    }
+    
+    function displayStudentsList(students) {
+        const container = document.getElementById('students_list');
+        
+        if (students.length === 0) {
+            container.innerHTML = '<p class="text-muted">Không có sinh viên nào.</p>';
+            return;
+        }
+        
+        let html = '<div class="table-responsive"><table class="table table-sm table-striped">';
+        html += '<thead><tr><th>STT</th><th>MSSV</th><th>Họ tên</th><th>Đợt</th></tr></thead><tbody>';
+        
+        students.forEach((student, index) => {
+            html += `
+                <tr data-mssv="${student.MSSV}" data-name="${student.Ten}">
+                    <td>${index + 1}</td>
+                    <td>${student.MSSV}</td>
+                    <td>${student.Ten}</td>
+                    <td>${student.TenDot || 'Chưa xác định'}</td>
+                </tr>
+            `;
+        });
+        
+        html += '</tbody></table></div>';
+        container.innerHTML = html;
+    }
+    
+    function populateStudentSelect(students) {
+        const select = document.getElementById('receive_nguoinhan');
+        select.innerHTML = '<option value="">-- Chọn sinh viên đại diện --</option>';
+        
+        students.forEach(student => {
+            const option = document.createElement('option');
+            option.value = student.ID_TaiKhoan;
+            option.textContent = `${student.Ten} (${student.MSSV})`;
+            select.appendChild(option);
+        });
+    }
+    
+    function filterStudentsInModal() {
+        const searchValue = document.getElementById('student_search').value.toLowerCase();
+        const rows = document.querySelectorAll('#students_list tbody tr');
+        
+        rows.forEach(row => {
+            const mssv = row.getAttribute('data-mssv').toLowerCase();
+            const name = row.getAttribute('data-name').toLowerCase();
+            
+            if (mssv.includes(searchValue) || name.includes(searchValue)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+    
+    function submitReceiveInfo() {
+        const form = document.getElementById('receiveForm');
+        const formData = new FormData(form);
+        
+        // Validate
+        const nguoinhan = document.getElementById('receive_nguoinhan').value;
+        if (!nguoinhan) {
+            alert('Vui lòng chọn người đại diện nhận giấy!');
+            return;
+        }
+        
+        // Disable submit button
+        const submitBtn = event.target;
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Đang lưu...';
+        submitBtn.disabled = true;
+        
+        // Send request
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/datn/pages/giaovien/save_receive_info.php', true);
+        
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    
+                    if (response.success) {
+                        alert('✅ ' + response.message);
+                        $('#receiveModal').modal('hide');
+                        location.reload();
+                    } else {
+                        alert('❌ ' + response.message);
+                    }
+                } catch (e) {
+                    alert('❌ Có lỗi xảy ra khi lưu thông tin');
+                    console.error('Parse error:', e);
+                }
+                
+                // Restore button
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        };
+        
+        xhr.send(formData);
+    }
+    
+    function handlePrintGrouped() {
+        // Kiểm tra xem có giấy nào để in không
+        const approvedCount = <?php echo count($approvedList); ?>;
+        if (approvedCount === 0) {
+            alert('Không có giấy giới thiệu nào để in!');
+            return;
+        }
+        
+        if (!confirm('In theo công ty sẽ gộp sinh viên cùng công ty vào một giấy.\n\nSau khi in, tất cả giấy sẽ được chuyển sang trạng thái "Đã in". Tiếp tục?')) {
+            return;
+        }
+        
+        // Hiển thị loading
+        const printBtn = document.getElementById('printGroupedBtn');
+        const originalText = printBtn.innerHTML;
+        printBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Đang chuẩn bị...';
+        printBtn.disabled = true;
+        
+        // Đánh dấu tất cả là đã in
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/datn/pages/giaovien/mark_as_printed.php', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    
+                    if (response.success) {
+                        // Mở file in theo công ty trong tab mới
+                        const printUrl = '/datn/pages/giaovien/print_grouped_letters.php';
+                        window.open(printUrl, '_blank', 'width=1024,height=768,scrollbars=yes,resizable=yes');
+                        
+                        // Reload trang sau delay ngắn
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1000);
+                    } else {
+                        alert('❌ ' + response.message);
+                        // Khôi phục nút
+                        printBtn.innerHTML = originalText;
+                        printBtn.disabled = false;
+                    }
+                } catch (e) {
+                    alert('❌ Có lỗi xảy ra khi cập nhật trạng thái');
+                    console.error('Parse error:', e);
+                    // Khôi phục nút
+                    printBtn.innerHTML = originalText;
+                    printBtn.disabled = false;
+                }
+            }
+        };
+        
+        xhr.send('action=print_grouped');
+    }
+
     function printLetter(letterId) {
-        // Mở trang in trong tab mới
-        const printUrl = '/datn/pages/giaovien/print_letter_template.php?id=' + letterId;
-        window.open(printUrl, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
+        if (!confirm('In giấy giới thiệu này?\n\nSau khi in, giấy sẽ được chuyển sang trạng thái "Đã in".')) {
+            return;
+        }
+        
+        // Đánh dấu là đã in trước
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/datn/pages/giaovien/mark_as_printed.php', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    
+                    if (response.success) {
+                        // Mở trang in trong tab mới
+                        const printUrl = '/datn/pages/giaovien/print_letter_template.php?id=' + letterId;
+                        window.open(printUrl, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
+                        
+                        // Reload trang sau delay ngắn
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1000);
+                    } else {
+                        alert('❌ ' + response.message);
+                    }
+                } catch (e) {
+                    alert('❌ Có lỗi xảy ra khi cập nhật trạng thái');
+                    console.error('Parse error:', e);
+                }
+            }
+        };
+        
+        xhr.send('action=print_single&letter_ids[]=' + encodeURIComponent(letterId));
     }
 
     function handlePrintAll() {
@@ -855,7 +1305,7 @@ $printedList = $letters['printed'];
             return;
         }
         
-        if (!confirm(`Bạn có muốn in tất cả ${approvedCount} giấy giới thiệu đã duyệt?`)) {
+        if (!confirm(`Bạn có muốn in tất cả ${approvedCount} giấy giới thiệu đã duyệt?\n\nMỗi sinh viên sẽ có một giấy riêng. Sau khi in, tất cả giấy sẽ được chuyển sang trạng thái "Đã in".`)) {
             return;
         }
         
@@ -865,18 +1315,48 @@ $printedList = $letters['printed'];
         printBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Đang chuẩn bị...';
         printBtn.disabled = true;
         
-        // Kích hoạt chức năng in sau delay ngắn
-        setTimeout(() => {
-            const printContents = document.getElementById('print-section').innerHTML;
-            const originalContents = document.body.innerHTML;
-            
-            document.body.innerHTML = printContents;
-            window.print();
-            document.body.innerHTML = originalContents;
-            
-            // Khôi phục lại trang
-            location.reload();
-        }, 500);
+        // Đánh dấu tất cả là đã in
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/datn/pages/giaovien/mark_as_printed.php', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    
+                    if (response.success) {
+                        // Mở từng giấy trong tab mới với delay
+                        const letterIds = <?php echo json_encode(array_column($approvedList, 'ID')); ?>;
+                        
+                        letterIds.forEach((id, index) => {
+                            setTimeout(() => {
+                                const printUrl = '/datn/pages/giaovien/print_letter_template.php?id=' + id;
+                                window.open(printUrl, '_blank' + index, 'width=800,height=600,scrollbars=yes,resizable=yes');
+                            }, index * 500); // Delay 500ms giữa các tab
+                        });
+                        
+                        // Reload trang sau khi mở hết các tab
+                        setTimeout(() => {
+                            location.reload();
+                        }, letterIds.length * 500 + 1000);
+                    } else {
+                        alert('❌ ' + response.message);
+                        // Khôi phục nút
+                        printBtn.innerHTML = originalText;
+                        printBtn.disabled = false;
+                    }
+                } catch (e) {
+                    alert('❌ Có lỗi xảy ra khi cập nhật trạng thái');
+                    console.error('Parse error:', e);
+                    // Khôi phục nút
+                    printBtn.innerHTML = originalText;
+                    printBtn.disabled = false;
+                }
+            }
+        };
+        
+        xhr.send('action=print_all');
     }
 
     // Utility functions

@@ -8,316 +8,571 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
     <title>Đăng ký giấy giới thiệu</title>
     <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php"; ?>
     <style>
+        /* === RESET & BASE === */
+        * {
+            box-sizing: border-box;
+        }
+        
         body {
             background: linear-gradient(135deg, #e3f0ff 0%, #f8fafc 100%);
-            font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+            line-height: 1.6;
+            color: #374151;
         }
+        
+        /* === LAYOUT === */
         #page-wrapper {
-            padding: 30px;
+            padding: 20px;
             min-height: 100vh;
         }
+        
         .page-header {
-            font-size: 2.2rem;
-            font-weight: 700;
-            color:rgb(0, 58, 217);
-            letter-spacing: 1px;
-            margin-bottom: 32px;
             text-align: center;
-            text-shadow: 0 2px 8px #b6d4fe44;
+            margin-bottom: 30px;
         }
+        
+        .page-header h1 {
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: #1e40af;
+            margin: 0;
+            text-shadow: 0 2px 4px rgba(30, 64, 175, 0.1);
+        }
+        
+        /* === SEARCH BAR === */
         .search-bar {
-            margin-bottom: 28px;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             display: flex;
-            gap: 14px;
             align-items: center;
-            background: #fff;
-            border-radius: 14px;
-            box-shadow: 0 2px 12px #007bff11;
-            padding: 14px 18px;
+            gap: 15px;
+            flex-wrap: wrap;
         }
+        
         .search-bar input {
             flex: 1;
-            border-radius: 10px;
-            border: 1.5px solid #b6d4fe;
-            padding: 10px 18px;
-            font-size: 17px;
-            background: #fafdff;
-            transition: border 0.2s;
+            min-width: 250px;
+            padding: 10px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            background: #f9fafb;
+            transition: all 0.2s ease;
         }
+        
         .search-bar input:focus {
-            border: 1.5px solid #007bff;
             outline: none;
-            background: #f0f8ff;
+            border-color: #3b82f6;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
-        .search-bar button {
-            border-radius: 10px;
-            padding: 10px 22px;
-            font-size: 17px;
-            font-weight: 600;
-            background: linear-gradient(90deg, #007bff 70%, #5bc0f7 100%);
-            color: #fff;
+        
+        .btn {
+            padding: 10px 16px;
             border: none;
-            box-shadow: 0 2px 8px #007bff22;
-            transition: background 0.2s, box-shadow 0.2s;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
-        .search-bar button:hover {
-            background: linear-gradient(90deg, #0056b3 70%, #3bb3e0 100%);
-            box-shadow: 0 4px 16px #007bff33;
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+        
+        .btn-info {
+            background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+            color: white;
+        }
+        
+        .btn-info:hover {
+            background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
         }
         .card {
-            border-radius: 22px !important;
-            border: 2px solid #e3eafc !important;    /* màu viền nhạt hơn */
-            box-shadow: 0 4px 18px rgba(0,123,255,0.06); /* bóng nhẹ hơn */
-            margin-bottom: 36px;
-            background: #fcfdff;                     /* nền nhạt hơn */
-        }
-        .card-header {
-            border-radius: 22px 22px 0 0 !important;
-            font-size: 22px;
-            font-weight: bold;
-            letter-spacing: 1px;
-            padding: 18px 28px !important;
-            background: linear-gradient(90deg, #e3f0ff 70%, #f8fafc 100%); /* gradient nhạt */
-            color: #007bff;
-            box-shadow: 0 1px 4px #007bff11;
-        }
-        .card-body {
-            background: #fafdff;
-            border-radius: 0 0 22px 22px;
-            min-height: 300px;
-            padding: 36px 24px 18px 24px !important;
-        }
-        .company-panel {
-            border: 2px solid #e3e6f0;
-            border-radius: 16px;
-            background: #fff;
-            margin-bottom: 36px;
-            padding: 28px 18px 22px 18px;
-            box-shadow: 0 2px 16px rgba(0,123,255,0.07);
-            min-height: 140px;
-            transition: box-shadow 0.2s, border-color 0.2s, background 0.2s;
-            cursor: pointer;
-            position: relative;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             overflow: hidden;
         }
+        
+        .card-header {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            padding: 16px 20px;
+            font-size: 16px;
+            font-weight: 600;
+            border-bottom: none;
+        }
+        
+        .card-body {
+            padding: 20px;
+            min-height: 300px;
+        }
+        
+        .card-footer {
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+            padding: 12px 20px;
+        }
+        .company-panel {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            padding: 20px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            position: relative;
+            min-height: 120px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
         .company-panel:hover {
-            border-color: #007bff;
-            box-shadow: 0 4px 24px rgba(0,123,255,0.16);
-            background: #f0f8ff;
-            transform: translateY(-2px) scale(1.01);
+            border-color: #3b82f6;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.1);
+            transform: translateY(-2px);
         }
-        .company-panel .icon {
-            position: absolute;
-            top: 18px;
-            right: 18px;
-            font-size: 28px;
-            color: #007bff33;
-        }
+        
         .company-panel .font-weight-bold {
-            font-size: 18px;
-            color: #007bff;
+            font-size: 16px;
+            font-weight: 600;
+            color: #1e40af;
             margin-bottom: 8px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
-        .company-panel div {
-            font-size: 15px;
+        
+        .company-panel .company-info {
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+        
+        .company-panel .company-info strong {
+            color: #475569;
         }
         .company-list-pagination {
             display: flex;
             justify-content: center;
-            margin: 18px 0 0 0;
-            gap: 10px;
-            padding: 10px 18px;
-            border: none;
-            border-radius: 16px;
-            background: #fff;
-            box-shadow: 0 4px 24px rgba(0,0,0,0.10);
-        }
-        .company-list-pagination button {
-            border: 1.5px solid #e3eafc;
-            background: #fff;
-            color: #007bff;
-            border-radius: 8px;
-            width: 38px;
-            height: 38px;
-            font-weight: 700;
-            font-size: 17px;
-            cursor: pointer;
-            transition: background 0.2s, color 0.2s, transform 0.1s, box-shadow 0.2s, border 0.2s;
-            box-shadow: 0 2px 8px #007bff11;
-            outline: none;
-        }
-        .company-list-pagination button.active,
-        .company-list-pagination button:hover {
-            background: #f0f8ff;
-            color: #007bff;
-            border: 2px solid #b6d4fe;
-            transform: translateY(-2px) scale(1.08);
-            box-shadow: 0 4px 16px #007bff22;
-        }
-        .company-list-pagination span {
-            padding: 0 8px;
-            color: #007bff;
-            font-weight: bold;
-            font-size: 18px;
-            user-select: none;
-        }
-        /* Modal thông báo tuyệt đẹp */
-        #notifyModal .modal-content {
-            border-radius: 22px;
-            box-shadow: 0 8px 40px rgba(0,0,0,0.18);
-            border: none;
-            background: #fff;
-        }
-        #notifyModal .modal-body {
-            padding-top: 36px !important;
-            padding-bottom: 10px !important;
-        }
-        #notifyIcon {
-            display: flex;
-            justify-content: center;
             align-items: center;
-            margin-bottom: 18px;
+            gap: 8px;
+            padding: 15px 0;
         }
-        #notifyModalLabel {
-            font-weight: 800;
-            font-size: 1.35rem;
-            margin-bottom: 10px;
-            letter-spacing: 1px;
+        
+        .company-list-pagination button {
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 500;
+            color: #374151;
+            cursor: pointer;
+            transition: all 0.2s ease;
         }
-        #notifyModalBody {
-            font-size: 1.08rem;
-            color: #444;
-            margin-bottom: 10px;
+        
+        .company-list-pagination button:hover {
+            background: #f3f4f6;
+            border-color: #3b82f6;
+            color: #3b82f6;
         }
+        
+        .company-list-pagination button.active {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+        }
+        
+        .company-list-pagination span {
+            color: #6b7280;
+            font-weight: 500;
+            padding: 0 8px;
+        }
+        /* === MODALS === */
+        .modal-content {
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        .modal-header {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            border-bottom: none;
+            border-radius: 12px 12px 0 0;
+            padding: 16px 20px;
+        }
+        
+        .modal-title {
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+        
+        .modal-footer {
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+            border-radius: 0 0 12px 12px;
+            padding: 12px 20px;
+        }
+        
+        /* Notify modal đặc biệt */
+        #notifyModal .modal-content {
+            border-radius: 16px;
+            max-width: 400px;
+            margin: auto;
+        }
+        
+        #notifyModal .modal-body {
+            text-align: center;
+            padding: 30px 20px 20px;
+        }
+        
         #notifyModal .modal-footer {
             border: none;
+            background: white;
             justify-content: center;
-            padding-bottom: 28px;
-            padding-top: 0;
-            background: none;
+            padding: 10px 20px 25px;
         }
-        #notifyModal .btn-close-modal {
+        
+        #notifyModalLabel {
+            font-weight: 700;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        
+        #notifyModalBody {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 15px;
+        }
+        
+        .btn-close-modal {
+            background: #f3f4f6;
+            border: none;
             border-radius: 50%;
-            width: 60px;
-            height: 60px;
+            width: 40px;
+            height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2.8rem;
-            color: #888;
-            background: #f8fafc;
-            box-shadow: 0 2px 12px #007bff22;
-            border: none;
-            margin: 0 auto;
-            transition: background 0.2s, color 0.2s, transform 0.1s;
+            font-size: 18px;
+            color: #6b7280;
+            transition: all 0.2s ease;
+            cursor: pointer;
         }
-        #notifyModal .btn-close-modal:hover {
-            background: #e3f0ff;
-            color: #dc3545;
-            transform: scale(1.08);
+        
+        .btn-close-modal:hover {
+            background: #e5e7eb;
+            color: #374151;
         }
-        .modal-content {
-            border-radius: 18px;
-            box-shadow: 0 4px 32px rgba(0,0,0,0.12);
-        }
-        .modal-header {
-            border-bottom: none;
-            background: linear-gradient(90deg, #007bff 70%, #5bc0f7 100%);
-            color: #fff;
-            border-radius: 18px 18px 0 0;
-        }
-        .modal-title {
-            font-weight: 700;
-            font-size: 1.2rem;
-        }
+        /* === FORM CONTROLS === */
         .form-group label {
             font-weight: 600;
-            color: #007bff;
-        }
-        .form-control {
-            border-radius: 8px;
-            border: 1.5px solid #b6d4fe;
-            font-size: 16px;
-            padding: 8px 14px;
-            background: #fafdff;
-            transition: border 0.2s;
-        }
-        .form-control:focus {
-            border: 1.5px solid #007bff;
-            background: #f0f8ff;
-            outline: none;
-        }
-        .btn-success, .btn-info, .btn-primary {
-            border-radius: 8px;
-            font-weight: 600;
-            box-shadow: 0 2px 8px #007bff22;
-            transition: background 0.2s, box-shadow 0.2s;
-        }
-        .btn-success:hover, .btn-info:hover, .btn-primary:hover {
-            box-shadow: 0 4px 16px #007bff33;
-        }
-        .giay-panel {
-            border: 2px solid #e3e6f0;
-            border-radius: 16px;
-            background: #fff;
-            margin-bottom: 24px;
-            padding: 18px 14px 14px 14px;
-            box-shadow: 0 2px 12px rgba(0,123,255,0.07);
-            min-height: 80px;
-            transition: box-shadow 0.2s, border-color 0.2s, background 0.2s;
-            position: relative;
-        }
-        .giay-panel .tencty {
-            font-size: 16px;
-            font-weight: 600;
-            color: #007bff;
+            color: #374151;
             margin-bottom: 6px;
         }
-        .giay-panel .trangthai {
+        
+        .form-control {
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 14px;
+            background: white;
+            transition: all 0.2s ease;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        /* === RESPONSIVE === */
+        @media (max-width: 1199px) {
+            .col-xl-8 {
+                order: 1;
+            }
+            .col-xl-4 {
+                order: 2;
+            }
+        }
+        
+        @media (max-width: 991px) {
+            .page-header h1 {
+                font-size: 1.75rem;
+            }
+            
+            .search-bar {
+                flex-direction: column;
+                gap: 12px;
+            }
+            
+            .search-bar input {
+                min-width: 100%;
+            }
+            
+            .card-body {
+                padding: 15px;
+            }
+            
+            .company-panel {
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+            
+            .giay-panel {
+                padding: 12px;
+                margin-bottom: 12px;
+            }
+            
+            .col-lg-7, .col-lg-5 {
+                order: 1;
+            }
+            
+            #company-panel-list .col-md-3 {
+                flex: 0 0 50%;
+                max-width: 50%;
+            }
+        }
+        
+        @media (max-width: 767px) {
+            #company-panel-list .col-md-3,
+            #company-panel-list .col-sm-6 {
+                flex: 0 0 100%;
+                max-width: 100%;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            #page-wrapper {
+                padding: 15px;
+            }
+            
+            .page-header {
+                margin-bottom: 20px;
+            }
+            
+            .page-header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .modal-dialog {
+                margin: 10px;
+            }
+            
+            .search-bar {
+                padding: 15px;
+            }
+            
+            .btn {
+                padding: 8px 12px;
+                font-size: 14px;
+            }
+        }
+        .giay-panel {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            padding: 16px;
+            transition: all 0.2s ease;
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .giay-panel:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.1);
+        }
+        
+        .giay-panel .tencty {
             font-size: 15px;
-            margin-top: 4px;
+            font-weight: 600;
+            color: #1e40af;
+            margin-bottom: 8px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .giay-panel .trangthai {
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        .giay-panel .dot-info {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 8px;
+        }
+        
+        .badge {
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+        
+        .badge-warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+        }
+        
+        .badge-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+        
+        .badge-info {
+            background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+            color: white;
+        }
+        
+        .badge-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+        }
+        
+        .badge-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
         }
         .giay-list-pagination {
             display: flex;
             justify-content: center;
-            gap: 10px;
-            padding: 6px 0 0 0;
-            border: none;
-            background: none;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 0;
         }
+        
         .giay-list-pagination button {
-            border: 1.5px solid #e3eafc;
-            background: #fff;
-            color: #007bff;
-            border-radius: 8px;
-            width: 32px;
-            height: 32px;
-            font-weight: 700;
-            font-size: 15px;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 500;
+            font-size: 12px;
+            color: #374151;
             cursor: pointer;
-            transition: background 0.2s, color 0.2s, transform 0.1s, box-shadow 0.2s, border 0.2s;
-            box-shadow: 0 2px 8px #007bff11;
-            outline: none;
+            transition: all 0.2s ease;
         }
-        .giay-list-pagination button.active,
+        
         .giay-list-pagination button:hover {
-            background: #f0f8ff;
-            color: #007bff;
-            border: 2px solid #b6d4fe;
-            transform: translateY(-2px) scale(1.08);
-            box-shadow: 0 4px 16px #007bff22;
+            background: #f3f4f6;
+            border-color: #3b82f6;
+            color: #3b82f6;
         }
+        
+        .giay-list-pagination button.active {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+        }
+        
         .giay-list-pagination span {
-            padding: 0 8px;
-            color: #007bff;
-            font-weight: bold;
-            font-size: 16px;
-            user-select: none;
+            color: #6b7280;
+            font-weight: 500;
+            padding: 0 4px;
+            font-size: 12px;
         }
         @media (max-width: 991px) {
-            .card-body { padding: 18px 6px 12px 6px !important; }
-            .company-panel { padding: 18px 8px 14px 8px; }
-            .search-bar { flex-direction: column; gap: 8px; }
+            .page-header h1 {
+                font-size: 1.75rem;
+            }
+            
+            .search-bar {
+                flex-direction: column;
+                gap: 12px;
+            }
+            
+            .search-bar input {
+                min-width: 100%;
+            }
+            
+            .card-body {
+                padding: 15px;
+            }
+            
+            .company-panel {
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+            
+            .giay-panel {
+                padding: 12px;
+                margin-bottom: 12px;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            #page-wrapper {
+                padding: 15px;
+            }
+            
+            .page-header {
+                margin-bottom: 20px;
+            }
+            
+            .page-header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .modal-dialog {
+                margin: 10px;
+            }
         }
 
         #company-panel-list > .col-md-3:last-child .company-panel,
@@ -422,22 +677,22 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
                     </div>
                 <?php endif; ?>
 
-                <!-- Modal thông báo tuyệt đẹp -->
+                <!-- Modal thông báo -->
                 <div class="modal fade" id="notifyModal" tabindex="-1" role="dialog" aria-labelledby="notifyModalLabel" aria-hidden="true">
-                  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 370px;">
-                    <div class="modal-content">
-                      <div class="modal-body px-4 pt-4 pb-2 text-center position-relative">
-                        <div id="notifyIcon"></div>
-                        <h5 class="modal-title w-100" id="notifyModalLabel"></h5>
-                        <div id="notifyModalBody"></div>
-                      </div>
-                      <div class="modal-footer">
-                        <button type="button" class="btn-close-modal" data-dismiss="modal" aria-label="Đóng">
-                          &times;
-                        </button>
-                      </div>
+                    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 400px;">
+                        <div class="modal-content">
+                            <div class="modal-body">
+                                <div id="notifyIcon" class="text-center mb-3"></div>
+                                <h5 class="modal-title text-center" id="notifyModalLabel"></h5>
+                                <div id="notifyModalBody" class="text-center"></div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn-close-modal mx-auto" data-dismiss="modal" aria-label="Đóng">
+                                    &times;
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                  </div>
                 </div>
 
                 <?php if (!empty($message)): ?>
@@ -447,26 +702,25 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
         setTimeout(function() {
             var modal = $('#notifyModal');
             var type = '<?= $messageType ?>';
-            // Icon tuyệt đẹp căn giữa trên
             let iconHtml = '';
             if(type === 'success') {
-                iconHtml = `<div style="margin-bottom:0;">
-                  <svg width="70" height="70" fill="none">
-                    <circle cx="35" cy="35" r="35" fill="#e6f9ed"/>
-                    <path d="M20 37l10 10 20-24" stroke="#28a745" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
+                iconHtml = `<div>
+                    <svg width="60" height="60" fill="none" viewBox="0 0 60 60">
+                        <circle cx="30" cy="30" r="30" fill="#d1fae5"/>
+                        <path d="M18 32l8 8 16-20" stroke="#10b981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
                 </div>`;
             } else {
-                iconHtml = `<div style="margin-bottom:0;">
-                  <svg width="70" height="70" fill="none">
-                    <circle cx="35" cy="35" r="35" fill="#fdeaea"/>
-                    <path d="M25 25l20 20M45 25l-20 20" stroke="#dc3545" stroke-width="4" stroke-linecap="round"/>
-                  </svg>
+                iconHtml = `<div>
+                    <svg width="60" height="60" fill="none" viewBox="0 0 60 60">
+                        <circle cx="30" cy="30" r="30" fill="#fee2e2"/>
+                        <path d="M20 20l20 20M40 20l-20 20" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>
+                    </svg>
                 </div>`;
             }
             $('#notifyIcon').html(iconHtml);
             $('#notifyModalLabel').text(type === 'success' ? 'Thành công' : 'Lỗi');
-            $('#notifyModalLabel').css('color', type === 'success' ? '#28a745' : '#dc3545');
+            $('#notifyModalLabel').css('color', type === 'success' ? '#10b981' : '#ef4444');
             $('#notifyModalBody').html('<?= htmlspecialchars($message) ?>');
             modal.modal({backdrop: 'static', keyboard: true});
             modal.modal('show');
@@ -487,36 +741,37 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
                     </button>
                 </div>
                 <div class="row">
-                <!-- Card 1: Danh sách công ty thực tập -->
-                <div class="col-lg-9 mb-4">
-                    <div class="card shadow-sm mb-4">
-                        <div class="card-header bg-primary text-white font-weight-bold">
-                            Danh sách công ty thực tập
+                    <!-- Card 1: Danh sách công ty thực tập -->
+                    <div class="col-xl-8 col-lg-7 mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <i class="fa fa-building"></i> Danh sách công ty thực tập
+                            </div>
+                            <div class="card-body">
+                                <!-- Danh sách công ty dạng panel -->
+                                <div id="company-panel-list" class="row"></div>
+                            </div>
+                            <div class="card-footer">
+                                <div class="company-list-pagination" id="company-pagination"></div>
+                            </div>
                         </div>
-                        <div class="card-body">
-                            <!-- Danh sách công ty dạng panel -->
-                            <div id="company-panel-list" class="row"></div>
-                        </div>
-                        <div class="card-footer bg-white" style="border-radius: 0 0 22px 22px;">
-                            <div class="company-list-pagination" id="company-pagination"></div>
+                    </div>
+                    
+                    <!-- Card 2: Trạng thái giấy đăng ký giới thiệu -->
+                    <div class="col-xl-4 col-lg-5 mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <i class="fa fa-file-text"></i> Phiếu đăng ký của bạn
+                            </div>
+                            <div class="card-body">
+                                <div id="giay-panel-list"></div>
+                            </div>
+                            <div class="card-footer">
+                                <div class="giay-list-pagination" id="giay-pagination"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <!-- Card 2: Trạng thái giấy đăng ký giới thiệu -->
-                <div class="col-lg-3 mb-4">
-                    <div class="card shadow-sm mb-4">
-                        <div class="card-header bg-primary text-white font-weight-bold">
-                            Phiếu đăng ký
-                        </div>
-                        <div class="card-body">
-                            <div id="giay-panel-list"></div>
-                        </div>
-                        <div class="card-footer bg-white" style="border-radius: 0 0 22px 22px;">
-                            <div class="giay-list-pagination" id="giay-pagination"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
                
 
                 <!-- Modal chi tiết công ty -->
@@ -619,18 +874,25 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
         const pageCompanies = filteredCompanies.slice(start, end);
 
         if (pageCompanies.length === 0) {
-            list.innerHTML = '<div class="col-12 text-center text-muted">Không tìm thấy công ty phù hợp.</div>';
+            list.innerHTML = `
+                <div class="col-12 text-center py-4">
+                    <div class="text-muted">
+                        <i class="fa fa-search fa-2x mb-3"></i>
+                        <p>Không tìm thấy công ty phù hợp.</p>
+                    </div>
+                </div>`;
             return;
         }
 
         pageCompanies.forEach((cty, idx) => {
             const col = document.createElement('div');
-            col.className = 'col-md-3 col-sm-6';
+            col.className = 'col-md-3 col-sm-6 mb-3';
             col.innerHTML = `
                 <div class="company-panel" data-index="${start + idx}">
-                    <div class="font-weight-bold mb-2">${cty.TenCty}</div>
-                    <div><b>MST:</b> ${cty.MaSoThue}</div>
-                    <div><b>Lĩnh vực:</b> ${cty.Linhvuc}</div>
+                    <div class="font-weight-bold">${cty.TenCty}</div>
+                    <div class="company-info"><strong>MST:</strong> ${cty.MaSoThue}</div>
+                    <div class="company-info"><strong>Lĩnh vực:</strong> ${cty.Linhvuc}</div>
+                    <div class="company-info"><strong>SĐT:</strong> ${cty.Sdt}</div>
                 </div>
             `;
             list.appendChild(col);
@@ -717,17 +979,18 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
         const trangThaiMap = {
             0: '<span class="badge badge-warning">Chờ duyệt</span>',
             1: '<span class="badge badge-success">Đã duyệt</span>',
-            2: '<span class="badge badge-danger">Từ chối</span>',
+            2: '<span class="badge badge-info">Đã in</span>',
+            3: '<span class="badge badge-primary">Đã nhận</span>',
         };
 
         pageGiay.forEach(giay => {
             const div = document.createElement('div');
-            div.className = 'giay-panel mb-2';
+            div.className = 'giay-panel';
             
             // Hiển thị thông tin đợt thực tập nếu có
             let dotInfo = '';
             if (giay.TenDot) {
-                dotInfo = `<div style="font-size: 13px; color: #6c757d; margin-top: 4px;">
+                dotInfo = `<div class="dot-info">
                     <i class="fa fa-calendar"></i> ${giay.TenDot}`;
                 if (giay.ThoiGianBatDau && giay.ThoiGianKetThuc) {
                     const startDate = new Date(giay.ThoiGianBatDau).toLocaleDateString('vi-VN');
@@ -739,7 +1002,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
             
             div.innerHTML = `
                 <div class="tencty">${giay.TenCty}</div>
-                <div class="trangthai">Trạng thái: ${trangThaiMap[giay.TrangThai] || '<span class="badge badge-secondary">Không xác định</span>'}</div>
+                <div class="trangthai">Trạng thái: ${trangThaiMap[giay.TrangThai] || '<span class="badge badge-danger">Từ chối</span>'}</div>
                 ${dotInfo}
             `;
             list.appendChild(div);
@@ -805,14 +1068,20 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
             const cty = filteredCompanies[idx];
             if (!cty) return;
 
-            // Fill modal (thêm in đậm cho nhãn) + form ẩn
+            // Fill modal với thông tin chi tiết hơn
             document.getElementById('company-modal-body').innerHTML = `
-                <div><b>Tên công ty:</b> ${cty.TenCty}</div>
-                <div><b>Mã số thuế:</b> ${cty.MaSoThue}</div>
-                <div><b>Địa chỉ:</b> ${cty.DiaChi}</div>
-                <div><b>Lĩnh vực:</b> ${cty.Linhvuc}</div>
-                <div><b>SĐT:</b> ${cty.Sdt}</div>
-                <div><b>Email:</b> ${cty.Email}</div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Tên công ty:</strong><br>${cty.TenCty}</p>
+                        <p><strong>Mã số thuế:</strong><br>${cty.MaSoThue}</p>
+                        <p><strong>Lĩnh vực:</strong><br>${cty.Linhvuc}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Địa chỉ:</strong><br>${cty.DiaChi}</p>
+                        <p><strong>Số điện thoại:</strong><br>${cty.Sdt}</p>
+                        <p><strong>Email:</strong><br>${cty.Email}</p>
+                    </div>
+                </div>
                 <form method="post" id="company-approve-form" style="display:none;">
                     <input type="hidden" name="ma_so_thue" id="approve-ma-so-thue">
                     <input type="hidden" name="ten_cong_ty" id="approve-ten-cong-ty">
@@ -845,10 +1114,12 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 
         // Nút mở modal nhập thủ công
         document.getElementById('btn-add-manual').onclick = function() {
+            // Reset form
+            document.getElementById('manual-company-form').reset();
             $('#manualModal').modal('show');
         };
 
-        // Giữ lại đoạn này để lấy thông tin công ty bằng API khi bấm nút "Lấy thông tin"
+        // Lấy thông tin công ty bằng API với loading state
         document.getElementById('btn-fill-api').onclick = async function(e) {
             e.preventDefault();
             const taxCode = document.getElementById('manual-ma-so-thue').value.trim();
@@ -856,15 +1127,31 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
                 alert('Vui lòng nhập mã số thuế');
                 return;
             }
-            const info = await getBusinessInfoByTaxCode(taxCode);
-            if (info) {
-                document.getElementById('manual-ten-cong-ty').value = info.name || info.shortName || '';
-                document.getElementById('manual-dia-chi').value = info.address || info.diaChi || '';
-                document.getElementById('manual-linh-vuc').value = info.businessLine || info.linhVuc || '';
-                document.getElementById('manual-sdt').value = info.phone || info.soDienThoai || '';
-                document.getElementById('manual-email').value = info.email || '';
-            } else {
-                alert('Không tìm thấy thông tin doanh nghiệp hoặc API bị lỗi.');
+            
+            // Hiển thị loading
+            const btn = this;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Đang tìm...';
+            btn.disabled = true;
+            
+            try {
+                const info = await getBusinessInfoByTaxCode(taxCode);
+                if (info) {
+                    document.getElementById('manual-ten-cong-ty').value = info.name || info.shortName || '';
+                    document.getElementById('manual-dia-chi').value = info.address || info.diaChi || '';
+                    document.getElementById('manual-linh-vuc').value = info.businessLine || info.linhVuc || '';
+                    document.getElementById('manual-sdt').value = info.phone || info.soDienThoai || '';
+                    document.getElementById('manual-email').value = info.email || '';
+                } else {
+                    alert('Không tìm thấy thông tin doanh nghiệp hoặc API bị lỗi.');
+                }
+            } catch (error) {
+                console.error('API Error:', error);
+                alert('Có lỗi xảy ra khi gọi API. Vui lòng thử lại.');
+            } finally {
+                // Khôi phục trạng thái button
+                btn.innerHTML = originalText;
+                btn.disabled = false;
             }
         };
 
