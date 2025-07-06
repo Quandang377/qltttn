@@ -8,11 +8,12 @@ $vaiTro = $stmt->fetchColumn();
 
 $stmt = $conn->prepare("
     SELECT ks.*, 
-    COALESCE(gv.Ten, sv.Ten,cb.Ten, tk.TaiKhoan) AS TenNguoiTao
+    COALESCE(gv.Ten, sv.Ten,cb.Ten,ad.Ten,tk.TaiKhoan) AS TenNguoiTao
     FROM KhaoSat ks
     JOIN TaiKhoan tk ON ks.NguoiTao = tk.ID_TaiKhoan
     LEFT JOIN GiaoVien gv ON gv.ID_TaiKhoan = tk.ID_TaiKhoan
     LEFT JOIN CanBoKhoa cb ON cb.ID_TaiKhoan = tk.ID_TaiKhoan
+    LEFT JOIN Admin ad ON ad.ID_TaiKhoan = tk.ID_TaiKhoan
     LEFT JOIN SinhVien sv ON sv.ID_TaiKhoan = tk.ID_TaiKhoan
     WHERE ks.TrangThai = 1
     AND (

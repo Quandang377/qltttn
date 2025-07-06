@@ -1,4 +1,6 @@
-<?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
+<?php
+ob_start();
+require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 $ID_TaiKhoan = $_SESSION['user_id'];
 
@@ -8,12 +10,13 @@ $vaiTro = $stmt->fetchColumn();
 
 $stmt = $conn->prepare("
     SELECT ks.*, 
-    COALESCE(gv.Ten, sv.Ten,cb.Ten, tk.TaiKhoan) AS TenNguoiTao
+    COALESCE(gv.Ten, sv.Ten,cb.Ten, ad.Ten, tk.TaiKhoan) AS TenNguoiTao
     FROM KhaoSat ks
     JOIN TaiKhoan tk ON ks.NguoiTao = tk.ID_TaiKhoan
     LEFT JOIN GiaoVien gv ON gv.ID_TaiKhoan = tk.ID_TaiKhoan
     LEFT JOIN CanBoKhoa cb ON cb.ID_TaiKhoan = tk.ID_TaiKhoan
     LEFT JOIN SinhVien sv ON sv.ID_TaiKhoan = tk.ID_TaiKhoan
+    LEFT JOIN Admin ad ON ad.ID_TaiKhoan = tk.ID_TaiKhoan
     WHERE ks.TrangThai = 1
     AND (
         ks.NguoiNhan IN ('Tất cả', ?) -- Vai trò
@@ -253,7 +256,7 @@ if (isset($_GET['ajax'])) {
                         $conn->rollBack();
                         $_SESSION['error'] = "Đã xảy ra lỗi khi phản hồi: " . $e->getMessage();
                     }
-                    header("Location: /datn/pages/giaovien/khaosat" );
+                    header("Location: /datn/pages/giaovien/khaosat");
                     exit;
                 }
                 $stmt = $conn->prepare("SELECT ks.ID, ks.TieuDe, ks.ThoiGianTao,
@@ -352,6 +355,7 @@ if (isset($_GET['ajax'])) {
                                     <tr>
                                         <th>ID</th>
                                         <th>Tiêu đề</th>
+                                        <th>Người gửi</th>
                                         <th>Ngày tạo</th>
                                         <th>Phản hồi</th>
                                     </tr>
@@ -362,6 +366,7 @@ if (isset($_GET['ajax'])) {
                                             <tr>
                                                 <td><?= $ks['ID'] ?></td>
                                                 <td><?= htmlspecialchars($ks['TieuDe']) ?></td>
+                                                <td><?= htmlspecialchars($ks['TenNguoiTao']) ?></td>
                                                 <td><?= $ks['ThoiGianTao'] ?></td>
                                                 <td>
                                                     <button class="btn btn-primary" data-toggle="modal"
@@ -449,201 +454,228 @@ if (isset($_GET['ajax'])) {
                 </div>
             </div>
         </div>
-        </div>
-        <?php
-        require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
-            ?>
-        <script>
-            let clickedButton = null;
+    </div>
+    <?php
+    require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
+        ?>
+    <script>
+        let clickedButton = null;
 
-            // Ghi lại nút được nhấn (dùng để xác định hành động)
-            document.querySelectorAll("button[type='submit']").forEach(button => {
-                button.addEventListener("click", function () {
-                    clickedButton = this;
-                });
+        // Ghi lại nút được nhấn (dùng để xác định hành động)
+        document.querySelectorAll("button[type='submit']").forEach(button => {
+            button.addEventListener("click", function () {
+                clickedButton = this;
             });
+        });
 
-            // Ngăn submit toàn cục và xử lý xác nhận gửi
-            document.querySelectorAll("form").forEach(form => {
-                form.addEventListener("submit", async function (e) {
-                    e.preventDefault();
+        // Ngăn submit toàn cục và xử lý xác nhận gửi
+        document.querySelectorAll("form").forEach(form => {
+            form.addEventListener("submit", async function (e) {
+                e.preventDefault();
 
-                    const btn = clickedButton || e.submitter;
-                    if (!btn) return;
+                const btn = clickedButton || e.submitter;
+                if (!btn) return;
 
-                    const action = btn.value;
+                const action = btn.value;
 
-                    if (action === "guikhaosat") {
-                        const result = await Swal.fire({
-                            title: "Xác nhận gửi khảo sát?",
-                            icon: "question",
-                            showCancelButton: true,
-                            confirmButtonText: "Gửi khảo sát",
-                            cancelButtonText: "Huỷ",
-                            confirmButtonColor: "#3085d6",
-                            cancelButtonColor: "#d33"
-                        });
+                if (action === "guikhaosat") {
+                    const result = await Swal.fire({
+                        title: "Xác nhận gửi khảo sát?",
+                        icon: "question",
+                        showCancelButton: true,
+                        confirmButtonText: "Gửi khảo sát",
+                        cancelButtonText: "Huỷ",
+                        confirmButtonColor: "#3085d6",
+                        cancelButtonColor: "#d33"
+                    });
 
-                        if (result.isConfirmed) {
-                            form.submit(); // chỉ submit khi đã xác nhận
-                        }
-                        // nếu không xác nhận thì dừng lại ở đây, không làm gì cả
-                    } else if (action === "phanhoi") {
-                        const result = await Swal.fire({
-                            title: "Xác nhận gửi phản hồi?",
-                            icon: "question",
-                            showCancelButton: true,
-                            confirmButtonText: "Gửi",
-                            cancelButtonText: "Huỷ",
-                            confirmButtonColor: "#3085d6",
-                            cancelButtonColor: "#d33"
-                        });
+                    if (result.isConfirmed) {
+                        form.submit(); // chỉ submit khi đã xác nhận
+                    }
+                    // nếu không xác nhận thì dừng lại ở đây, không làm gì cả
+                } else if (action === "phanhoi") {
+                    const result = await Swal.fire({
+                        title: "Xác nhận gửi phản hồi?",
+                        icon: "question",
+                        showCancelButton: true,
+                        confirmButtonText: "Gửi",
+                        cancelButtonText: "Huỷ",
+                        confirmButtonColor: "#3085d6",
+                        cancelButtonColor: "#d33"
+                    });
 
-                        if (result.isConfirmed) {
-                            form.submit();
-                        }
-                    } else {
-                        // Với các action khác thì cứ submit
+                    if (result.isConfirmed) {
                         form.submit();
                     }
-                });
+                } else {
+                    // Với các action khác thì cứ submit
+                    form.submit();
+                }
             });
+        });
 
-            // Xử lý tạo khảo sát qua Ajax
-            $('#formKhaoSat').on('submit', function (e) {
-                e.preventDefault();
-                $.post('/datn/pages/giaovien/khaosat', $(this).serialize() + '&action=tao', function (res) {
-                    if (res.status === 'OK') {
-                        Swal.fire('Tạo thành công!', '', 'success');
-                        loadBangKhaoSat();
-                        $('#formTaoKhaoSat')[0].reset();
-                    } else {
-                        Swal.fire('Lỗi', res.message || 'Không thể tạo khảo sát', 'error');
-                    }
-                }, 'json');
-            });
+        // Xử lý tạo khảo sát qua Ajax
+        $('#formKhaoSat').on('submit', function (e) {
+            e.preventDefault();
+            $.post('/datn/pages/giaovien/khaosat', $(this).serialize() + '&action=tao', function (res) {
+                if (res.status === 'OK') {
+                    Swal.fire('Tạo thành công!', '', 'success');
+                    loadBangKhaoSat();
+                    $('#formTaoKhaoSat')[0].reset();
+                } else {
+                    Swal.fire('Lỗi', res.message || 'Không thể tạo khảo sát', 'error');
+                }
+            }, 'json');
+        });
 
-            // Load bảng khảo sát theo đợt
-            $('#dot_filter').on('change', function () {
-                loadBangKhaoSat();
-            });
+        // Load bảng khảo sát theo đợt
+        $('#dot_filter').on('change', function () {
+            loadBangKhaoSat();
+        });
 
-            function loadBangKhaoSat() {
-                $.get('/datn/pages/giaovien/khaosat', {
-                    ajax: 1,
-                    dot_filter: $('#dot_filter').val()
-                }, function (html) {
-                    $('#quanlykhaosat').html(html);
-                    if ($('#quanlykhaosat table').length) {
-                        $('#quanlykhaosat table').DataTable({
-                            info: false,
-                            destroy: true,
-                            language: {
-                                url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json'
-                            }
-                        });
-                    }
-                });
-            }
-
-            // Xoá khảo sát
-            function xoaKhaoSat(id) {
-                Swal.fire({
-                    title: 'Xác nhận xóa?',
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonText: 'Xóa',
-                    cancelButtonText: 'Huỷ'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        $.post('/datn/pages/giaovien/khaosat', { action: 'xoa', id: id }, function (res) {
-                            if (res.status === 'OK') {
-                                loadBangKhaoSat();
-                            } else {
-                                Swal.fire('Lỗi', res.message || 'Không thể xóa', 'error');
-                            }
-                        }, 'json');
-                    }
-                });
-            }
-
-            // Xử lý thêm câu hỏi trong khảo sát
-            document.addEventListener("DOMContentLoaded", function () {
-                const danhSachCauHoi = document.getElementById("danhSachCauHoi");
-                const btnThem = document.getElementById("btnThemCauHoi");
-
-                btnThem.addEventListener("click", function () {
-                    const cauHoiItem = danhSachCauHoi.querySelector(".cau-hoi-item");
-                    const html = cauHoiItem.outerHTML;
-                    const temp = document.createElement('div');
-                    temp.innerHTML = html;
-                    const newItem = temp.firstElementChild;
-                    newItem.querySelector("input[name='cauhoi[]']").value = "";
-                    newItem.querySelector("select[name='loaicauhoi[]']").value = "text";
-                    newItem.querySelector("input[name='dapan[]']").style.display = "none";
-                    newItem.querySelector("input[name='dapan[]']").value = "";
-                    newItem.querySelector("input[name='dapan[]']").required = false;
-                    danhSachCauHoi.appendChild(newItem);
-                    capNhatTrangThaiNutXoa();
-                });
-
-                danhSachCauHoi.addEventListener("click", function (e) {
-                    if (e.target.closest(".btn-remove")) {
-                        const items = danhSachCauHoi.querySelectorAll(".cau-hoi-item");
-                        if (items.length > 1) {
-                            e.target.closest(".cau-hoi-item").remove();
-                            capNhatTrangThaiNutXoa();
+        function loadBangKhaoSat() {
+            $.get('/datn/pages/giaovien/khaosat', {
+                ajax: 1,
+                dot_filter: $('#dot_filter').val()
+            }, function (html) {
+                $('#quanlykhaosat').html(html);
+                if ($('#quanlykhaosat table').length) {
+                    $('#quanlykhaosat table').DataTable({
+                        info: false,
+                        destroy: true,
+                        language: {
+                            url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json'
                         }
-                    }
-                });
-
-                danhSachCauHoi.addEventListener('change', function (e) {
-                    if (e.target.name === 'loaicauhoi[]') {
-                        const $item = e.target.closest('.cau-hoi-item');
-                        const dapAnInput = $item.querySelector("input[name='dapan[]']");
-                        if (e.target.value === 'choice' || e.target.value === 'multiple') {
-                            dapAnInput.style.display = '';
-                            dapAnInput.required = true;
-                        } else {
-                            dapAnInput.style.display = 'none';
-                            dapAnInput.required = false;
-                        }
-                    }
-                });
-
-                function capNhatTrangThaiNutXoa() {
-                    const items = danhSachCauHoi.querySelectorAll(".cau-hoi-item");
-                    items.forEach((item, index) => {
-                        const btn = item.querySelector(".btn-remove");
-                        btn.disabled = (items.length === 1);
                     });
                 }
+            });
+        }
 
+        // Xoá khảo sát
+        function xoaKhaoSat(id) {
+            Swal.fire({
+                title: 'Xác nhận xóa?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Xóa',
+                cancelButtonText: 'Huỷ'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.post('/datn/pages/giaovien/khaosat', { action: 'xoa', id: id }, function (res) {
+                        if (res.status === 'OK') {
+                            loadBangKhaoSat();
+                        } else {
+                            Swal.fire('Lỗi', res.message || 'Không thể xóa', 'error');
+                        }
+                    }, 'json');
+                }
+            });
+        }
+
+        // Xử lý thêm câu hỏi trong khảo sát
+        document.addEventListener("DOMContentLoaded", function () {
+            const danhSachCauHoi = document.getElementById("danhSachCauHoi");
+            const btnThem = document.getElementById("btnThemCauHoi");
+
+            btnThem.addEventListener("click", function () {
+                const cauHoiItem = danhSachCauHoi.querySelector(".cau-hoi-item");
+                const html = cauHoiItem.outerHTML;
+                const temp = document.createElement('div');
+                temp.innerHTML = html;
+                const newItem = temp.firstElementChild;
+                newItem.querySelector("input[name='cauhoi[]']").value = "";
+                newItem.querySelector("select[name='loaicauhoi[]']").value = "text";
+                newItem.querySelector("input[name='dapan[]']").style.display = "none";
+                newItem.querySelector("input[name='dapan[]']").value = "";
+                newItem.querySelector("input[name='dapan[]']").required = false;
+                danhSachCauHoi.appendChild(newItem);
                 capNhatTrangThaiNutXoa();
             });
 
-            // Modal phản hồi khảo sát
-            $(document).ready(function () {
-                $('.btnPhanHoi').click(function () {
-                    const id = $(this).data('id');
-                    const ten = $(this).data('ten');
-                    alert("Mở modal phản hồi khảo sát ID " + id + " - " + ten);
-                });
-            });
-
-            // Ẩn alert thành công sau 2 giây
-            window.addEventListener('DOMContentLoaded', () => {
-                const alertBox = document.getElementById('noti');
-                if (alertBox) {
-                    setTimeout(() => {
-                        alertBox.style.transition = 'opacity 0.5s ease';
-                        alertBox.style.opacity = '0';
-                        setTimeout(() => alertBox.remove(), 500);
-                    }, 2000);
+            danhSachCauHoi.addEventListener("click", function (e) {
+                if (e.target.closest(".btn-remove")) {
+                    const items = danhSachCauHoi.querySelectorAll(".cau-hoi-item");
+                    if (items.length > 1) {
+                        e.target.closest(".cau-hoi-item").remove();
+                        capNhatTrangThaiNutXoa();
+                    }
                 }
             });
-        </script>
 
+            danhSachCauHoi.addEventListener('change', function (e) {
+                if (e.target.name === 'loaicauhoi[]') {
+                    const $item = e.target.closest('.cau-hoi-item');
+                    const dapAnInput = $item.querySelector("input[name='dapan[]']");
+                    if (e.target.value === 'choice' || e.target.value === 'multiple') {
+                        dapAnInput.style.display = '';
+                        dapAnInput.required = true;
+                    } else {
+                        dapAnInput.style.display = 'none';
+                        dapAnInput.required = false;
+                    }
+                }
+            });
+
+            function capNhatTrangThaiNutXoa() {
+                const items = danhSachCauHoi.querySelectorAll(".cau-hoi-item");
+                items.forEach((item, index) => {
+                    const btn = item.querySelector(".btn-remove");
+                    btn.disabled = (items.length === 1);
+                });
+            }
+
+            capNhatTrangThaiNutXoa();
+        });
+
+        // Modal phản hồi khảo sát
+        $(document).ready(function () {
+            $('.btnPhanHoi').click(function () {
+                const id = $(this).data('id');
+                const ten = $(this).data('ten');
+                alert("Mở modal phản hồi khảo sát ID " + id + " - " + ten);
+            });
+        });
+
+        // Ẩn alert thành công sau 2 giây
+        window.addEventListener('DOMContentLoaded', () => {
+            const alertBox = document.getElementById('noti');
+            if (alertBox) {
+                setTimeout(() => {
+                    alertBox.style.transition = 'opacity 0.5s ease';
+                    alertBox.style.opacity = '0';
+                    setTimeout(() => alertBox.remove(), 500);
+                }, 2000);
+            }
+        });
+    </script>
+    <?php if (!empty($_SESSION['success'])): ?>
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Thành công!',
+                    text: <?= json_encode($_SESSION['success']) ?>,
+                    confirmButtonText: 'Đóng'
+                });
+            });
+        </script>
+        <?php unset($_SESSION['success']); ?>
+    <?php endif; ?>
+
+    <?php if (!empty($_SESSION['error'])): ?>
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi!',
+                    text: <?= json_encode($_SESSION['error']) ?>,
+                    confirmButtonText: 'Đóng'
+                });
+            });
+        </script>
+        <?php unset($_SESSION['error']); ?>
+    <?php endif; ?>
 </body>
 
 </html>
+<?php ob_end_flush(); ?>

@@ -878,7 +878,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                         <button onclick="window.location='pages/canbo/importexcel?id=<?= $id ?>';"
                             class="btn btn-primary btn-md" title="Import danh sách sinh viên" <?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?>>Import sinh
                             viên</button>
-                        <button type="button" class="btn btn-primary btn-md" id="btnMoModalThemGV "
+                        <button type="button" class="btn btn-primary btn-md" id="btnMoModalThemGV"
                             title="Thêm giáo viên cho đợt thực tập" <?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?>>
                             Thêm giáo viên
                         </button>

@@ -221,6 +221,25 @@ foreach ($diems as $diem) {
     }
 }
 
+$stmt1 = $conn->prepare("
+    SELECT COUNT(*) AS SoLuongKhongDat
+    FROM tongket t
+    JOIN sinhvien sv ON t.IDSV = sv.ID_TaiKhoan
+    WHERE t.Diem < 5 AND sv.ID_Dot = :id_dot
+");
+$stmt1->execute(['id_dot' => $id]);
+$soLuongKhongDat = $stmt1->fetchColumn();
+
+// --- Danh sách SV đăng ký giấy GGT nhưng chưa nhận ---
+$stmtGGT = $conn->prepare("
+    SELECT sv.Ten, sv.MSSV, sv.Lop
+    FROM giaygioithieu g
+    JOIN sinhvien sv ON g.IdSinhVien = sv.ID_TaiKhoan
+    WHERE g.TrangThai = 2 AND sv.ID_Dot = :id_dot
+");
+$stmtGGT->execute(['id_dot' => $dot['ID']]);
+$danhSachGGT = $stmtGGT->fetchAll(PDO::FETCH_ASSOC);
+
 if (isset($_GET['export_excel']) && $_GET['export_excel'] == 2) {
     ob_clean();
     header_remove();
@@ -251,9 +270,10 @@ if (isset($_GET['export_excel']) && $_GET['export_excel'] == 2) {
             default => 'Đã kết thúc'
         },
         "Tổng sinh viên:" => $tongSinhVien,
+        "Tổng GVHD:" => $tongGVHD,
         "Sinh viên đã hoàn thành:" => $tkTrangThai['DaHoanThanh'],
         "Sinh viên chưa hoàn thành:" => $tkTrangThai['ChuaHoanThanh'],
-        "Tổng GVHD:" => $tongGVHD,
+        "Sinh viên không đạt:" => $soLuongKhongDat,
     ];
     $infoStart = $row;
 
@@ -267,26 +287,62 @@ if (isset($_GET['export_excel']) && $_GET['export_excel'] == 2) {
         'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
     ]);
 
-    $sheet->setCellValue("E$infoStart", "THỐNG KÊ THEO KHUNG ĐIỂM TỔNG KẾT");
-    $sheet->mergeCells("E$infoStart:H$infoStart");
-    $sheet->getStyle("E$infoStart")->getFont()->setBold(true);
-    $sheet->getStyle("E$infoStart")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+    $sheet->setCellValue("F$infoStart", "THỐNG KÊ THEO KHUNG ĐIỂM TỔNG KẾT");
+    $sheet->mergeCells("F$infoStart:I$infoStart");
+    $sheet->getStyle("F$infoStart")->getFont()->setBold(true);
+    $sheet->getStyle("F$infoStart")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
     $xlRow = $infoStart + 1;
 
-    $sheet->fromArray([ 'Khung điểm', 'Số lượng'], NULL, "F$xlRow");
-    $sheet->getStyle("F$xlRow:G$xlRow")->getFont()->setBold(true);
-    $sheet->getStyle("F$xlRow:G$xlRow")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+    $sheet->fromArray(['Khung điểm', 'Số lượng'], NULL, "G$xlRow");
+    $sheet->getStyle("G$xlRow:H$xlRow")->getFont()->setBold(true);
+    $sheet->getStyle("G$xlRow:H$xlRow")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
     $xlRow++;
 
     foreach ($thongKeKhungDiem as $khoang => $soLuong) {
-        $sheet->setCellValue("F$xlRow", $khoang);
-        $sheet->setCellValue("G$xlRow", $soLuong);
+        $sheet->setCellValue("G$xlRow", $khoang);
+        $sheet->setCellValue("H$xlRow", $soLuong);
         $xlRow++;
     }
 
-    $sheet->getStyle("F" . ($infoStart + 1) . ":G" . ($xlRow - 1))->applyFromArray([
+    $sheet->getStyle("G" . ($infoStart + 1) . ":H" . ($xlRow - 1))->applyFromArray([
         'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
     ]);
+    $xlRow += 1;
+    // Ghi tiêu đề bảng dưới phần khung điểm
+    $sheet->setCellValue("E$xlRow", "SINH VIÊN ĐĂNG KÝ GIẤY GIỚI THIỆU NHƯNG CHƯA NHẬN");
+    $sheet->mergeCells("E$xlRow:J$xlRow");
+    $sheet->getStyle("E$xlRow")->getFont()->setBold(true);
+    $sheet->getStyle("E$xlRow")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+    $xlRow++;
+
+    // Ghi header bảng
+    $sheet->fromArray(['STT', 'Họ tên', 'MSSV', 'Lớp'], NULL, "F$xlRow");
+    $sheet->getStyle("F$xlRow:I$xlRow")->getFont()->setBold(true);
+    $sheet->getStyle("F$xlRow:I$xlRow")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+    $startRow = $xlRow;
+    $xlRow++;
+
+    // Ghi dữ liệu
+    $stt = 1;
+    foreach ($danhSachGGT as $sv) {
+        $sheet->setCellValue("F$xlRow", $stt++);
+        $sheet->setCellValue("G$xlRow", $sv['Ten']);
+        $sheet->setCellValue("H$xlRow", $sv['MSSV']);
+        $sheet->setCellValue("I$xlRow", $sv['Lop']);
+        $xlRow++;
+    }
+
+    // Kẻ khung nếu có dữ liệu
+    if ($stt > 1) {
+        $sheet->getStyle("F" . ($startRow) . ":I" . ($xlRow - 1))->applyFromArray([
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
+        ]);
+        foreach (range('F', 'I') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+    } else {
+        $sheet->setCellValue("E$xlRow", "Không có sinh viên nào chưa nhận.");
+    }
 
     $row = max($row, $xlRow) + 2;
 
