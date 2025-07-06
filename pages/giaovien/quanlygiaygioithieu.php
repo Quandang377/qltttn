@@ -852,6 +852,43 @@ function groupLettersByCompany($letters) {
                         </div>
                     </div>
                 </div>
+                
+                <!-- Modal xác nhận in -->
+                <div id="printConfirmModal" class="modal fade" tabindex="-1" role="dialog">
+                    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 500px;">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h4 class="modal-title">
+                                    <i class="fa fa-print"></i>
+                                    Xác nhận đã in xong
+                                </h4>
+                                <button type="button" class="close" data-dismiss="modal">
+                                    <span>&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body text-center">
+                                <div class="mb-4">
+                                    <i class="fa fa-question-circle text-warning" style="font-size: 4rem;"></i>
+                                </div>
+                                <h5 id="printConfirmTitle" class="mb-3"></h5>
+                                <p id="printConfirmMessage" class="text-muted mb-4"></p>
+                                <div class="alert alert-info">
+                                    <i class="fa fa-info-circle"></i>
+                                    <strong>Lưu ý:</strong> Chỉ xác nhận "Đã in xong" khi việc in đã hoàn tất thành công. 
+                                    Nếu có vấn đề kỹ thuật, hãy chọn "Chưa xong" để in lại sau.
+                                </div>
+                            </div>
+                            <div class="modal-footer justify-content-center">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                                    <i class="fa fa-times"></i> Chưa xong
+                                </button>
+                                <button type="button" class="btn btn-success" id="confirmPrintBtn">
+                                    <i class="fa fa-check"></i> Đã in xong
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -1212,17 +1249,44 @@ function groupLettersByCompany($letters) {
             return;
         }
         
-        if (!confirm('In theo công ty sẽ gộp sinh viên cùng công ty vào một giấy.\n\nSau khi in, tất cả giấy sẽ được chuyển sang trạng thái "Đã in". Tiếp tục?')) {
+        if (!confirm('In theo công ty sẽ gộp sinh viên cùng công ty vào một giấy.\n\nBạn có muốn tiếp tục không?')) {
             return;
         }
         
         // Hiển thị loading
         const printBtn = document.getElementById('printGroupedBtn');
         const originalText = printBtn.innerHTML;
-        printBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Đang chuẩn bị...';
+        printBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Đang mở...';
         printBtn.disabled = true;
         
-        // Đánh dấu tất cả là đã in
+        // Mở file in trước, chưa cập nhật trạng thái
+        const printUrl = '/datn/pages/giaovien/print_grouped_letters.php';
+        const printWindow = window.open(printUrl, '_blank', 'width=1024,height=768,scrollbars=yes,resizable=yes');
+        
+        // Khôi phục nút sau khi mở
+        setTimeout(() => {
+            printBtn.innerHTML = originalText;
+            printBtn.disabled = false;
+            
+            // Hiển thị modal xác nhận đã in xong
+            setTimeout(() => {
+                showPrintConfirmModal(
+                    'Xác nhận in theo công ty',
+                    'Bạn đã in xong tất cả giấy theo công ty chưa?',
+                    () => confirmPrintGroupedCompleted()
+                );
+            }, 2000); // Delay 2s để người dùng thấy trang in
+        }, 1000);
+    }
+    
+    function confirmPrintGroupedCompleted() {
+        // Hiển thị loading
+        const printBtn = document.getElementById('printGroupedBtn');
+        const originalText = printBtn.innerHTML;
+        printBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Đang cập nhật...';
+        printBtn.disabled = true;
+        
+        // Cập nhật trạng thái đã in
         const xhr = new XMLHttpRequest();
         xhr.open('POST', '/datn/pages/giaovien/mark_as_printed.php', true);
         xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
@@ -1233,14 +1297,8 @@ function groupLettersByCompany($letters) {
                     const response = JSON.parse(xhr.responseText);
                     
                     if (response.success) {
-                        // Mở file in theo công ty trong tab mới
-                        const printUrl = '/datn/pages/giaovien/print_grouped_letters.php';
-                        window.open(printUrl, '_blank', 'width=1024,height=768,scrollbars=yes,resizable=yes');
-                        
-                        // Reload trang sau delay ngắn
-                        setTimeout(() => {
-                            location.reload();
-                        }, 1000);
+                        alert('✅ Đã cập nhật trạng thái "Đã in" cho tất cả giấy!');
+                        location.reload();
                     } else {
                         alert('❌ ' + response.message);
                         // Khôi phục nút
@@ -1261,11 +1319,38 @@ function groupLettersByCompany($letters) {
     }
 
     function printLetter(letterId) {
-        if (!confirm('In giấy giới thiệu này?\n\nSau khi in, giấy sẽ được chuyển sang trạng thái "Đã in".')) {
+        if (!confirm('In giấy giới thiệu này?\n\nBạn có muốn tiếp tục không?')) {
             return;
         }
         
-        // Đánh dấu là đã in trước
+        // Hiển thị loading
+        const btn = event.target.closest('button');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Đang mở...';
+        btn.disabled = true;
+        
+        // Mở trang in trước, chưa cập nhật trạng thái
+        const printUrl = '/datn/pages/giaovien/print_letter_template.php?id=' + letterId;
+        const printWindow = window.open(printUrl, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
+        
+        // Khôi phục nút sau khi mở
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            
+            // Hiển thị modal xác nhận đã in xong
+            setTimeout(() => {
+                showPrintConfirmModal(
+                    'Xác nhận in giấy giới thiệu',
+                    'Bạn đã in xong giấy giới thiệu này chưa?',
+                    () => confirmPrintSingleCompleted(letterId)
+                );
+            }, 2000); // Delay 2s để người dùng thấy trang in
+        }, 1000);
+    }
+    
+    function confirmPrintSingleCompleted(letterId) {
+        // Cập nhật trạng thái đã in
         const xhr = new XMLHttpRequest();
         xhr.open('POST', '/datn/pages/giaovien/mark_as_printed.php', true);
         xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
@@ -1276,14 +1361,8 @@ function groupLettersByCompany($letters) {
                     const response = JSON.parse(xhr.responseText);
                     
                     if (response.success) {
-                        // Mở trang in trong tab mới
-                        const printUrl = '/datn/pages/giaovien/print_letter_template.php?id=' + letterId;
-                        window.open(printUrl, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
-                        
-                        // Reload trang sau delay ngắn
-                        setTimeout(() => {
-                            location.reload();
-                        }, 1000);
+                        alert('✅ Đã cập nhật trạng thái "Đã in" cho giấy!');
+                        location.reload();
                     } else {
                         alert('❌ ' + response.message);
                     }
@@ -1305,17 +1384,50 @@ function groupLettersByCompany($letters) {
             return;
         }
         
-        if (!confirm(`Bạn có muốn in tất cả ${approvedCount} giấy giới thiệu đã duyệt?\n\nMỗi sinh viên sẽ có một giấy riêng. Sau khi in, tất cả giấy sẽ được chuyển sang trạng thái "Đã in".`)) {
+        if (!confirm(`Bạn có muốn in tất cả ${approvedCount} giấy giới thiệu đã duyệt?\n\nMỗi sinh viên sẽ có một giấy riêng. Bạn có muốn tiếp tục không?`)) {
             return;
         }
         
         // Hiển thị loading
         const printBtn = document.getElementById('printAllBtn');
         const originalText = printBtn.innerHTML;
-        printBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Đang chuẩn bị...';
+        printBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Đang mở...';
         printBtn.disabled = true;
         
-        // Đánh dấu tất cả là đã in
+        // Mở từng giấy trong tab mới với delay, chưa cập nhật trạng thái
+        const letterIds = <?php echo json_encode(array_column($approvedList, 'ID')); ?>;
+        
+        letterIds.forEach((id, index) => {
+            setTimeout(() => {
+                const printUrl = '/datn/pages/giaovien/print_letter_template.php?id=' + id;
+                window.open(printUrl, '_blank' + index, 'width=800,height=600,scrollbars=yes,resizable=yes');
+            }, index * 500); // Delay 500ms giữa các tab
+        });
+        
+        // Khôi phục nút sau khi mở hết các tab
+        setTimeout(() => {
+            printBtn.innerHTML = originalText;
+            printBtn.disabled = false;
+            
+            // Hiển thị modal xác nhận đã in xong
+            setTimeout(() => {
+                showPrintConfirmModal(
+                    'Xác nhận in tất cả giấy',
+                    `Bạn đã in xong tất cả ${approvedCount} giấy giới thiệu chưa?`,
+                    () => confirmPrintAllCompleted()
+                );
+            }, 3000); // Delay 3s để người dùng thấy các trang in
+        }, letterIds.length * 500 + 1000);
+    }
+    
+    function confirmPrintAllCompleted() {
+        // Hiển thị loading
+        const printBtn = document.getElementById('printAllBtn');
+        const originalText = printBtn.innerHTML;
+        printBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Đang cập nhật...';
+        printBtn.disabled = true;
+        
+        // Cập nhật trạng thái đã in cho tất cả
         const xhr = new XMLHttpRequest();
         xhr.open('POST', '/datn/pages/giaovien/mark_as_printed.php', true);
         xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
@@ -1326,20 +1438,8 @@ function groupLettersByCompany($letters) {
                     const response = JSON.parse(xhr.responseText);
                     
                     if (response.success) {
-                        // Mở từng giấy trong tab mới với delay
-                        const letterIds = <?php echo json_encode(array_column($approvedList, 'ID')); ?>;
-                        
-                        letterIds.forEach((id, index) => {
-                            setTimeout(() => {
-                                const printUrl = '/datn/pages/giaovien/print_letter_template.php?id=' + id;
-                                window.open(printUrl, '_blank' + index, 'width=800,height=600,scrollbars=yes,resizable=yes');
-                            }, index * 500); // Delay 500ms giữa các tab
-                        });
-                        
-                        // Reload trang sau khi mở hết các tab
-                        setTimeout(() => {
-                            location.reload();
-                        }, letterIds.length * 500 + 1000);
+                        alert('✅ Đã cập nhật trạng thái "Đã in" cho tất cả giấy!');
+                        location.reload();
                     } else {
                         alert('❌ ' + response.message);
                         // Khôi phục nút
@@ -1366,6 +1466,25 @@ function groupLettersByCompany($letters) {
 
     function hideLoading(element) {
         element.classList.remove('loading');
+    }
+    
+    function showPrintConfirmModal(title, message, onConfirm) {
+        // Cập nhật nội dung modal
+        document.getElementById('printConfirmTitle').textContent = title;
+        document.getElementById('printConfirmMessage').textContent = message;
+        
+        // Xóa event listener cũ và thêm mới
+        const confirmBtn = document.getElementById('confirmPrintBtn');
+        const newConfirmBtn = confirmBtn.cloneNode(true);
+        confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+        
+        newConfirmBtn.onclick = function() {
+            $('#printConfirmModal').modal('hide');
+            onConfirm();
+        };
+        
+        // Hiển thị modal
+        $('#printConfirmModal').modal('show');
     }
 
     // Initialize display on load

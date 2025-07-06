@@ -972,7 +972,14 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
         const pageGiay = giayList.slice(start, end);
 
         if (pageGiay.length === 0) {
-            list.innerHTML = '<div class="text-center text-muted">Chưa có phiếu giới thiệu nào.</div>';
+            list.innerHTML = `
+                <div class="text-center py-4">
+                    <div class="text-muted">
+                        <i class="fa fa-file-text fa-2x mb-3"></i>
+                        <p>Chưa có phiếu giới thiệu nào.</p>
+                        <small>Hãy chọn công ty để đăng ký!</small>
+                    </div>
+                </div>`;
             return;
         }
 
