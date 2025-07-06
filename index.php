@@ -1,8 +1,25 @@
 <?php
-session_start();
+require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
+
+date_default_timezone_set('Asia/Ho_Chi_Minh');
 define('BASE_PATH', '/datn');
 
 $URL = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+session_start();
+if (!isset($_SESSION['user']) && isset($_COOKIE['remember_token'])) {
+    $token = $_COOKIE['remember_token'];
+    $stmt = $conn->prepare("SELECT * FROM taikhoan WHERE remember_token = ?");
+    $stmt->execute([$token]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($user) {
+        $_SESSION['user'] = $user;
+    } else {
+        // Token sai → xóa cookie
+        setcookie('remember_token', '', time() - 3600, "/");
+    }
+}
+
 
 // Loại bỏ tiền tố BASE_PATH
 if (strpos($URL, BASE_PATH) === 0) {
@@ -62,6 +79,7 @@ if ($URL === '') {
                 break;
             case 'Sinh viên':
                 header("Location: " . BASE_PATH . "/pages/sinhvien/trangchu");
+                
                 break;
             default:
                 require_once '404.php';

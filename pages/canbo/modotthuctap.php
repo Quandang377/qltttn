@@ -13,7 +13,7 @@ $hoTen = $stmt->fetchColumn();
 function getAllInternships($conn)
 {
     $stmt = $conn->prepare("
-        SELECT d.ID, d.TenDot, d.Nam, d.Bac, d.NguoiQuanLy, cb.Ten AS TenNguoiQuanLy,
+        SELECT d.ID, d.TenDot, d.Nam, d.BacDaoTao, d.NguoiQuanLy, cb.Ten AS TenNguoiQuanLy,
                d.ThoiGianBatDau, d.ThoiGianKetThuc, d.NguoiMoDot, d.TrangThai
         FROM DOTTHUCTAP d
         LEFT JOIN CanBoKhoa cb ON d.NguoiQuanLy = cb.ID_TaiKhoan
@@ -29,16 +29,16 @@ function countSimilar($conn, $tendot)
     $stmt->execute(['tendot' => $tendot . '%']);
     return $stmt->fetchColumn();
 }
-function saveInternship($conn, $tendot, $bac, $namHoc, $thoigianbatdau, $thoigianketthuc, $nguoiquanly, $nguoitao)
+function saveInternship($conn, $tendot, $BacDaoTao, $namHoc, $thoigianbatdau, $thoigianketthuc, $nguoiquanly, $nguoitao)
 {
     $stmt = $conn->prepare("INSERT INTO DOTTHUCTAP (
-        TENDOT, NAM,BAC , NGUOIQUANLY, THOIGIANBATDAU, THOIGIANKETTHUC, NGUOIMODOT, TRANGTHAI
-    ) VALUES (:tendot, :nam, :bac, :nguoiquanly, :thoigianbatdau, :thoigianketthuc, :nguoimodot, 1)");
+        TENDOT, NAM,BACDAOTAO , NGUOIQUANLY, THOIGIANBATDAU, THOIGIANKETTHUC, NGUOIMODOT, TRANGTHAI
+    ) VALUES (:tendot, :nam, :BacDaoTao, :nguoiquanly, :thoigianbatdau, :thoigianketthuc, :nguoimodot, 1)");
 
     if ($stmt->execute([
         'tendot' => $tendot,
         'nam' => $namHoc,
-        'bac' => $bac,
+        'BacDaoTao' => $BacDaoTao,
         'nguoiquanly' => $nguoiquanly,
         'thoigianbatdau' => $thoigianbatdau,
         'thoigianketthuc' => $thoigianketthuc,
@@ -53,21 +53,21 @@ $successMessage = "";
 $notification = "";
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     var_dump($_POST['NguoiQuanLy']);
-    $bac = $_POST['bac'];
+    $BacDaoTao = $_POST['BacDaoTao'];
     $namHoc = $_POST['namhoc'];
     $nguoitao = $idTaiKhoan;
     $nguoiQuanLy = intval($_POST['NguoiQuanLy']);
     $thoigianbatdau = $_POST['thoigianbatdau'];
     $thoigianketthuc = $_POST['thoigianketthuc'];
-    if ($bac == "" || $namHoc == "" || $thoigianbatdau == "" || $thoigianketthuc == "" || $nguoiQuanLy == "") {
+    if ($BacDaoTao == "" || $namHoc == "" || $thoigianbatdau == "" || $thoigianketthuc == "" || $nguoiQuanLy == "") {
         $notification = "Vui lòng điền tất cả các trường.";
     } else {
-        $tendot = ($bac === 'Cao đẳng ngành' ? 'CĐTH' : 'CĐNTH') . substr($namHoc, -2);
+        $tendot = ($BacDaoTao === 'Cao đẳng ngành' ? 'CĐTH' : 'CĐNTH') . substr($namHoc, -2);
 
         $count = countSimilar($conn, $tendot);
         $tendot = $tendot . '-' . ($count + 1);
 
-        $idDot = saveInternship($conn, $tendot, $bac, $namHoc, $thoigianbatdau, $thoigianketthuc, $nguoiQuanLy, $nguoitao);
+        $idDot = saveInternship($conn, $tendot, $BacDaoTao, $namHoc, $thoigianbatdau, $thoigianketthuc, $nguoiQuanLy, $nguoitao);
         if ($idDot) {
             session_start();
             $_SESSION['success'] = "Đợt thực tập $tendot được mở thành công!";
@@ -145,8 +145,8 @@ if (isset($_SESSION['deleted'])) {
                                 </div>
                                 <div class="col-lg-6">
                                     <div class="form-group">
-                                        <label>Bậc</label>
-                                        <select id="bac" name="bac" class="form-control">
+                                        <label>Bậc đào tạo</label>
+                                        <select id="BacDaoTao" name="BacDaoTao" class="form-control">
                                             <option value="Cao đẳng ngành">Cao đẳng ngành</option>
                                             <option value="Cao đẳng nghề">Cao đẳng nghề</option>
                                         </select>
@@ -205,7 +205,7 @@ if (isset($_SESSION['deleted'])) {
                                                     <th>#</th>
                                                     <th>Tên đợt</th>
                                                     <th>Năm</th>
-                                                    <th>Bậc</th>
+                                                    <th>Bậc đào tạo</th>
                                                     <th>Thời gian bắt đầu</th>
                                                     <th>Thời gian kết thúc</th>
                                                     <th>Người quản lý</th>
@@ -241,7 +241,7 @@ if (isset($_SESSION['deleted'])) {
                                                         <td><?= $i++ ?></td>
                                                         <td><?= htmlspecialchars($dot['TenDot']) ?></td>
                                                         <td><?= htmlspecialchars($dot['Nam']) ?></td>
-                                                        <td><?= htmlspecialchars($dot['Bac']) ?></td>
+                                                        <td><?= htmlspecialchars($dot['BacDaoTao']) ?></td>
                                                         <td><?= htmlspecialchars($dot['ThoiGianBatDau']) ?></td>
                                                         <td><?= htmlspecialchars($dot['ThoiGianKetThuc']) ?></td>
                                                         <td><?= htmlspecialchars($dot['TenNguoiQuanLy']) ?></td>
@@ -271,6 +271,12 @@ if (isset($_SESSION['deleted'])) {
     require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
         ?>
     <script>
+        function formatDateInput(date) {
+            const year = date.getFullYear();
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const day = date.getDate().toString().padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
         document.getElementById('btnShowFormMoDot').addEventListener('click', function () {
             var formDiv = document.getElementById('formMoDotContainer');
             if (formDiv.style.display === 'none') {
@@ -302,21 +308,16 @@ if (isset($_SESSION['deleted'])) {
             }
         });
         document.addEventListener('DOMContentLoaded', function () {
-            const startInput = document.getElementById('thoigianbatdau');
-            const endInput = document.getElementById('thoigianketthuc');
-            const form = document.getElementById('FormMoDot');
-
+            // Gán min ngày bắt đầu = hôm nay + 1 (dùng local time)
             const today = new Date();
             today.setDate(today.getDate() + 1);
-            const minStartDate = today.toISOString().split('T')[0];
-            startInput.min = minStartDate;
+            startInput.min = formatDateInput(today);
 
             startInput.addEventListener('change', function () {
                 const startDate = new Date(this.value);
                 if (!isNaN(startDate)) {
-                    startDate.setDate(startDate.getDate() + 28);
-                    const minEndDate = startDate.toISOString().split('T')[0];
-                    endInput.min = minEndDate;
+                    startDate.setDate(startDate.getDate() + 28); // Cộng 4 tuần
+                    endInput.min = formatDateInput(startDate);
                 }
             });
 
@@ -332,7 +333,7 @@ if (isset($_SESSION['deleted'])) {
             form.addEventListener('submit', function (e) {
                 e.preventDefault();
 
-                const bac = document.getElementById('bac').value;
+                const BacDaoTao = document.getElementById('BacDaoTao').value;
                 const nam = document.getElementById('namhoc').value;
                 const nguoiquanlySelect = document.getElementById('NguoiQuanLy');
                 const nguoiquanly = nguoiquanlySelect.options[nguoiquanlySelect.selectedIndex].text;
@@ -355,7 +356,7 @@ if (isset($_SESSION['deleted'])) {
                 Swal.fire({
                     title: 'Xác nhận mở đợt?',
                     html: `
-                <p><strong>Bậc:</strong> ${bac}</p>
+                <p><strong>Bậc đào tạo:</strong> ${BacDaoTao}</p>
                 <p><strong>Năm học:</strong> ${nam}</p>
                 <p><strong>Thời gian bắt đầu:</strong> ${startInput.value}</p>
                 <p><strong>Thời gian kết thúc:</strong> ${endInput.value}</p>

@@ -1,7 +1,6 @@
 <?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
-require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/includes/ThongBao_funtions.php";
 
 if (!isset($_GET['id'])) {
   die("Không tìm thấy ID thông báo.");

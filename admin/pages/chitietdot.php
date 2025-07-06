@@ -15,7 +15,7 @@ if (!$id)
     die("Không tìm thấy ID đợt thực tập.");
 // Lấy thông tin đợt thực tập
 $stmt = $conn->prepare("
-    SELECT d.ID, d.TenDot, d.Bac, d.Nam, d.NguoiMoDot, d.NguoiQuanLy, d.ThoiGianBatDau, d.ThoiGianKetThuc, d.TrangThai,
+    SELECT d.ID, d.TenDot, d.BacDaoTao, d.Nam, d.NguoiMoDot, d.NguoiQuanLy, d.ThoiGianBatDau, d.ThoiGianKetThuc, d.TrangThai,
         COALESCE(cb1.Ten, ad1.Ten) AS TenNguoiMoDot,
         COALESCE(cb2.Ten, ad2.Ten) AS TenNguoiQuanLy
     FROM DOTTHUCTAP d
@@ -187,21 +187,41 @@ WHERE SV.ID_Dot = :id");
 $stmt->execute(['id' => $id]);
 $tkTrangThai = $stmt->fetch(PDO::FETCH_ASSOC);
 
-// Thống kê xếp loại
-$stmt = $conn->prepare("SELECT SV.XepLoai, COUNT(*) AS SoLuong
-FROM sinhvien SV
-WHERE SV.ID_Dot = :id AND SV.XepLoai IS NOT NULL AND SV.XepLoai <> ''
-GROUP BY SV.XepLoai");
+// ĐIểm
+$stmt = $conn->prepare("
+    SELECT TK.Diem
+    FROM tongket TK
+    JOIN sinhvien SV ON TK.IDSV = SV.ID_TaiKhoan
+    WHERE SV.ID_Dot = :id AND TK.Diem IS NOT NULL
+");
 $stmt->execute(['id' => $id]);
-$tkXepLoai = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$diems = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+// Thống kê khung điểm
+$thongKeKhungDiem = [
+    '>=9.4' => 0,
+    '8.4 - 9.39' => 0,
+    '7.4 - 8.39' => 0,
+    '5 - 7.39' => 0,
+    '<5' => 0
+];
+
+foreach ($diems as $diem) {
+    $diem = floatval($diem);
+    if ($diem >= 9.4) {
+        $thongKeKhungDiem['>=9.4']++;
+    } elseif ($diem >= 8.4) {
+        $thongKeKhungDiem['8.4 - 9.39']++;
+    } elseif ($diem >= 7.4) {
+        $thongKeKhungDiem['7.4 - 8.39']++;
+    } elseif ($diem >= 5) {
+        $thongKeKhungDiem['5 - 7.39']++;
+    } else {
+        $thongKeKhungDiem['<5']++;
+    }
+}
+
 if (isset($_GET['export_excel']) && $_GET['export_excel'] == 2) {
-    ob_clean();
-    header_remove();
-
-    $spreadsheet = new Spreadsheet();
-    $sheet = $spreadsheet->getActiveSheet();
-    $sheet->setTitle("ThongKeDot");
-
     ob_clean();
     header_remove();
 
@@ -215,17 +235,10 @@ if (isset($_GET['export_excel']) && $_GET['export_excel'] == 2) {
     $sheet->mergeCells("B$row:C$row");
     $sheet->getStyle("B$row")->getFont()->setBold(true)->setSize(14);
     $sheet->getStyle("B$row")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-
-    // Tiêu đề Xếp loại
-    $sheet->setCellValue("E$row", "THỐNG KÊ XẾP LOẠI SINH VIÊN");
-    $sheet->mergeCells("E$row:G$row");
-    $sheet->getStyle("E$row")->getFont()->setBold(true);
-    $sheet->getStyle("E$row")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
     $row++;
-
     // ===== THÔNG TIN ĐỢT =====
     $infoFields = [
-        "Bậc:" => $dot['Bac'],
+        "Bậc đào tạo đào tạo:" => $dot['BacDaoTao'],
         "Năm:" => $dot['Nam'],
         "Người quản lý:" => $dot['TenNguoiQuanLy'],
         "Người mở đợt:" => $dot['TenNguoiMoDot'],
@@ -254,19 +267,24 @@ if (isset($_GET['export_excel']) && $_GET['export_excel'] == 2) {
         'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
     ]);
 
-    // ===== XẾP LOẠI =====
-    $sheet->fromArray(['STT', 'Xếp loại', 'Số lượng'], NULL, "E" . ($infoStart));
-    $sheet->getStyle("E$infoStart:F$infoStart")->getFont()->setBold(true);
-    $sheet->getStyle("F$infoStart:G$infoStart")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+    $sheet->setCellValue("E$infoStart", "THỐNG KÊ THEO KHUNG ĐIỂM TỔNG KẾT");
+    $sheet->mergeCells("E$infoStart:H$infoStart");
+    $sheet->getStyle("E$infoStart")->getFont()->setBold(true);
+    $sheet->getStyle("E$infoStart")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
     $xlRow = $infoStart + 1;
-    $stt = 1;
-    foreach ($tkXepLoai as $xl) {
-        $sheet->setCellValue("E$xlRow", $stt++);
-        $sheet->setCellValue("F$xlRow", $xl['XepLoai']);
-        $sheet->setCellValue("G$xlRow", $xl['SoLuong']);
+
+    $sheet->fromArray([ 'Khung điểm', 'Số lượng'], NULL, "F$xlRow");
+    $sheet->getStyle("F$xlRow:G$xlRow")->getFont()->setBold(true);
+    $sheet->getStyle("F$xlRow:G$xlRow")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+    $xlRow++;
+
+    foreach ($thongKeKhungDiem as $khoang => $soLuong) {
+        $sheet->setCellValue("F$xlRow", $khoang);
+        $sheet->setCellValue("G$xlRow", $soLuong);
         $xlRow++;
     }
-    $sheet->getStyle("E$infoStart:G" . ($xlRow - 1))->applyFromArray([
+
+    $sheet->getStyle("F" . ($infoStart + 1) . ":G" . ($xlRow - 1))->applyFromArray([
         'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
     ]);
 
@@ -823,7 +841,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
                     <div class="row" style="margin-bottom:10px;">
                         <div class="col-sm-4 col-xs-12">
-                            <p><b>Bậc:</b> <?= htmlspecialchars($dot['Bac']) ?></p>
+                            <p><b>Bậc đào tạo:</b> <?= htmlspecialchars($dot['BacDaoTao']) ?></p>
                             <p><b>Năm:</b> <?= htmlspecialchars($dot['Nam']) ?></p>
                             <p><b>Người quản lý:</b> <?= htmlspecialchars($dot['TenNguoiQuanLy']) ?></p>
                             <p><b>Người mở đợt:</b> <?= htmlspecialchars($dot['TenNguoiMoDot']) ?></p>

@@ -7,13 +7,13 @@ if (!$id) {
     die("Không tìm thấy ID đợt thực tập.");
 }
 
-$stmt = $conn->prepare("SELECT ID,TenDot,Loai,Nam,NguoiMoDot,NguoiQuanLy,ThoiGianBatDau,ThoiGianKetThuc,TrangThai FROM DOTTHUCTAP WHERE ID = :id");
+$stmt = $conn->prepare("SELECT ID,TenDot,BacDaoTao,Nam,NguoiMoDot,NguoiQuanLy,ThoiGianBatDau,ThoiGianKetThuc,TrangThai FROM DOTTHUCTAP WHERE ID = :id");
 $stmt->execute(['id' => $id]);
 $dot = $stmt->fetch();
 $successMessage = "";
 $notification = "";
 
-$stmt = $conn->prepare("SELECT ID, TenDot, Loai, Nam, NguoiMoDot, NguoiQuanLy, ThoiGianBatDau, ThoiGianKetThuc, TrangThai 
+$stmt = $conn->prepare("SELECT ID, TenDot, BacDaoTao, Nam, NguoiMoDot, NguoiQuanLy, ThoiGianBatDau, ThoiGianKetThuc, TrangThai 
                         FROM DOTTHUCTAP WHERE ID = :id");
 $stmt->execute(['id' => $id]);
 $dot = $stmt->fetch();
@@ -27,7 +27,7 @@ if (!$dot) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $tenDot = $_POST['TenDot'] ?? '';
     $nam = $_POST['Nam'] ?? '';
-    $loai = $_POST['Loai'] ?? '';
+    $BacDaoTao = $_POST['BacDaoTao'] ?? '';
     $thoiGianBatDau = $_POST['ThoiGianBatDau'] ?? '';
     $thoiGianKetThuc = $_POST['ThoiGianKetThuc'] ?? '';
     $nguoiQuanLy = intval($_POST['NguoiQuanLy']);
@@ -62,7 +62,7 @@ else {
             UPDATE DOTTHUCTAP SET
                 TenDot = :tenDot,
                 Nam = :nam,
-                Loai = :loai,
+                BacDaoTao = :BacDaoTao,
                 ThoiGianBatDau = :thoiGianBatDau,
                 ThoiGianKetThuc = :thoiGianKetThuc,
                 NguoiQuanLy = :nguoiQuanLy
@@ -72,7 +72,7 @@ else {
         $updateStmt->execute([
             'tenDot' => $tenDot,
             'nam' => $nam,
-            'loai' => $loai,
+            'BacDaoTao' => $BacDaoTao,
             'thoiGianBatDau' => $thoiGianBatDau,
             'thoiGianKetThuc' => $thoiGianKetThuc,
             'nguoiQuanLy' => $nguoiQuanLy,
@@ -81,7 +81,7 @@ else {
 
         $successMessage = "Cập nhật thành công!";
 
-        $stmt = $conn->prepare("SELECT ID,TenDot,Loai,Nam,NguoiMoDot,NguoiQuanLy,ThoiGianBatDau,ThoiGianKetThuc,TrangThai FROM DOTTHUCTAP WHERE ID = :id");
+        $stmt = $conn->prepare("SELECT ID,TenDot,BacDaoTao,Nam,NguoiMoDot,NguoiQuanLy,ThoiGianBatDau,ThoiGianKetThuc,TrangThai FROM DOTTHUCTAP WHERE ID = :id");
         $stmt->execute(['id' => $id]);
         $dot = $stmt->fetch();
     }
@@ -99,7 +99,7 @@ else {
 
         $successMessage = "Cập nhật thành công!";
 
-        $stmt = $conn->prepare("SELECT ID,TenDot,Loai,Nam,NguoiMoDot,NguoiQuanLy,ThoiGianBatDau,ThoiGianKetThuc,TrangThai FROM DOTTHUCTAP WHERE ID = :id");
+        $stmt = $conn->prepare("SELECT ID,TenDot,BacDaoTao,Nam,NguoiMoDot,NguoiQuanLy,ThoiGianBatDau,ThoiGianKetThuc,TrangThai FROM DOTTHUCTAP WHERE ID = :id");
         $stmt->execute(['id' => $id]);
         $dot = $stmt->fetch();
     }
@@ -153,13 +153,13 @@ else {
                     </div>
 
                     <div class="form-group">
-                        <label class="col-sm-2 control-label">Loại</label>
+                        <label class="col-sm-2 control-label">Bậc đào tạo</label>
                         <div class="col-sm-10">
-                            <select <?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?> id="Loai" name="Loai"
+                            <select <?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?> id="BacDaoTao" name="BacDaoTao"
                                 class="form-control" required>
-                                <option value="Cao đẳng" <?= $dot['Loai'] == 'Cao đẳng' ? 'selected' : '' ?>>Cao đẳng
+                                <option value="Cao đẳng" <?= $dot['BacDaoTao'] == 'Cao đẳng' ? 'selected' : '' ?>>Cao đẳng
                                 </option>
-                                <option value="Cao đẳng ngành" <?= $dot['Loai'] == 'Cao đẳng ngành' ? 'selected' : '' ?>>
+                                <option value="Cao đẳng ngành" <?= $dot['BacDaoTao'] == 'Cao đẳng ngành' ? 'selected' : '' ?>>
                                     Cao đẳng ngành</option>
                             </select>
                         </div>

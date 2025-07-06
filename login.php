@@ -1,5 +1,6 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = $_POST['email'];
     $password = $_POST['password'];
@@ -12,7 +13,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['user'] = $user;
         $_SESSION['user_id'] = $user['ID_TaiKhoan'];
         $_SESSION['user_role'] = $user['VaiTro'];
-        $_SESSION['user_email'] = $user['TaiKhoan'];    
+        $_SESSION['user_email'] = $user['TaiKhoan'];
+        if (!empty($_POST['remember'])) {
+            $token = bin2hex(random_bytes(32)); // tạo chuỗi ngẫu nhiên
+            setcookie('remember_token', $token, time() + (86400 * 30), "/"); // 30 ngày
+
+            // lưu vào DB
+            $stmt = $conn->prepare("UPDATE taikhoan SET remember_token = ? WHERE ID_TaiKhoan = ?");
+            $stmt->execute([$token, $thongTinNguoiDung['ID_TaiKhoan']]);
+        }
         header("Location: " . BASE_PATH . "/");
         exit;
     } else {
@@ -90,6 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <a href="<?= BASE_PATH ?>/quenmatkhau">Quên mật khẩu?</a>
                         </div>
                         <button type="submit" class="btn btn-primary btn-login">Đăng nhập</button>
+                        <input type="checkbox" name="remember" id="remember"> <label for="remember">Ghi nhớ đăng nhập</label>
                     </form>
                     <div class="footer-text">
                         © 2025- Hệ thống quản lý thực tập
