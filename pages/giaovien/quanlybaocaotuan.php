@@ -636,6 +636,57 @@ for ($i = 0; $i < 7; $i++) {
         .mode-btn:hover:not(.active) {
             background: #f8f9fa;
         }
+        
+        /* Improvements for many students */
+        .student-grid {
+            max-height: 80vh;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        .student-grid::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .student-grid::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        
+        .student-grid::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+        
+        .student-grid::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+        
+        .student-panel.hidden {
+            display: none;
+        }
+        
+        .no-results {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 40px 20px;
+            color: #70757a;
+        }
+        
+        @media (min-width: 1600px) {
+            .student-grid {
+                grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            }
+        }
+        
+        @media (max-width: 400px) {
+            .student-grid {
+                grid-template-columns: 1fr;
+            }
+            .student-panel {
+                padding: 15px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -687,6 +738,31 @@ for ($i = 0; $i < 7; $i++) {
                         <input type="hidden" name="date" value="<?= htmlspecialchars($selectedDate) ?>">
                     </form>
                 </div>
+
+                <!-- Search và Filter cho nhiều sinh viên -->
+                <?php if ($selectedSinhVien == 0 && count($sinhVienList) > 6): ?>
+                <div class="filter-container" style="margin-bottom: 15px;">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center" style="gap: 15px;">
+                            <div>
+                                <input type="text" id="student-search" class="form-control" placeholder="Tìm kiếm sinh viên..." style="min-width: 250px;">
+                            </div>
+                            <div>
+                                <select id="status-filter" class="form-control">
+                                    <option value="">Tất cả trạng thái</option>
+                                    <option value="excellent">Xuất sắc</option>
+                                    <option value="good">Tốt</option>
+                                    <option value="average">Trung bình</option>
+                                    <option value="poor">Kém</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="text-muted">
+                            <span id="student-count"><?= count($sinhVienList) ?></span> sinh viên
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
 
                 <?php if ($selectedSinhVien == 0): ?>
                     <!-- Trang tổng quan tất cả sinh viên -->
@@ -995,6 +1071,63 @@ for ($i = 0; $i < 7; $i++) {
                     this.style.transform = 'translateY(-2px)';
                 });
             });
+            
+            // Search và Filter functionality
+            const searchInput = document.getElementById('student-search');
+            const statusFilter = document.getElementById('status-filter');
+            const studentPanels = document.querySelectorAll('.student-panel');
+            const studentCount = document.getElementById('student-count');
+            
+            function filterStudents() {
+                const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+                const statusTerm = statusFilter ? statusFilter.value : '';
+                let visibleCount = 0;
+                
+                studentPanels.forEach(panel => {
+                    const studentName = panel.querySelector('.student-info h4').textContent.toLowerCase();
+                    const studentMSSV = panel.querySelector('.student-info p').textContent.toLowerCase();
+                    const studentStatus = panel.querySelector('.status-badge').className.includes('status-' + statusTerm) || statusTerm === '';
+                    
+                    const matchesSearch = studentName.includes(searchTerm) || studentMSSV.includes(searchTerm);
+                    
+                    if (matchesSearch && studentStatus) {
+                        panel.classList.remove('hidden');
+                        visibleCount++;
+                    } else {
+                        panel.classList.add('hidden');
+                    }
+                });
+                
+                // Update count
+                if (studentCount) {
+                    studentCount.textContent = visibleCount;
+                }
+                
+                // Show no results message
+                const studentGrid = document.querySelector('.student-grid');
+                let noResults = studentGrid.querySelector('.no-results');
+                
+                if (visibleCount === 0) {
+                    if (!noResults) {
+                        noResults = document.createElement('div');
+                        noResults.className = 'no-results';
+                        noResults.innerHTML = '<i class="fa fa-search"></i><h4>Không tìm thấy sinh viên</h4><p>Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc.</p>';
+                        studentGrid.appendChild(noResults);
+                    }
+                } else {
+                    if (noResults) {
+                        noResults.remove();
+                    }
+                }
+            }
+            
+            // Event listeners
+            if (searchInput) {
+                searchInput.addEventListener('input', filterStudents);
+            }
+            if (statusFilter) {
+                statusFilter.addEventListener('change', filterStudents);
+            }
         });
     </script>
 </body>
