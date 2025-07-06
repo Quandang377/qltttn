@@ -8,26 +8,61 @@ if (!$id_gvhd) die('Bạn chưa đăng nhập!');
 
 $errorMsg = '';
 
-// Xử lý đóng/mở nộp báo cáo tổng kết
+// Xử lý đóng/mở nộp báo cáo tổng kết - AJAX (không reload trang)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['luu_trangthai_tongket'], $_POST['id_dot'])) {
     $id_dot = (int)$_POST['id_dot'];
-    $trangthai_tongket = isset($_POST['trangthai_tongket']) ? 1 : 0;
+    $trangthai_tongket = isset($_POST['trangthai_tongket']) && $_POST['trangthai_tongket'] == '1' ? 1 : 0;
     
-    // Kiểm tra và cập nhật/thêm mới trạng thái
-    $stmt = $conn->prepare("INSERT INTO Baocaotongket (ID_TaiKhoan, ID_Dot, TrangThai) 
-                           VALUES (?, ?, ?) 
-                           ON DUPLICATE KEY UPDATE TrangThai = ?");
-    $stmt->execute([$id_gvhd, $id_dot, $trangthai_tongket, $trangthai_tongket]);
+    try {
+        // Kiểm tra xem đã có bản ghi nào chưa
+        $stmt = $conn->prepare("SELECT ID FROM Baocaotongket WHERE ID_TaiKhoan = ? AND ID_Dot = ?");
+        $stmt->execute([$id_gvhd, $id_dot]);
+        $existing_record = $stmt->fetch();
+        
+        if ($existing_record) {
+            // Nếu đã có bản ghi thì chỉ update trường TrangThai
+            $stmt = $conn->prepare("UPDATE Baocaotongket SET TrangThai = ? WHERE ID_TaiKhoan = ? AND ID_Dot = ?");
+            $result = $stmt->execute([$trangthai_tongket, $id_gvhd, $id_dot]);
+        } else {
+            // Nếu chưa có bản ghi thì insert mới
+            $stmt = $conn->prepare("INSERT INTO Baocaotongket (ID_TaiKhoan, ID_Dot, TrangThai) VALUES (?, ?, ?)");
+            $result = $stmt->execute([$id_gvhd, $id_dot, $trangthai_tongket]);
+        }
+        
+        // Trả về JSON cho AJAX (không reload trang)
+        if (isset($_POST['ajax']) && $_POST['ajax'] == '1') {
+            echo json_encode([
+                'success' => true,
+                'message' => $trangthai_tongket ? 'Đã mở nộp báo cáo tổng kết' : 'Đã đóng nộp báo cáo tổng kết',
+                'status' => $trangthai_tongket
+            ]);
+            exit;
+        }
+    } catch (Exception $e) {
+        // Trả về lỗi cho AJAX
+        if (isset($_POST['ajax']) && $_POST['ajax'] == '1') {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra khi cập nhật trạng thái: ' . $e->getMessage(),
+                'status' => null
+            ]);
+            exit;
+        }
+        $errorMsg = 'Có lỗi xảy ra khi cập nhật trạng thái!';
+    }
     
+    // Nếu không phải AJAX thì reload trang
     header("Location: " . $_SERVER['REQUEST_URI']);
     exit;
 }
 
-// Lấy trạng thái cho phép nộp báo cáo tổng kết
-$stmt = $conn->prepare("SELECT TrangThai FROM Baocaotongket WHERE ID_TaiKhoan = ?");
+// Lấy trạng thái cho phép nộp báo cáo tổng kết cho từng đợt
+$trangthai_tongket_dot = [];
+$stmt = $conn->prepare("SELECT ID_Dot, TrangThai FROM Baocaotongket WHERE ID_TaiKhoan = ?");
 $stmt->execute([$id_gvhd]);
-$trangthai_tongket = $stmt->fetchColumn();
-if ($trangthai_tongket === false) $trangthai_tongket = 0;
+while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    $trangthai_tongket_dot[$row['ID_Dot']] = $row['TrangThai'];
+}
 
 // Lấy danh sách sinh viên thuộc giáo viên này và cùng đợt
 $stmt = $conn->prepare("
@@ -96,15 +131,24 @@ foreach ($dots as $dot) {
 // Xử lý tải xuống tất cả báo cáo thành file zip
 if (isset($_GET['download_all']) && $_GET['download_all'] == 1) {
     $zip = new ZipArchive();
-    $zipName = 'baocao_tongket_' . date('Ymd_His') . '.zip';
+    
+    // Kiểm tra nếu có dot_id cụ thể
+    $specific_dot_id = isset($_GET['dot_id']) ? (int)$_GET['dot_id'] : null;
+    $zipName = $specific_dot_id ? 
+        'baocao_dot_' . $specific_dot_id . '_' . date('Ymd_His') . '.zip' : 
+        'baocao_tongket_' . date('Ymd_His') . '.zip';
     $zipPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $zipName;
     
     if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) === TRUE) {
         $added_files = 0; // Track if any files were added
         $student_count = 0; // Track number of students with complete submissions
         
-        // Lấy danh sách sinh viên từ tất cả các đợt
-        foreach ($ds_sinhvien_theo_dot as $dot_id => $sinhviens) {
+        // Lấy danh sách sinh viên - tất cả đợt hoặc đợt cụ thể
+        $dots_to_process = $specific_dot_id ? 
+            [$specific_dot_id => $ds_sinhvien_theo_dot[$specific_dot_id] ?? []] : 
+            $ds_sinhvien_theo_dot;
+        
+        foreach ($dots_to_process as $dot_id => $sinhviens) {
             $dot_info = array_filter($dots, function($d) use ($dot_id) { return $d['ID'] == $dot_id; });
             $dot_info = reset($dot_info);
             $dot_name = $dot_info ? preg_replace('/[^a-zA-Z0-9_-]/', '', $dot_info['TenDot']) : "Dot-$dot_id";
@@ -219,15 +263,7 @@ foreach ($ds_sinhvien_theo_dot as $dot_id => $sinhviens) {
     }
 }
 
-// Lấy trạng thái nộp báo cáo tổng kết cho từng đợt của giáo viên
-$trangthai_tongket_dot = [];
-$stmt = $conn->prepare("SELECT ID_Dot, TrangThai FROM Baocaotongket WHERE ID_TaiKhoan = ?");
-$stmt->execute([$id_gvhd]);
-while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-    $trangthai_tongket_dot[$row['ID_Dot']] = $row['TrangThai'];
-}
-
-// Kiểm tra và xử lý lưu điểm từ form/modal nhập điểm
+// Xử lý lưu điểm từ form nhập điểm - AJAX (không reload trang)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['diem_baocao'], $_POST['diem_chuyencan'], $_POST['diem_chuannghe'], $_POST['diem_thucte'], $_POST['id_sv'])) {
     $id_sv = (int)$_POST['id_sv'];
     $diem_baocao = $_POST['diem_baocao'];
@@ -235,14 +271,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['diem_baocao'], $_POST
     $diem_chuannghe = $_POST['diem_chuannghe'];
     $diem_thucte = $_POST['diem_thucte'];
     $ghichu = $_POST['ghichu'] ?? null;
+    $id_dot = isset($_POST['id_dot']) ? (int)$_POST['id_dot'] : null;
 
-    // Nếu có ID_Dot, lấy từ POST hoặc truyền thêm vào form/modal
-    $id_dot = null;
-    if (isset($_POST['id_dot'])) {
-        $id_dot = (int)$_POST['id_dot'];
-    }
-
-    // Kiểm tra đã có điểm chưa (theo ID_SV và ID_Dot nếu có)
+    // Kiểm tra đã có điểm chưa
     $sql_check = "SELECT ID FROM diem_tongket WHERE ID_SV = ?" . ($id_dot ? " AND ID_Dot = ?" : "");
     $params = $id_dot ? [$id_sv, $id_dot] : [$id_sv];
     $stmt = $conn->prepare($sql_check);
@@ -266,6 +297,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['diem_baocao'], $_POST
         $stmt->execute($params_insert);
     }
 
+    // Trả về JSON cho AJAX
+    if (isset($_POST['ajax']) && $_POST['ajax'] == '1') {
+        echo json_encode([
+            'success' => true,
+            'message' => 'Đã lưu điểm thành công!'
+        ]);
+        exit;
+    }
+
+    // Nếu không phải AJAX thì reload trang và hiển thị thông báo
+    $_SESSION['success_message'] = 'Đã lưu điểm thành công!';
     header("Location: " . $_SERVER['REQUEST_URI']);
     exit;
 }
@@ -277,194 +319,215 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['diem_baocao'], $_POST
     <title>Báo cáo tổng kết sinh viên</title>
     <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php"; ?>
     <style>
+    /* === GLOBAL STYLES === */
     body {
-        background: linear-gradient(135deg, #e3f0ff 0%, #f8fafc 100%);
-        font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+        background: linear-gradient(135deg, #f8fafc 0%, #e3f0ff 100%);
+        font-family: 'Inter', 'Segoe UI', sans-serif;
+        line-height: 1.6;
     }
+    
     #page-wrapper {
-        padding: 30px;
+        padding: 20px;
         min-height: 100vh;
-        background: none;
     }
-    .page-header, h1.page-header {
-        font-size: 2.2rem;
+    
+    .page-header {
+        font-size: 2rem;
         font-weight: 700;
-        color: #007bff;
-        letter-spacing: 1px;
-        margin-bottom: 32px;
+        color: #1e40af;
         text-align: center;
-        text-shadow: 0 2px 8px #b6d4fe44;
+        margin-bottom: 30px;
+        text-shadow: 0 2px 4px rgba(30, 64, 175, 0.1);
     }
+
+    /* === PANEL STYLES === */
     .panel {
-        border-radius: 18px !important;
-        border: 2px solid #e3eafc !important;
-        background: #fff;
-        box-shadow: 0 2px 16px rgba(0,123,255,0.07);
-        margin-bottom: 28px;
-        transition: box-shadow 0.2s, border-color 0.2s, background 0.2s;
+        border-radius: 12px !important;
+        border: 1px solid #e2e8f0 !important;
+        background: #ffffff;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        margin-bottom: 24px;
     }
+    
     .panel-heading {
-        font-size: 18px;
-        color: #007bff;
-        font-weight: 700;
-        background: linear-gradient(90deg, #e3f0ff 70%, #f8fafc 100%);
-        border-radius: 18px 18px 0 0;
-        padding: 14px 24px;
-        border-bottom: 1.5px solid #e3eafc;
+        background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+        border-radius: 12px 12px 0 0;
+        padding: 16px 20px;
+        border-bottom: 1px solid #e2e8f0;
+        color: #1e40af;
+        font-weight: 600;
+        font-size: 16px;
     }
+    
     .panel-body {
-        background: #fafdff;
-        border-radius: 0 0 18px 18px;
-        font-size: 15px;
-        padding: 18px 24px;
+        background: #ffffff;
+        border-radius: 0 0 12px 12px;
+        padding: 20px;
     }
-    .btn, .btn-success {
+
+    /* === BUTTON STYLES === */
+    .btn {
         border-radius: 8px !important;
-        font-weight: 600;
-        box-shadow: 0 2px 8px #007bff22;
-        border: none;
-        background: linear-gradient(90deg, #007bff 70%, #5bc0f7 100%) !important;
-        color: #fff !important;
-        transition: background 0.2s, box-shadow 0.2s;
-    }
-    .btn:hover, .btn-success:hover {
-        background: linear-gradient(90deg, #0056d2 70%, #3fa9f5 100%) !important;
-        color: #fff !important;
-        box-shadow: 0 4px 16px #007bff33;
-    }
-    .table {
-        background: #fff;
-        border-radius: 14px;
-        overflow: hidden;
-        box-shadow: 0 2px 12px #007bff11;
-    }
-    .table thead th {
-        background: #e3f0ff;
-        color: #007bff;
-        font-weight: 700;
-        border-bottom: 2px solid #b6d4fe;
-        font-size: 16px;
-    }
-    .table-striped tbody tr:nth-of-type(odd) {
-        background: #fafdff;
-    }
-    .table-striped tbody tr:nth-of-type(even) {
-        background: #f3f8ff;
-    }
-    .table td, .table th {
-        vertical-align: middle !important;
-    }
-    .alert {
-        border-radius: 10px;
-        font-size: 16px;
-    }
-    @media (max-width: 991px) {
-        #page-wrapper { padding: 10px; }
-        .panel-body { padding: 12px 6px; }
-        .panel-heading { padding: 10px 12px; }
-        .table { font-size: 14px; }
-        #page-wrapper .card.shadow-sm {
-            max-height: none;
-        }
-    }
-    @media (min-width: 768px) {
-        .row .col-md-6:first-child {
-            border-right: 2.5px dashed #b6d4fe;
-            /* hoặc dùng solid nếu muốn nét liền: border-right: 2.5px solid #b6d4fe; */
-        }
-    }
-    #page-wrapper .card.shadow-sm {
-        min-height: unset !important;
-        max-height: 70vh;
-        overflow-y: auto;
-        box-sizing: border-box;
-    }
-    .row-detail:hover {
-        background: #e3f0ff !important;
-        cursor: pointer;
-    }
-    .student-detail-table {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 0 8px;
-    }
-    .student-detail-table tr:not(:last-child) td {
-        border-bottom: 1px dashed #b6d4fe;
-        padding-bottom: 8px;
-    }
-    .student-detail-table td {
-        padding-top: 8px;
-        background: transparent;
-    }
-    .student-detail-label {
-        color: #007bff;
-        font-weight: 600;
-        width: 160px;
-        white-space: nowrap;
-        padding-right: 12px;
-    }
-    .student-detail-value {
-        color: #222;
         font-weight: 500;
+        padding: 8px 16px;
+        border: none;
+        transition: all 0.2s ease;
+        text-decoration: none;
     }
-    .student-detail-icon {
-        margin-right: 6px;
-        color: #5bc0f7;
-        font-size: 17px;
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        color: white;
     }
-    .student-detail-action {
-        margin-top: 18px;
+    
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
     }
-    /* Tab đợt đơn giản, nhẹ nhàng, chủ đạo xanh dương */
-.nav-tabs {
-    border-bottom: 2px solid #b6d4fe;
-    background: #fafdff;
-    border-radius: 10px 10px 0 0;
-    padding: 4px 8px 0 8px;
-}
-.nav-tabs .nav-link {
-    color: #1565c0;
-    font-weight: 600;
-    border: 1.5px solid transparent;
-    border-bottom: none;
-    border-radius: 8px 8px 0 0;
-    margin-right: 6px;
-    background: #fafdff;
-    transition: background 0.2s, color 0.2s, border-color 0.2s;
-    padding: 9px 20px 8px 20px;
-    font-size: 15px;
-}
-.nav-tabs .nav-link.active, .nav-tabs .nav-link:focus {
-    background: #e3f0ff;
-    color: #0d47a1 !important;
-    border-color: #2196f3 #2196f3 #fafdff #2196f3;
-    font-weight: 700;
-    box-shadow: 0 2px 8px #2196f322;
-    z-index: 2;
-}
-.nav-tabs .nav-link:not(.active):hover {
-    background: #e3f0ff;
-    color: #1976d2;
-    border-color: #b6d4fe #b6d4fe #fafdff #b6d4fe;
-}
-    .form-control.border-primary:focus {
-    border-color: #1976d2;
-    box-shadow: 0 0 0 2px #b6d4fe55;
-}
-    .btn-close-custom span {
-    transition: background 0.2s, color 0.2s;
-    box-shadow: 0 2px 8px #dc354555;
-}
-.btn-close-custom span:hover {
-    background: #b52a37;
-    color: #fff;
-}
-.modal-header {
-    border-radius: 18px 18px 0 0 !important;
-    background: linear-gradient(90deg,#e3f0ff 70%,#f8fafc 100%);
-    padding-right: 2.5rem !important;
-    overflow: visible;
-}
+    
+    .btn-success {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+    }
+    
+    .btn-success:hover {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    /* === TABLE STYLES === */
+    .table {
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        margin-bottom: 0;
+    }
+    
+    .table thead th {
+        background: #f8fafc;
+        color: #374151;
+        font-weight: 600;
+        border-bottom: 1px solid #e5e7eb;
+        padding: 12px 8px;
+        font-size: 14px;
+    }
+    
+    .table td {
+        padding: 12px 8px;
+        vertical-align: middle;
+        border-top: 1px solid #f3f4f6;
+    }
+    
+    .table-striped tbody tr:nth-of-type(odd) {
+        background: #f9fafb;
+    }
+
+    /* === TAB STYLES === */
+    .nav-tabs {
+        border-bottom: 2px solid #e5e7eb;
+        background: #f8fafc;
+        border-radius: 8px 8px 0 0;
+        padding: 8px 16px 0;
+        margin-bottom: 0;
+    }
+    
+    .nav-tabs .nav-link {
+        color: #6b7280;
+        font-weight: 500;
+        border: none;
+        border-radius: 6px 6px 0 0;
+        margin-right: 8px;
+        padding: 12px 20px;
+        background: transparent;
+        transition: all 0.2s ease;
+    }
+    
+    .nav-tabs .nav-link.active {
+        background: white;
+        color: #1e40af;
+        border: 1px solid #e5e7eb;
+        border-bottom: 1px solid white;
+        margin-bottom: -1px;
+        font-weight: 600;
+    }
+    
+    .nav-tabs .nav-link:hover:not(.active) {
+        background: #f3f4f6;
+        color: #374151;
+    }
+
+    .nav-pills .nav-link {
+        color: #6b7280;
+        font-weight: 500;
+        border-radius: 6px;
+        margin-right: 8px;
+        padding: 8px 16px;
+        background: #f3f4f6;
+        border: 1px solid #e5e7eb;
+        transition: all 0.2s ease;
+    }
+    
+    .nav-pills .nav-link.active {
+        background: #3b82f6;
+        color: white;
+        border-color: #3b82f6;
+    }
+    
+    .nav-pills .nav-link:hover:not(.active) {
+        background: #e5e7eb;
+        color: #374151;
+    }
+
+    /* === FORM STYLES === */
+    .form-control {
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        padding: 8px 12px;
+        font-size: 14px;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .form-control:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        outline: none;
+    }
+    
+    .form-control-sm {
+        padding: 6px 8px;
+        font-size: 12px;
+    }
+
+    /* === STATUS ICONS === */
+    .status-icon {
+        font-size: 16px;
+        width: 20px;
+        text-align: center;
+    }
+    
+    .text-success { color: #10b981 !important; }
+    .text-danger { color: #ef4444 !important; }
+    .text-warning { color: #f59e0b !important; }
+    .text-muted { color: #6b7280 !important; }
+
+    /* === RESPONSIVE === */
+    @media (max-width: 768px) {
+        #page-wrapper { padding: 15px; }
+        .panel-body { padding: 15px; }
+        .table { font-size: 13px; }
+        .btn { padding: 6px 12px; font-size: 13px; }
+    }
+
+    /* === UTILITIES === */
+    .d-flex { display: flex !important; }
+    .align-items-center { align-items: center !important; }
+    .justify-content-between { justify-content: space-between !important; }
+    .text-center { text-align: center !important; }
+    .mb-3 { margin-bottom: 1rem !important; }
+    .gap-2 > * + * { margin-left: 8px; }
     </style>
 </head>
 <body>
@@ -473,9 +536,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['diem_baocao'], $_POST
 
         <div id="page-wrapper">
             <div class="container-fluid">
-                <h1 class="page-header">Báo cáo tổng kết sinh viên</h1>
+                <h1 class="page-header">
+                    <i class="fa fa-chart-line"></i> Báo cáo tổng kết sinh viên
+                </h1>
+                
+                <?php if (isset($_SESSION['success_message'])): ?>
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="fa fa-check-circle"></i> <?php echo $_SESSION['success_message']; ?>
+                        <button type="button" class="close" data-dismiss="alert">
+                            <span>&times;</span>
+                        </button>
+                    </div>
+                    <?php unset($_SESSION['success_message']); ?>
+                <?php endif; ?>
+                
                 <?php if ($errorMsg): ?>
-                    <div class="alert alert-danger"><?php echo $errorMsg; ?></div>
+                    <div class="alert alert-danger" role="alert">
+                        <i class="fa fa-exclamation-triangle"></i> <?php echo $errorMsg; ?>
+                    </div>
                 <?php endif; ?>
 
                 <?php if (empty($dots)): ?>
@@ -483,12 +561,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['diem_baocao'], $_POST
                         Không có đợt nào bạn đang hướng dẫn sinh viên (hoặc chưa có đợt nào trạng thái >= 3).
                     </div>
                 <?php else: ?>
-                    <!-- Nút tải xuống tất cả -->
-                    <form method="get" style="margin-bottom: 15px;">
-                        <button type="submit" name="download_all" value="1" class="btn btn-success">
-                            <i class="fa fa-download"></i> Tải xuống tất cả báo cáo (ZIP)
-                        </button>
-                    </form>
                     <!-- Tabs và nội dung các đợt -->
                     <ul class="nav nav-tabs mb-3" id="dotTab" role="tablist">
                         <?php foreach ($dots as $i => $dot): ?>
@@ -502,107 +574,306 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['diem_baocao'], $_POST
                     <div class="tab-content" id="dotTabContent">
                         <?php foreach ($dots as $i => $dot): ?>
                             <div class="tab-pane fade <?= $i==0?'show active':'' ?>" id="dot-<?= $dot['ID'] ?>" role="tabpanel">
-                                <div class="panel panel-default" style="max-width:1200px;margin:auto;">
-                                    <!-- Toggle đóng/mở báo cáo tổng kết cho từng đợt -->
-                                    <form method="post" class="mb-3 d-inline" id="form-trangthai-tongket-<?= $dot['ID'] ?>">
-                                        <div class="panel panel-default" style="max-width: 350px; margin-bottom: 20px;">
-                                            <div class="panel-heading"><strong>Đóng/mở nộp báo cáo tổng kết</strong></div>
-                                            <div class="panel-body" style="display: flex; align-items: center; justify-content: center; padding: 18px 0;">
-                                                <span style="margin-right: 12px;">Trạng thái:</span>
-                                                <input type="checkbox" name="trangthai_tongket" value="1" id="toggle-trangthai-<?= $dot['ID'] ?>"
-                                                    <?php if (!empty($trangthai_tongket_dot[$dot['ID']])) echo 'checked'; ?>
-                                                    data-toggle="toggle" data-on="Mở" data-off="Đóng"
-                                                    data-onstyle="success" data-offstyle="danger"
-                                                >
-                                                <input type="hidden" name="luu_trangthai_tongket" value="1">
-                                                <input type="hidden" name="id_dot" value="<?= $dot['ID'] ?>">
-                                            </div>
-                                        </div>
-                                    </form>
-                                    <!-- Tiêu đề và thống kê -->
-                                    <div class="panel-heading d-flex align-items-center" style="flex-wrap: wrap; justify-content: space-between;">
-                                        <span>
-                                            Danh sách sinh viên thuộc quản lí - <?= htmlspecialchars($dot['TenDot']) ?>
-                                        </span>
-                                        <?php
-                                            $tong_sv = count($ds_sinhvien_theo_dot[$dot['ID']]);
-                                            $so_nop = 0;
-                                            foreach ($ds_sinhvien_theo_dot[$dot['ID']] as $sv) {
-                                                if (!empty($baocao_tongket[$dot['ID']][$sv['ID_TaiKhoan']]['TenFile'])) $so_nop++;
-                                            }
-                                        ?>
-                                        <span class="ml-auto" style="font-size:15px; color:#1976d2; min-width:220px; text-align:right;">
-                                            <i class="fa fa-users"></i> Số lượng SV: <b><?= $tong_sv ?></b>
-                                            &nbsp;|&nbsp;
-                                            <i class="fa fa-file-text"></i> Đã nộp: <b><?= $so_nop ?></b>
-                                        </span>
-                                    </div>
-                                    <div class="panel-body">
-                                        <div class="row">
-                                            <!-- Bảng danh sách sinh viên -->
-                                            <div class="col-md-6">
-                                                <div class="table-responsive">
-                                                    <?php if (empty($ds_sinhvien_theo_dot[$dot['ID']])): ?>
-                                                        <div class="alert alert-warning text-center mb-0">
-                                                            Không có sinh viên nào thuộc đợt này do bạn hướng dẫn.
-                                                        </div>
-                                                    <?php else: ?>
-                                                    <table class="table table-striped table-bordered">
-                                                        <thead>
-                                                            <tr>
-                                                                <th>#</th>
-                                                                <th>MSSV</th>
-                                                                <th>Trạng thái báo cáo tổng kết</th>
-                                                                <th>Thao tác</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            <?php $stt = 1; foreach ($ds_sinhvien_theo_dot[$dot['ID']] as $sv): ?>
-                                                                <tr class="row-detail"
-                                                                    data-id="<?= $sv['ID_TaiKhoan'] ?>"
-                                                                    data-dot="<?= $dot['ID'] ?>"
-                                                                    style="cursor: pointer;">
-                                                                    <td><?= $stt++ ?></td>
-                                                                    <td><?= htmlspecialchars($sv['MSSV']) ?></td>
-                                                                    <td>
-                                                                        <?php
-                                                                        $loai_files = ['Baocao', 'khoasat', 'phieuthuctap', 'nhanxet'];
-                                                                        $total_files = 0;
-                                                                        foreach ($loai_files as $loai) {
-                                                                            $stmt_check = $conn->prepare("SELECT COUNT(*) FROM file WHERE ID_SV = ? AND Loai = ? AND TrangThai = 1");
-                                                                            $stmt_check->execute([$sv['ID_TaiKhoan'], $loai]);
-                                                                            if ($stmt_check->fetchColumn() > 0) $total_files++;
-                                                                        }
-                                                                        echo $total_files > 0 
-                                                                            ? "<span class='text-success'>Đã nộp {$total_files}/4</span>" 
-                                                                            : "<span class='text-danger'>Chưa nộp 0/4</span>";
-                                                                        ?>
-                                                                    </td>
-                                                                    <td>
-                                                                        <?php if ($total_files === 4): ?>
-                                                                            <a href="/datn/pages/giaovien/download_student.php?id_sv=<?= $sv['ID_TaiKhoan'] ?>&id_dot=<?= $dot['ID'] ?>" 
-                                                                               class="btn btn-success btn-xs" title="Tải xuống báo cáo">
-                                                                                <i class="fa fa-download"></i> Tải xuống
-                                                                            </a>
-                                                                        <?php else: ?>
-                                                                            <span class="text-muted">-</span>
-                                                                        <?php endif; ?>
-                                                                    </td>
-                                                                </tr>
-                                                            <?php endforeach; ?>
-                                                        </tbody>
-                                                    </table>
-                                                    <?php endif; ?>
-                                                </div>
-                                            </div>
-                                            <!-- Chi tiết sinh viên -->
-                                            <div class="col-md-6">
-                                                <div id="student-detail-panel-<?= $dot['ID'] ?>" class="card shadow-sm p-4" style="border-radius:18px;background:#fff;min-height:420px;">
-                                                    <h4 class="mb-3 text-primary">Chi tiết sinh viên</h4>
-                                                    <div id="student-detail-content-<?= $dot['ID'] ?>">
-                                                        <div class="text-muted text-center">Chọn sinh viên để xem chi tiết</div>
+                                <!-- Sub-tabs cho từng đợt -->
+                                <ul class="nav nav-pills mb-3" id="subTab-<?= $dot['ID'] ?>" role="tablist">
+                                    <li class="nav-item">
+                                        <a class="nav-link" id="detail-tab-<?= $dot['ID'] ?>" data-toggle="pill" href="#detail-<?= $dot['ID'] ?>" role="tab">
+                                            <i class="fa fa-list-alt"></i> Chi tiết sinh viên
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link active" id="grade-tab-<?= $dot['ID'] ?>" data-toggle="pill" href="#grade-<?= $dot['ID'] ?>" role="tab">
+                                            <i class="fa fa-star"></i> Bảng điểm
+                                        </a>
+                                    </li>
+                                </ul>
+                                
+                                <div class="tab-content" id="subTabContent-<?= $dot['ID'] ?>">
+                                    <!-- Tab Chi tiết sinh viên -->
+                                    <div class="tab-pane fade" id="detail-<?= $dot['ID'] ?>" role="tabpanel">
+                                        <div class="panel panel-default" style="max-width:1200px;margin:auto;">
+                                            <!-- Toggle đóng/mở báo cáo tổng kết cho từng đợt -->
+                                            <form method="post" class="mb-3 d-inline" id="form-trangthai-tongket-<?= $dot['ID'] ?>">
+                                                <div class="panel panel-default toggle-container">
+                                                    <div class="panel-heading"><strong>Đóng/mở nộp báo cáo tổng kết</strong></div>
+                                                    <div class="panel-body">
+                                                        <span>Trạng thái:</span>
+                                                        <input type="checkbox" name="trangthai_tongket" value="1" id="toggle-trangthai-<?= $dot['ID'] ?>"
+                                                            <?php 
+                                                            // Kiểm tra trạng thái: 1 = mở (checked), 0 = đóng (unchecked)
+                                                            if (isset($trangthai_tongket_dot[$dot['ID']]) && $trangthai_tongket_dot[$dot['ID']] == 1) {
+                                                                echo 'checked'; 
+                                                            }
+                                                            ?>
+                                                            data-toggle="toggle" data-on="" data-off=""
+                                                            data-onstyle="success" data-offstyle="danger"
+                                                            data-size="small" data-width="60" data-height="30"
+                                                            class="toggle"
+                                                        >
+                                                        <input type="hidden" name="luu_trangthai_tongket" value="1">
+                                                        <input type="hidden" name="id_dot" value="<?= $dot['ID'] ?>">
                                                     </div>
                                                 </div>
+                                            </form>
+                                            <!-- Tiêu đề và thống kê -->
+                                            <div class="panel-heading d-flex align-items-center" style="flex-wrap: wrap; justify-content: space-between;">
+                                                <span>
+                                                    Danh sách sinh viên thuộc quản lí - <?= htmlspecialchars($dot['TenDot']) ?>
+                                                </span>
+                                                <?php
+                                                    $tong_sv = count($ds_sinhvien_theo_dot[$dot['ID']]);
+                                                    $so_nop = 0;
+                                                    foreach ($ds_sinhvien_theo_dot[$dot['ID']] as $sv) {
+                                                        if (!empty($baocao_tongket[$dot['ID']][$sv['ID_TaiKhoan']]['TenFile'])) $so_nop++;
+                                                    }
+                                                ?>
+                                                <span class="ml-auto" style="font-size:15px; color:#1976d2; min-width:220px; text-align:right;">
+                                                    <i class="fa fa-users"></i> Số lượng SV: <b><?= $tong_sv ?></b>
+                                                    &nbsp;|&nbsp;
+                                                    <i class="fa fa-file-text"></i> Đã nộp: <b><?= $so_nop ?></b>
+                                                </span>
+                                            </div>
+                                            <div class="panel-body">
+                                                <div class="row">
+                                                    <!-- Bảng danh sách sinh viên -->
+                                                    <div class="col-md-6">
+                                                        <div class="table-responsive">
+                                                            <?php if (empty($ds_sinhvien_theo_dot[$dot['ID']])): ?>
+                                                                <div class="alert alert-warning text-center mb-0">
+                                                                    Không có sinh viên nào thuộc đợt này do bạn hướng dẫn.
+                                                                </div>
+                                                            <?php else: ?>
+                                                            <table class="table table-striped table-bordered">
+                                                                <thead>
+                                                                    <tr>
+                                                                        <th>#</th>
+                                                                        <th>MSSV</th>
+                                                                        <th>Trạng thái báo cáo tổng kết</th>
+                                                                        <th>Thao tác</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    <?php $stt = 1; foreach ($ds_sinhvien_theo_dot[$dot['ID']] as $sv): ?>
+                                                                        <tr class="row-detail"
+                                                                            data-id="<?= $sv['ID_TaiKhoan'] ?>"
+                                                                            data-dot="<?= $dot['ID'] ?>"
+                                                                            style="cursor: pointer;">
+                                                                            <td><?= $stt++ ?></td>
+                                                                            <td><?= htmlspecialchars($sv['MSSV']) ?></td>
+                                                                            <td>
+                                                                                <?php
+                                                                                $loai_files = ['Baocao', 'khoasat', 'phieuthuctap', 'nhanxet'];
+                                                                                $total_files = 0;
+                                                                                foreach ($loai_files as $loai) {
+                                                                                    $stmt_check = $conn->prepare("SELECT COUNT(*) FROM file WHERE ID_SV = ? AND Loai = ? AND TrangThai = 1");
+                                                                                    $stmt_check->execute([$sv['ID_TaiKhoan'], $loai]);
+                                                                                    if ($stmt_check->fetchColumn() > 0) $total_files++;
+                                                                                }
+                                                                                echo $total_files > 0 
+                                                                                    ? "<span class='text-success'>Đã nộp {$total_files}/4</span>" 
+                                                                                    : "<span class='text-danger'>Chưa nộp 0/4</span>";
+                                                                                ?>
+                                                                            </td>
+                                                                            <td>
+                                                                                <?php if ($total_files === 4): ?>
+                                                                                    <a href="/datn/pages/giaovien/download_student.php?id_sv=<?= $sv['ID_TaiKhoan'] ?>&id_dot=<?= $dot['ID'] ?>" 
+                                                                                       class="btn btn-success btn-xs" title="Tải xuống báo cáo">
+                                                                                        <i class="fa fa-download"></i> Tải xuống
+                                                                                    </a>
+                                                                                <?php else: ?>
+                                                                                    <span class="text-muted">-</span>
+                                                                                <?php endif; ?>
+                                                                            </td>
+                                                                        </tr>
+                                                                    <?php endforeach; ?>
+                                                                </tbody>
+                                                            </table>
+                                                            <?php endif; ?>
+                                                        </div>
+                                                    </div>
+                                                    <!-- Chi tiết sinh viên -->
+                                                    <div class="col-md-6">
+                                                        <div id="student-detail-panel-<?= $dot['ID'] ?>" class="card shadow-sm p-4" style="border-radius:18px;background:#fff;min-height:420px;">
+                                                            <h4 class="mb-3 text-primary">Chi tiết sinh viên</h4>
+                                                            <div id="student-detail-content-<?= $dot['ID'] ?>">
+                                                                <div class="text-muted text-center">Chọn sinh viên để xem chi tiết</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Tab Bảng điểm -->
+                                    <div class="tab-pane fade show active" id="grade-<?= $dot['ID'] ?>" role="tabpanel">
+                                        <div class="panel panel-default">
+                                            <div class="panel-heading d-flex align-items-center justify-content-between">
+                                                <h4 style="margin: 0;">
+                                                    <i class="fa fa-star text-warning"></i> 
+                                                    Bảng điểm - <?= htmlspecialchars($dot['TenDot']) ?>
+                                                </h4>
+                                                <div class="d-flex gap-2">
+                                                    <button type="button" class="btn btn-primary btn-sm btn-save-all-grades" data-dot-id="<?= $dot['ID'] ?>">
+                                                        <i class="fa fa-save"></i> Lưu tất cả
+                                                    </button>
+                                                    <form method="get" style="margin: 0;">
+                                                        <input type="hidden" name="download_all" value="1">
+                                                        <input type="hidden" name="dot_id" value="<?= $dot['ID'] ?>">
+                                                        <button type="submit" class="btn btn-success btn-sm">
+                                                            <i class="fa fa-download"></i> Tải báo cáo
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                            <div class="panel-body">
+                                                <?php if (empty($ds_sinhvien_theo_dot[$dot['ID']])): ?>
+                                                    <div class="alert alert-warning text-center">
+                                                        Không có sinh viên nào thuộc đợt này để hiển thị điểm.
+                                                    </div>
+                                                <?php else: ?>                                                    
+                                                    <!-- Form để lưu điểm cho đợt này -->
+                                                    <form method="post" id="form-save-grades-<?= $dot['ID'] ?>">
+                                                        <div class="table-responsive">
+                                                            <table class="table table-striped table-bordered table-grades-dot" id="table-grades-<?= $dot['ID'] ?>">
+                                                                <thead>
+                                                                    <tr>
+                                                                        <th style="width: 50px;">#</th>
+                                                                        <th style="width: 120px;">MSSV</th>
+                                                                        <th style="width: 200px;">Họ và tên</th>
+                                                                        <th style="width: 80px;">Báo cáo</th>
+                                                                        <th style="width: 80px;">Khảo sát</th>
+                                                                        <th style="width: 80px;">Phiếu TT</th>
+                                                                        <th style="width: 80px;">Nhận xét</th>
+                                                                        <th style="width: 100px;">Báo cáo tuần</th>
+                                                                        <th style="width: 100px;">Điểm báo cáo</th>
+                                                                        <th style="width: 100px;">Điểm chuyên cần</th>
+                                                                        <th style="width: 100px;">Điểm chuẩn nghề</th>
+                                                                        <th style="width: 100px;">Điểm thực tế</th>
+                                                                        <th style="width: 200px;">Ghi chú</th>
+                                                                        <th style="width: 120px;">Thao tác</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    <?php 
+                                                                    $stt = 1; 
+                                                                    foreach ($ds_sinhvien_theo_dot[$dot['ID']] as $sv): 
+                                                                        $diem_info = isset($diemData[$dot['ID']][$sv['ID_TaiKhoan']]) ? $diemData[$dot['ID']][$sv['ID_TaiKhoan']] : [];
+                                                                        
+                                                                        // Lấy trạng thái 4 loại file
+                                                                        $loai_files = ['Baocao', 'khoasat', 'phieuthuctap', 'nhanxet'];
+                                                                        $file_status = [];
+                                                                        $file_details = [];
+                                                                        foreach ($loai_files as $loai) {
+                                                                            $stmt_file = $conn->prepare("SELECT TenFile, Dir FROM file WHERE ID_SV = ? AND Loai = ? AND TrangThai = 1 ORDER BY ID DESC LIMIT 1");
+                                                                            $stmt_file->execute([$sv['ID_TaiKhoan'], $loai]);
+                                                                            $file_info = $stmt_file->fetch(PDO::FETCH_ASSOC);
+                                                                            $file_status[$loai] = !empty($file_info);
+                                                                            $file_details[$loai] = $file_info;
+                                                                        }
+                                                                        
+                                                                        // Lấy thống kê báo cáo tuần
+                                                                        $stmt_baocao_tuan = $conn->prepare("SELECT COUNT(*) as total_tasks, 
+                                                                                                           SUM(CASE WHEN TienDo = 100 THEN 1 ELSE 0 END) as completed_tasks,
+                                                                                                           AVG(TienDo) as avg_progress
+                                                                                                           FROM congviec_baocao 
+                                                                                                           WHERE IDSV = ? AND ID_Dot = ?");
+                                                                        $stmt_baocao_tuan->execute([$sv['ID_TaiKhoan'], $dot['ID']]);
+                                                                        $baocao_tuan = $stmt_baocao_tuan->fetch(PDO::FETCH_ASSOC);
+                                                                        $total_tasks = $baocao_tuan['total_tasks'] ?? 0;
+                                                                        $completed_tasks = $baocao_tuan['completed_tasks'] ?? 0;
+                                                                        $avg_progress = round($baocao_tuan['avg_progress'] ?? 0, 1);
+                                                                    ?>
+                                                                        <tr data-id-sv="<?= $sv['ID_TaiKhoan'] ?>" data-id-dot="<?= $dot['ID'] ?>">
+                                                                            <td><?= $stt++ ?></td>
+                                                                            <td><strong><?= htmlspecialchars($sv['MSSV']) ?></strong></td>
+                                                                            <td><?= htmlspecialchars($sv['Ten']) ?></td>
+                                                                            <!-- 4 cột trạng thái file -->
+                                                                            <td class="text-center">
+                                                                                <?= $file_status['Baocao'] ? '<i class="fa fa-check text-success" title="Đã nộp"></i>' : '<i class="fa fa-times text-danger" title="Chưa nộp"></i>' ?>
+                                                                            </td>
+                                                                            <td class="text-center">
+                                                                                <?= $file_status['khoasat'] ? '<i class="fa fa-check text-success" title="Đã nộp"></i>' : '<i class="fa fa-times text-danger" title="Chưa nộp"></i>' ?>
+                                                                            </td>
+                                                                            <td class="text-center">
+                                                                                <?= $file_status['phieuthuctap'] ? '<i class="fa fa-check text-success" title="Đã nộp"></i>' : '<i class="fa fa-times text-danger" title="Chưa nộp"></i>' ?>
+                                                                            </td>
+                                                                            <td class="text-center">
+                                                                                <?= $file_status['nhanxet'] ? '<i class="fa fa-check text-success" title="Đã nộp"></i>' : '<i class="fa fa-times text-danger" title="Chưa nộp"></i>' ?>
+                                                                            </td>
+                                                                            <!-- Cột báo cáo tuần -->
+                                                                            <td class="text-center">
+                                                                                <small class="d-block">
+                                                                                    <strong><?= $completed_tasks ?>/<?= $total_tasks ?></strong> công việc
+                                                                                </small>
+                                                                                <div class="progress" style="height: 5px; margin-top: 2px;">
+                                                                                    <div class="progress-bar <?= $avg_progress >= 80 ? 'bg-success' : ($avg_progress >= 50 ? 'bg-warning' : 'bg-danger') ?>" 
+                                                                                         style="width: <?= $avg_progress ?>%"></div>
+                                                                                </div>
+                                                                                <small class="text-muted"><?= $avg_progress ?>%</small>
+                                                                            </td>
+                                                                            <!-- Các cột điểm -->
+                                                                            <td>
+                                                                                <input type="number" 
+                                                                                       class="form-control form-control-sm" 
+                                                                                       name="grades[<?= $sv['ID_TaiKhoan'] ?>][<?= $dot['ID'] ?>][diem_baocao]"
+                                                                                       value="<?= $diem_info['diem_baocao'] ?? '' ?>"
+                                                                                       min="0" max="4" step="0.1"
+                                                                                       placeholder="0-4">
+                                                                            </td>
+                                                                            <td>
+                                                                                <input type="number" 
+                                                                                       class="form-control form-control-sm" 
+                                                                                       name="grades[<?= $sv['ID_TaiKhoan'] ?>][<?= $dot['ID'] ?>][diem_chuyencan]"
+                                                                                       value="<?= $diem_info['diem_chuyencan'] ?? '' ?>"
+                                                                                       min="0" max="2" step="0.1"
+                                                                                       placeholder="0-2">
+                                                                            </td>
+                                                                            <td>
+                                                                                <input type="number" 
+                                                                                       class="form-control form-control-sm" 
+                                                                                       name="grades[<?= $sv['ID_TaiKhoan'] ?>][<?= $dot['ID'] ?>][diem_chuannghe]"
+                                                                                       value="<?= $diem_info['diem_chuannghe'] ?? '' ?>"
+                                                                                       min="0" max="2" step="0.1"
+                                                                                       placeholder="0-2">
+                                                                            </td>
+                                                                            <td>
+                                                                                <input type="number" 
+                                                                                       class="form-control form-control-sm" 
+                                                                                       name="grades[<?= $sv['ID_TaiKhoan'] ?>][<?= $dot['ID'] ?>][diem_thucte]"
+                                                                                       value="<?= $diem_info['diem_thucte'] ?? '' ?>"
+                                                                                       min="0" max="2" step="0.1"
+                                                                                       placeholder="0-2">
+                                                                            </td>
+                                                                            <td>
+                                                                                <textarea class="form-control form-control-sm" 
+                                                                                          name="grades[<?= $sv['ID_TaiKhoan'] ?>][<?= $dot['ID'] ?>][ghichu]"
+                                                                                          rows="2" 
+                                                                                          placeholder="Ghi chú..."><?= htmlspecialchars($diem_info['ghichu'] ?? '') ?></textarea>
+                                                                            </td>
+                                                                            <td>
+                                                                                <button type="button" 
+                                                                                        class="btn btn-primary btn-sm btn-save-single"
+                                                                                        data-id-sv="<?= $sv['ID_TaiKhoan'] ?>"
+                                                                                        data-id-dot="<?= $dot['ID'] ?>"
+                                                                                        title="Lưu điểm sinh viên này">
+                                                                                    <i class="fa fa-save"></i>
+                                                                                </button>
+                                                                            </td>
+                                                                        </tr>
+                                                                    <?php endforeach; ?>
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                        
+                                                        <!-- Chỉ cần nút làm mới -->
+                                                        <div class="text-center mt-3">
+                                                            <button type="button" class="btn btn-warning btn-lg" onclick="location.reload()">
+                                                                <i class="fa fa-refresh"></i> Làm mới trang
+                                                            </button>
+                                                        </div>
+                                                    </form>
+                                                <?php endif; ?>
                                             </div>
                                         </div>
                                     </div>
@@ -619,24 +890,245 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['diem_baocao'], $_POST
     <script src="https://cdn.jsdelivr.net/npm/bootstrap4-toggle@3.6.1/js/bootstrap4-toggle.min.js"></script>
     <script>
     $(function() {
+        // Khởi tạo bootstrap toggle cho các checkbox
         $('[id^=toggle-trangthai-]').bootstrapToggle();
-        $('[id^=toggle-trangthai-]').change(function() {
-            var dotId = $(this).attr('id').replace('toggle-trangthai-', '');
-            $('#form-trangthai-tongket-' + dotId).submit();
-        });
-    });
-    $(document).ready(function () {
-        $('#table-dsbaocao').DataTable({
-            responsive: true,
-            language: {
-                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json'
+        
+        // Kiểm tra và cập nhật màu sắc toggle theo trạng thái từ CSDL
+        $('[id^=toggle-trangthai-]').each(function() {
+            var $toggle = $(this);
+            var isChecked = $toggle.prop('checked');
+            
+            // Đảm bảo màu sắc hiển thị đúng:
+            // - Checked (1) = Mở = Xanh lá (success)
+            // - Unchecked (0) = Đóng = Đỏ (danger)
+            if (isChecked) {
+                $toggle.bootstrapToggle('on');
+            } else {
+                $toggle.bootstrapToggle('off');
             }
         });
-    });
-    $(document).ready(function() {
-        // Nếu không có hash trên URL, luôn mở tab đầu tiên
+        
+        $('[id^=toggle-trangthai-]').change(function() {
+            var dotId = $(this).attr('id').replace('toggle-trangthai-', '');
+            var isChecked = $(this).prop('checked');
+            var $toggle = $(this);
+            
+            // Tạm thời disable toggle để tránh click liên tục
+            $toggle.bootstrapToggle('disable');
+            
+            // AJAX submit về chính file này
+            $.ajax({
+                url: '', // Submit về chính file này
+                type: 'POST',
+                data: {
+                    luu_trangthai_tongket: 1,
+                    id_dot: dotId,
+                    trangthai_tongket: isChecked ? 1 : '',
+                    ajax: 1 // Đánh dấu là AJAX request
+                },
+                dataType: 'json',
+                success: function(response) {
+                    if (!response.success) {
+                        // Có lỗi, hoàn lại trạng thái toggle
+                        $toggle.bootstrapToggle(isChecked ? 'off' : 'on');
+                        console.log('Lỗi cập nhật trạng thái:', response.message || 'Có lỗi xảy ra');
+                    } else {
+                        // Cập nhật thành công, đảm bảo màu sắc hiển thị đúng
+                        if (isChecked) {
+                            $toggle.bootstrapToggle('on');
+                        } else {
+                            $toggle.bootstrapToggle('off');
+                        }
+                    }
+                    // Không hiển thị thông báo
+                },
+                error: function() {
+                    // Có lỗi, hoàn lại trạng thái toggle
+                    $toggle.bootstrapToggle(isChecked ? 'off' : 'on');
+                    console.log('Lỗi kết nối khi cập nhật trạng thái');
+                },
+                complete: function() {
+                    // Re-enable toggle
+                    $toggle.bootstrapToggle('enable');
+                }
+            });
+        });
+        
+        // Khởi tạo DataTable cho bảng điểm
+        setTimeout(function() {
+            $('[id^="table-grades-"]').each(function() {
+                if (!$.fn.dataTable.isDataTable(this)) {
+                    $(this).DataTable({
+                        responsive: true,
+                        language: {
+                            url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json'
+                        },
+                        pageLength: 25,
+                        order: [[1, 'asc']], // Sắp xếp theo MSSV
+                        columnDefs: [
+                            { orderable: false, targets: [3, 4, 5, 6, 7, 13] }, // Không cho sắp xếp cột trạng thái file, báo cáo tuần và thao tác
+                            { className: "text-center", targets: [3, 4, 5, 6, 7] } // Căn giữa các cột trạng thái
+                        ]
+                    });
+                }
+            });
+        }, 500);
+        
+        // Luôn mở tab "Bảng điểm" đầu tiên
         if (!window.location.hash) {
             $('#dotTab a:first').tab('show');
+        }
+        
+        // Khi chuyển tab đợt, luôn mở tab "Bảng điểm" đầu tiên
+        $('#dotTab a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+            var target = $(e.target).attr("href");
+            var dotId = target.replace('#dot-', '');
+            $('#grade-tab-' + dotId).tab('show');
+        });
+        
+        // Mở tab "Bảng điểm" cho đợt đầu tiên khi load trang
+        setTimeout(function() {
+            var firstDotTab = $('#dotTab a:first');
+            if (firstDotTab.length > 0) {
+                var firstDotId = firstDotTab.attr('href').replace('#dot-', '');
+                $('#grade-tab-' + firstDotId).tab('show');
+            }
+        }, 100);
+        
+        // Xử lý lưu điểm đơn lẻ - AJAX không reload trang
+        $(document).on('click', '.btn-save-single', function() {
+            var $btn = $(this);
+            var $row = $btn.closest('tr');
+            var id_sv = $btn.data('id-sv');
+            var id_dot = $btn.data('id-dot');
+            
+            var data = {
+                id_sv: id_sv,
+                id_dot: id_dot,
+                diem_baocao: $row.find('input[name*="[diem_baocao]"]').val(),
+                diem_chuyencan: $row.find('input[name*="[diem_chuyencan]"]').val(),
+                diem_chuannghe: $row.find('input[name*="[diem_chuannghe]"]').val(),
+                diem_thucte: $row.find('input[name*="[diem_thucte]"]').val(),
+                ghichu: $row.find('textarea[name*="[ghichu]"]').val(),
+                ajax: 1 // Đánh dấu là AJAX request
+            };
+            
+            $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>');
+            
+            // AJAX submit về chính file này
+            $.post('', data, function(response) {
+                if (response.success) {
+                    $btn.removeClass('btn-primary').addClass('btn-success').html('<i class="fa fa-check"></i>');
+                    setTimeout(function() {
+                        $btn.removeClass('btn-success').addClass('btn-primary').html('<i class="fa fa-save"></i>');
+                    }, 2000);
+                    
+                    // Hiển thị thông báo thành công
+                    showAlert('success', response.message, id_dot);
+                    
+                    // Cập nhật dữ liệu JavaScript để chi tiết sinh viên hiển thị đúng
+                    if (diemData[id_dot] && diemData[id_dot][id_sv]) {
+                        diemData[id_dot][id_sv].diem_baocao = data.diem_baocao;
+                        diemData[id_dot][id_sv].diem_chuyencan = data.diem_chuyencan;
+                        diemData[id_dot][id_sv].diem_chuannghe = data.diem_chuannghe;
+                        diemData[id_dot][id_sv].diem_thucte = data.diem_thucte;
+                        diemData[id_dot][id_sv].ghichu = data.ghichu;
+                    }
+                } else {
+                    showAlert('danger', 'Có lỗi xảy ra khi lưu điểm!', id_dot);
+                }
+            }, 'json').fail(function() {
+                showAlert('danger', 'Có lỗi xảy ra khi lưu điểm!', id_dot);
+            }).always(function() {
+                $btn.prop('disabled', false);
+            });
+        });
+        
+        // Xử lý lưu tất cả điểm cho một đợt - AJAX không reload trang
+        $(document).on('click', '.btn-save-all-grades', function() {
+            var $btn = $(this);
+            var dot_id = $btn.data('dot-id');
+            var $table = $('#table-grades-' + dot_id);
+            var promises = [];
+            var totalRows = 0;
+            var savedRows = 0;
+            
+            $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Đang lưu...');
+            
+            // Lặp qua tất cả các hàng trong bảng
+            $table.find('tbody tr').each(function() {
+                var $row = $(this);
+                var $saveBtn = $row.find('.btn-save-single');
+                
+                if ($saveBtn.length > 0) {
+                    totalRows++;
+                    var id_sv = $saveBtn.data('id-sv');
+                    var id_dot_row = $saveBtn.data('id-dot');
+                    
+                    var data = {
+                        id_sv: id_sv,
+                        id_dot: id_dot_row,
+                        diem_baocao: $row.find('input[name*="[diem_baocao]"]').val(),
+                        diem_chuyencan: $row.find('input[name*="[diem_chuyencan]"]').val(),
+                        diem_chuannghe: $row.find('input[name*="[diem_chuannghe]"]').val(),
+                        diem_thucte: $row.find('input[name*="[diem_thucte]"]').val(),
+                        ghichu: $row.find('textarea[name*="[ghichu]"]').val(),
+                        ajax: 1
+                    };
+                    
+                    // Tạo promise cho mỗi request
+                    var promise = $.post('', data, function(response) {
+                        if (response.success) {
+                            savedRows++;
+                            // Cập nhật dữ liệu JavaScript
+                            if (diemData[id_dot_row] && diemData[id_dot_row][id_sv]) {
+                                diemData[id_dot_row][id_sv].diem_baocao = data.diem_baocao;
+                                diemData[id_dot_row][id_sv].diem_chuyencan = data.diem_chuyencan;
+                                diemData[id_dot_row][id_sv].diem_chuannghe = data.diem_chuannghe;
+                                diemData[id_dot_row][id_sv].diem_thucte = data.diem_thucte;
+                                diemData[id_dot_row][id_sv].ghichu = data.ghichu;
+                            }
+                        }
+                    }, 'json');
+                    
+                    promises.push(promise);
+                }
+            });
+            
+            // Đợi tất cả requests hoàn thành
+            $.when.apply($, promises).always(function() {
+                $btn.prop('disabled', false).html('<i class="fa fa-save"></i> Lưu tất cả');
+                
+                // Thay đổi màu nút tạm thời để báo hiệu đã lưu
+                if (savedRows === totalRows && totalRows > 0) {
+                    $btn.removeClass('btn-primary').addClass('btn-success').html('<i class="fa fa-check"></i> Đã lưu');
+                    setTimeout(function() {
+                        $btn.removeClass('btn-success').addClass('btn-primary').html('<i class="fa fa-save"></i> Lưu tất cả');
+                    }, 2000);
+                }
+                // Không hiển thị thông báo
+            });
+        });
+        
+        // Hàm hiển thị thông báo (cập nhật để hỗ trợ từng đợt)
+        function showAlert(type, message, dot_id) {
+            var alertHtml = '<div class="alert alert-' + type + ' alert-dismissible fade show grade-panel-alert" role="alert">' +
+                           message +
+                           '<button type="button" class="close" data-dismiss="alert" aria-label="Close">' +
+                           '<span aria-hidden="true">&times;</span>' +
+                           '</button>' +
+                           '</div>';
+            
+            if (dot_id) {
+                $('#grade-' + dot_id + ' .panel-body').prepend(alertHtml);
+            } else {
+                $('.panel-body').first().prepend(alertHtml);
+            }
+            
+            // Tự động ẩn sau 5 giây
+            setTimeout(function() {
+                $('.grade-panel-alert').alert('close');
+            }, 5000);
         }
     });
     </script>
@@ -737,7 +1229,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['diem_baocao'], $_POST
             </tr>
         </table>
         <div class="student-detail-action text-center">
-            <button type="button" class="btn btn-primary" id="btn-nhap-diem" data-id="${id_sv}">Nhập/Sửa điểm</button>
+            <button type="button" class="btn btn-primary" id="btn-nhap-diem" data-id="${id_sv}" data-dot="${dot_id}">Nhập/Sửa điểm</button>
         </div>
         `;
         }
@@ -750,13 +1242,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['diem_baocao'], $_POST
         renderStudentDetail(id_sv, dot_id);
     });
 
-    // Khi click nút nhập điểm
+    // Khi click nút nhập điểm, mở modal
     $(document).on('click', '#btn-nhap-diem', function() {
         const id_sv = $(this).data('id');
-        const dot_id = $(this).closest('.tab-pane').attr('id').replace('dot-', '');
+        const dot_id = $(this).data('dot');
         $('#modal-id-sv').val(id_sv);
         $('#modal-id-dot').val(dot_id);
-        // Nếu có dữ liệu điểm thì fill vào modal
+        
+        // Fill dữ liệu điểm hiện tại vào modal
         const diem = (diemData[dot_id] && diemData[dot_id][id_sv]) ? diemData[dot_id][id_sv] : {};
         $('input[name="diem_baocao"]').val(diem.diem_baocao ?? '');
         $('input[name="diem_chuyencan"]').val(diem.diem_chuyencan ?? '');
@@ -766,37 +1259,82 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['diem_baocao'], $_POST
         $('#modalNhapDiem').modal('show');
     });
 
-    // Khi submit modal, bạn cần xử lý lưu điểm qua AJAX hoặc POST về PHP (tùy bạn triển khai backend)
+    // Submit modal bằng AJAX (không reload trang)
     $('#form-nhap-diem').on('submit', function(e) {
+        e.preventDefault(); // Ngăn submit bình thường
+        
         const diem_baocao = parseFloat($('input[name="diem_baocao"]').val());
         const diem_chuyencan = parseFloat($('input[name="diem_chuyencan"]').val());
         const diem_chuannghe = parseFloat($('input[name="diem_chuannghe"]').val());
         const diem_thucte = parseFloat($('input[name="diem_thucte"]').val());
 
+        // Validate
         if (diem_baocao < 0 || diem_baocao > 4) {
             alert('Điểm báo cáo phải từ 0 đến 4');
             $('input[name="diem_baocao"]').focus();
-            e.preventDefault();
             return false;
         }
         if (diem_chuyencan < 0 || diem_chuyencan > 2) {
             alert('Điểm chuyên cần phải từ 0 đến 2');
             $('input[name="diem_chuyencan"]').focus();
-            e.preventDefault();
             return false;
         }
         if (diem_chuannghe < 0 || diem_chuannghe > 2) {
             alert('Điểm chuẩn nghề phải từ 0 đến 2');
             $('input[name="diem_chuannghe"]').focus();
-            e.preventDefault();
             return false;
         }
         if (diem_thucte < 0 || diem_thucte > 2) {
             alert('Điểm thực tế phải từ 0 đến 2');
             $('input[name="diem_thucte"]').focus();
-            e.preventDefault();
             return false;
         }
+
+        var $submitBtn = $('#form-nhap-diem button[type="submit"]');
+        $submitBtn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Đang lưu...');
+
+        // AJAX submit về chính file này
+        var formData = $(this).serialize() + '&ajax=1';
+        $.post('', formData, function(response) {
+            if (response.success) {
+                $('#modalNhapDiem').modal('hide');
+                
+                // Cập nhật dữ liệu JavaScript
+                const id_sv = $('#modal-id-sv').val();
+                const dot_id = $('#modal-id-dot').val();
+                if (diemData[dot_id] && diemData[dot_id][id_sv]) {
+                    diemData[dot_id][id_sv].diem_baocao = $('input[name="diem_baocao"]').val();
+                    diemData[dot_id][id_sv].diem_chuyencan = $('input[name="diem_chuyencan"]').val();
+                    diemData[dot_id][id_sv].diem_chuannghe = $('input[name="diem_chuannghe"]').val();
+                    diemData[dot_id][id_sv].diem_thucte = $('input[name="diem_thucte"]').val();
+                    diemData[dot_id][id_sv].ghichu = $('textarea[name="ghichu"]').val();
+                }
+                
+                // Cập nhật lại input trong bảng điểm nếu có
+                var $tableRow = $('tr[data-id-sv="' + id_sv + '"][data-id-dot="' + dot_id + '"]');
+                if ($tableRow.length > 0) {
+                    $tableRow.find('input[name*="[diem_baocao]"]').val($('input[name="diem_baocao"]').val());
+                    $tableRow.find('input[name*="[diem_chuyencan]"]').val($('input[name="diem_chuyencan"]').val());
+                    $tableRow.find('input[name*="[diem_chuannghe]"]').val($('input[name="diem_chuannghe"]').val());
+                    $tableRow.find('input[name*="[diem_thucte]"]').val($('input[name="diem_thucte"]').val());
+                    $tableRow.find('textarea[name*="[ghichu]"]').val($('textarea[name="ghichu"]').val());
+                }
+                
+                // Cập nhật lại chi tiết sinh viên nếu đang hiển thị
+                renderStudentDetail(id_sv, dot_id);
+                
+                // Hiển thị thông báo thành công (function đã được define ở trên)
+                if (typeof showAlert === 'function') {
+                    showAlert('success', response.message, dot_id);
+                }
+            } else {
+                alert('Có lỗi xảy ra khi lưu điểm!');
+            }
+        }, 'json').fail(function() {
+            alert('Có lỗi xảy ra khi lưu điểm!');
+        }).always(function() {
+            $submitBtn.prop('disabled', false).html('<i class="fa fa-save"></i> Lưu lại');
+        });
     });
     </script>
 </body>

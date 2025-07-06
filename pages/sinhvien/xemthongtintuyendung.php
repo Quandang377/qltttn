@@ -1,1 +1,0 @@
-Đây là trang xem thông tin tuyển dụng
