@@ -14,11 +14,11 @@ foreach ($stmt as $row) {
 
 <head>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
 </head>
 
-<footer
-    style="background-color: <?= $cauhinh['mau_sac_giaodien'] ?? '#2563eb' ?>; color: white; padding: 30px 0; margin-top: 50px;">
+<footer style="background-color: <?= $cauhinh['mau_sac_giaodien'] ?? '#2563eb' ?>; color: white; padding: 30px 0; margin-top: 50px;z-index: 1001;padding: 15px 0;
+    font-size: 14px;
+    position: relative;">
     <div class="container">
         <!-- Mạng xã hội -->
         <div class="row">

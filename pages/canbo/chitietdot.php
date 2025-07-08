@@ -178,49 +178,90 @@ if (isset($_GET['export_excel']) && $_GET['export_excel'] == 1) {
 
 
 // Thống kê số SV hoàn thành và chưa hoàn thành
-$stmt = $conn->prepare("SELECT 
-    SUM(CASE WHEN T.TrangThai = 1 THEN 1 ELSE 0 END) AS DaHoanThanh,
-    SUM(CASE WHEN T.TrangThai != 1 OR T.TrangThai IS NULL THEN 1 ELSE 0 END) AS ChuaHoanThanh
-FROM sinhvien SV
-LEFT JOIN tongket T ON SV.ID_TaiKhoan = T.IDSV
-WHERE SV.ID_Dot = :id");
+$stmt = $conn->prepare("
+    SELECT 
+        SUM(CASE 
+                WHEN dt.ID IS NOT NULL 
+                     AND dt.Diem_BaoCao IS NOT NULL 
+                     AND dt.Diem_ChuyenCan IS NOT NULL 
+                     AND dt.Diem_ChuanNghe IS NOT NULL 
+                     AND dt.Diem_ThucTe IS NOT NULL
+                THEN 1 ELSE 0 
+            END) AS DaHoanThanh,
+        SUM(CASE 
+                WHEN dt.ID IS NULL 
+                     OR dt.Diem_BaoCao IS NULL 
+                     OR dt.Diem_ChuyenCan IS NULL 
+                     OR dt.Diem_ChuanNghe IS NULL 
+                     OR dt.Diem_ThucTe IS NULL
+                THEN 1 ELSE 0 
+            END) AS ChuaHoanThanh
+    FROM sinhvien sv
+    LEFT JOIN diem_tongket dt ON sv.ID_TaiKhoan = dt.ID_SV AND dt.ID_Dot = sv.ID_Dot
+    WHERE sv.ID_Dot = :id
+");
 $stmt->execute(['id' => $id]);
 $tkTrangThai = $stmt->fetch(PDO::FETCH_ASSOC);
 
 
-// ĐIểm
+// Lấy danh sách điểm tính theo công thức mới
 $stmt = $conn->prepare("
-    SELECT TK.Diem
-    FROM tongket TK
-    JOIN sinhvien SV ON TK.IDSV = SV.ID_TaiKhoan
-    WHERE SV.ID_Dot = :id AND TK.Diem IS NOT NULL
+    SELECT 
+        (Diem_BaoCao * 0.4 + Diem_ChuyenCan * 0.2 + Diem_ChuanNghe * 0.2 + Diem_ThucTe * 0.2) AS DiemTong
+    FROM diem_tongket
+    WHERE ID_Dot = :id
+        AND Diem_BaoCao IS NOT NULL 
+        AND Diem_ChuyenCan IS NOT NULL 
+        AND Diem_ChuanNghe IS NOT NULL 
+        AND Diem_ThucTe IS NOT NULL
 ");
 $stmt->execute(['id' => $id]);
 $diems = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
 // Thống kê khung điểm
 $thongKeKhungDiem = [
-    '>=9.4' => 0,
-    '8.4 - 9.39' => 0,
-    '7.4 - 8.39' => 0,
-    '5 - 7.39' => 0,
+    '>=9' => 0,
+    '7 - <9' => 0,
+    '5 - <7' => 0,
     '<5' => 0
 ];
 
 foreach ($diems as $diem) {
     $diem = floatval($diem);
-    if ($diem >= 9.4) {
-        $thongKeKhungDiem['>=9.4']++;
-    } elseif ($diem >= 8.4) {
-        $thongKeKhungDiem['8.4 - 9.39']++;
-    } elseif ($diem >= 7.4) {
-        $thongKeKhungDiem['7.4 - 8.39']++;
+    if ($diem >= 9) {
+        $thongKeKhungDiem['>=9']++;
+    } elseif ($diem >= 7) {
+        $thongKeKhungDiem['7 - <9']++;
     } elseif ($diem >= 5) {
-        $thongKeKhungDiem['5 - 7.39']++;
+        $thongKeKhungDiem['5 - <7']++;
     } else {
         $thongKeKhungDiem['<5']++;
     }
 }
+
+// Đếm số lượng không đạt (< 5)
+$stmt1 = $conn->prepare("
+    SELECT COUNT(*) 
+    FROM diem_tongket 
+    WHERE ID_Dot = :id
+        AND Diem_BaoCao IS NOT NULL 
+        AND Diem_ChuyenCan IS NOT NULL 
+        AND Diem_ChuanNghe IS NOT NULL 
+        AND Diem_ThucTe IS NOT NULL
+        AND (Diem_BaoCao * 0.4 + Diem_ChuyenCan * 0.2 + Diem_ChuanNghe * 0.2 + Diem_ThucTe * 0.2) < 5
+");
+$stmt1->execute(['id' => $id]);
+$soLuongKhongDat = $stmt1->fetchColumn();
+
+// --- Danh sách SV đăng ký giấy GGT nhưng chưa nhận ---
+$stmtGGT = $conn->prepare("
+    SELECT sv.Ten, sv.MSSV, sv.Lop
+    FROM giaygioithieu g
+    JOIN sinhvien sv ON g.IdSinhVien = sv.ID_TaiKhoan
+    WHERE g.TrangThai = 2 AND sv.ID_Dot = :id_dot
+");
+$stmtGGT->execute(['id_dot' => $dot['ID']]);
+$danhSachGGT = $stmtGGT->fetchAll(PDO::FETCH_ASSOC);
 
 if (isset($_GET['export_excel']) && $_GET['export_excel'] == 2) {
     ob_clean();
@@ -252,9 +293,10 @@ if (isset($_GET['export_excel']) && $_GET['export_excel'] == 2) {
             default => 'Đã kết thúc'
         },
         "Tổng sinh viên:" => $tongSinhVien,
+        "Tổng GVHD:" => $tongGVHD,
         "Sinh viên đã hoàn thành:" => $tkTrangThai['DaHoanThanh'],
         "Sinh viên chưa hoàn thành:" => $tkTrangThai['ChuaHoanThanh'],
-        "Tổng GVHD:" => $tongGVHD,
+        "Sinh viên không đạt:" => $soLuongKhongDat,
     ];
     $infoStart = $row;
 
@@ -268,27 +310,65 @@ if (isset($_GET['export_excel']) && $_GET['export_excel'] == 2) {
         'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
     ]);
 
-    $sheet->setCellValue("E$infoStart", "THỐNG KÊ THEO KHUNG ĐIỂM TỔNG KẾT");
-    $sheet->mergeCells("E$infoStart:H$infoStart");
-    $sheet->getStyle("E$infoStart")->getFont()->setBold(true);
-    $sheet->getStyle("E$infoStart")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+    $sheet->setCellValue("F$infoStart", "THỐNG KÊ THEO KHUNG ĐIỂM TỔNG KẾT");
+    $sheet->mergeCells("F$infoStart:I$infoStart");
+    $sheet->getStyle("F$infoStart")->getFont()->setBold(true);
+    $sheet->getStyle("F$infoStart")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
     $xlRow = $infoStart + 1;
 
-    $sheet->fromArray([ 'Khung điểm', 'Số lượng'], NULL, "F$xlRow");
-    $sheet->getStyle("F$xlRow:G$xlRow")->getFont()->setBold(true);
-    $sheet->getStyle("F$xlRow:G$xlRow")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+    $sheet->fromArray(['Khung điểm', 'Số lượng'], NULL, "G$xlRow");
+    $sheet->getStyle("G$xlRow:H$xlRow")->getFont()->setBold(true);
+    $sheet->getStyle("G$xlRow:H$xlRow")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
     $xlRow++;
 
     foreach ($thongKeKhungDiem as $khoang => $soLuong) {
-        $sheet->setCellValue("F$xlRow", $khoang);
-        $sheet->setCellValue("G$xlRow", $soLuong);
+        $sheet->setCellValue("G$xlRow", $khoang);
+        $sheet->setCellValue("H$xlRow", $soLuong);
         $xlRow++;
     }
 
-    $sheet->getStyle("F" . ($infoStart + 1) . ":G" . ($xlRow - 1))->applyFromArray([
+    $sheet->getStyle("G" . ($infoStart + 1) . ":H" . ($xlRow - 1))->applyFromArray([
         'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
     ]);
+    $xlRow += 1;
+    // Ghi tiêu đề bảng dưới phần khung điểm
+    $sheet->setCellValue("E$xlRow", "SINH VIÊN ĐĂNG KÝ GIẤY GIỚI THIỆU NHƯNG CHƯA NHẬN");
+    $sheet->mergeCells("E$xlRow:J$xlRow");
+    $sheet->getStyle("E$xlRow")->getFont()->setBold(true);
+    $sheet->getStyle("E$xlRow")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+    $xlRow++;
 
+    // Ghi header bảng
+    $sheet->fromArray(['STT', 'Họ tên', 'MSSV', 'Lớp'], NULL, "F$xlRow");
+    $sheet->getStyle("F$xlRow:I$xlRow")->getFont()->setBold(true);
+    $sheet->getStyle("F$xlRow:I$xlRow")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+    $startRow = $xlRow;
+    $xlRow++;
+
+    // Ghi dữ liệu
+    $stt = 1;
+    foreach ($danhSachGGT as $sv) {
+        $sheet->setCellValue("F$xlRow", $stt++);
+        $sheet->setCellValue("G$xlRow", $sv['Ten']);
+        $sheet->setCellValue("H$xlRow", $sv['MSSV']);
+        $sheet->setCellValue("I$xlRow", $sv['Lop']);
+        $xlRow++;
+    }
+
+    // Kẻ khung nếu có dữ liệu
+    if ($stt > 1) {
+        $sheet->getStyle("F" . ($startRow) . ":I" . ($xlRow - 1))->applyFromArray([
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
+        ]);
+        
+    } else {
+        $sheet->setCellValue("F$xlRow", "Không có sinh viên nào.");
+        $sheet->mergeCells("F$xlRow:I$xlRow");
+        $sheet->getStyle("F$xlRow")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+    }
+    foreach (range('F', 'I') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
     $row = max($row, $xlRow) + 2;
 
     // ===== TIÊU ĐỀ GVHD =====

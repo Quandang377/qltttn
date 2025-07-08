@@ -3,14 +3,9 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 $ID_TaiKhoan = $_SESSION['user_id'];
 
-$idTaiKhoan = $_SESSION['user_id'];
-
-$stmt = $conn->prepare("SELECT Ten FROM CanBoKhoa WHERE ID_TaiKhoan = ?");
-$stmt->execute([$idTaiKhoan]);
-$hoTen = $stmt->fetchColumn();
 // Lấy danh sách đợt thực tập
-$stmt = $conn->prepare("SELECT ID, TenDot FROM DotThucTap WHERE TrangThai >= 0 and NguoiQuanLy = ? ORDER BY ID DESC");
-$stmt->execute([$hoTen]);
+$stmt = $conn->prepare(query: "SELECT ID, TenDot FROM DotThucTap WHERE TrangThai >= 0 and NguoiQuanLy = ? ORDER BY ID DESC");
+$stmt->execute([$ID_TaiKhoan]);
 $dsDot = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // AJAX: Tạo khảo sát
@@ -112,7 +107,7 @@ if (isset($_GET['ajax'])) {
                     <td onclick="window.location='pages/canbo/chitietkhaosat?id=<?= $ks['ID'] ?>';" style="cursor: pointer;">
                         <?= date('d/m/Y', strtotime($ks['ThoiGianTao'])) ?>
                     </td>
-                    <td>
+                    <td onclick="window.location='pages/canbo/chitietkhaosat?id=<?= $ks['ID'] ?>';" style="cursor: pointer;">
                         <?php
                         $tenDot = '';
                         foreach ($dsDot as $dot) {
@@ -169,7 +164,7 @@ if (isset($_GET['ajax'])) {
                             <div class="col-sm-3">
                                 <div class="form-group">
                                     <label><strong>Chọn đợt thực tập</strong></label>
-                                    <select id="id_dot" name="id_dot" class="form-control" style="width: 250px;"
+                                    <select id="id_dot" name="id_dot" class="form-control" style="width: 200px;"
                                         required>
                                         <option value="">-- Chọn đợt --</option>
                                         <?php foreach ($dsDot as $dot): ?>
@@ -179,7 +174,7 @@ if (isset($_GET['ajax'])) {
                                     </select>
                                 </div>
                             </div>
-                            <div class="col-sm-3" style="margin-left: 20px;">
+                            <div class="col-sm-3">
                                 <div class="form-group">
                                     <label><strong>Gửi đến</strong></label>
                                     <select id="to" name="to" class="form-control" style="width: 200px;" required>
@@ -201,8 +196,8 @@ if (isset($_GET['ajax'])) {
                             <div class="col-lg-6">
                                 <div class="form-group">
                                     <label>Mô tả</label>
-                                    <textarea class="form-control" id="mota" name="mota" type="text" required
-                                        placeholder="Nhập mô tả"></textarea>
+                                    <input class="form-control" id="mota" name="mota" type="text" required
+                                        placeholder="Nhập mô tả">
                                 </div>
                             </div>
                         </div>

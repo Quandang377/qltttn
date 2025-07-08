@@ -196,8 +196,8 @@ if (isset($_GET['ajax'])) {
                             <div class="col-lg-6">
                                 <div class="form-group">
                                     <label>Mô tả</label>
-                                    <textarea class="form-control" id="mota" name="mota" type="text" required
-                                        placeholder="Nhập mô tả"></textarea>
+                                    <input class="form-control" id="mota" name="mota" type="text" required
+                                        placeholder="Nhập mô tả">
                                 </div>
                             </div>
                         </div>

@@ -135,10 +135,11 @@ $updateStmt2->execute(['today' => $today]);
         </div>
       </div>
     </div>
-  </div>
   <?php
   require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
     ?>
+  </div>
+
   <script>
     const thongbaos = <?= json_encode($thongbaos) ?>;
     const pageSize = 5;

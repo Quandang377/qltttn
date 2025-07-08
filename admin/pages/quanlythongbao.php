@@ -48,6 +48,89 @@ $dsDot = $stmt->fetchAll(PDO::FETCH_ASSOC);
   <?php
   require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php";
   ?>
+  <style>
+
+  .page-header {
+    padding: 20px 25px;
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  .form-inline label {
+    margin-right: 10px;
+    font-weight: 600;
+  }
+
+  .form-inline select {
+    min-width: 200px;
+  }
+
+  .fixed-button {
+    float: right;
+    margin-bottom: 15px;
+    background-color: #1abc9c;
+    border-color: #16a085;
+  }
+
+  .fixed-button:hover {
+    background-color: #16a085;
+    border-color: #149174;
+  }
+
+  .panel {
+    background: #ffffff;
+    border: 1px solid #dcdcdc;
+    border-radius: 6px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  }
+
+  .panel-heading {
+    background-color: #34495e;
+    color: #fff;
+    padding: 15px;
+    font-size: 18px;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    font-weight: 600;
+  }
+
+  .table thead th {
+    background-color: #ecf0f1;
+    color: #34495e;
+    font-weight: bold;
+    text-align: center;
+  }
+
+  .table td, .table th {
+    vertical-align: middle !important;
+  }
+
+  .table tbody tr:hover {
+    background-color:rgb(223, 222, 226);
+    cursor: pointer;
+  }
+
+  .btn-danger.btn-sm {
+    padding: 4px 10px;
+    font-size: 13px;
+  }
+
+  @media (max-width: 768px) {
+    .page-header h1 {
+      font-size: 22px;
+    }
+
+    .fixed-button {
+      width: 100%;
+      margin-top: 10px;
+      float: none;
+    }
+
+    .form-inline {
+      display: block;
+    }
+  }
+</style>
 </head>
 
 <body>

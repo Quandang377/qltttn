@@ -108,6 +108,113 @@ if (isset($_SESSION['deleted'])) {
     <?php
     require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php";
     ?>
+    <style>
+    
+    
+    .page-header {
+        /* background: #2c3e50; */
+        color: #fff;
+        padding: 20px 25px;
+        margin-top: 0;
+        border-radius: 5px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    .page-header h1 {
+        margin: 0;
+        font-size: 26px;
+        font-weight: 600;
+    }
+
+    .btn-primary {
+        background-color: #1abc9c;
+        border-color: #16a085;
+    }
+
+    .btn-primary:hover {
+        background-color: #16a085;
+        border-color: #149174;
+    }
+
+    .panel {
+        background: #ffffff;
+        border: 1px solid #dcdcdc;
+        border-radius: 6px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    .panel-heading {
+        background-color: #34495e;
+        color: #fff;
+        padding: 15px;
+        font-size: 18px;
+        border-top-left-radius: 6px;
+        border-top-right-radius: 6px;
+    }
+
+    .table thead th {
+        background-color: #ecf0f1;
+        color: #34495e;
+        font-weight: 600;
+    }
+
+    .table td, .table th {
+        vertical-align: middle !important;
+    }
+
+    #filterTrangThai {
+        border: 1px solid #ccc;
+        padding: 6px 12px;
+        border-radius: 4px;
+    }
+
+    #noti.alert {
+        margin-top: 15px;
+        font-size: 16px;
+    }
+
+    .form-container {
+        background: #ffffff;
+        border: 1px solid #ddd;
+        padding: 20px;
+        margin-bottom: 20px;
+        border-radius: 6px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+
+    input.form-control, select.form-control {
+        border-radius: 4px;
+        box-shadow: none;
+        border: 1px solid #ccc;
+    }
+
+    .btn-default {
+        background:rgb(255, 255, 255);
+        border-color: #95a5a6;
+    }
+
+    .btn-default:hover {
+        background: #95a5a6;
+        color: white;
+    }
+
+    a.btn-xs {
+        padding: 5px 10px;
+        font-size: 12px;
+    }
+
+    /* Responsive cải tiến */
+    @media (max-width: 768px) {
+        .page-header h1 {
+            font-size: 22px;
+        }
+
+        .btn-lg {
+            font-size: 16px;
+            padding: 10px 16px;
+        }
+    }
+</style>
 </head>
 
 <body>
@@ -243,7 +350,6 @@ if (isset($_SESSION['deleted'])) {
                                                         default:
                                                             $trangthai = 'Không xác định';
                                                     }
-
                                                     ?>
                                                     <tr>
                                                         <td><?= $i++ ?></td>
