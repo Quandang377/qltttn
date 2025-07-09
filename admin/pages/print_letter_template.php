@@ -103,7 +103,7 @@ if (!$letterData) {
                 Giấy giới thiệu với ID #<?= htmlspecialchars($letterId) ?> không tồn tại trong hệ thống 
                 hoặc bạn không có quyền truy cập.
             </p>
-            <a href="/datn/pages/canbo/quanlygiaygioithieu.php" class="btn">
+            <a href="/datn/admin/pages/quanlygiaygioithieu.php" class="btn">
                 ← Quay lại danh sách
             </a>
         </div>
@@ -415,7 +415,7 @@ switch ($letterData['TrangThai']) {
         <button class="btn btn-primary" onclick="window.print()">
             🖨️ In giấy giới thiệu
         </button>
-        <a href="/datn/pages/canbo/quanlygiaygioithieu.php" class="btn btn-secondary">
+        <a href="/datn/admin/pages/quanlygiaygioithieu.php" class="btn btn-secondary">
             ← Quay lại
         </a>
     </div>

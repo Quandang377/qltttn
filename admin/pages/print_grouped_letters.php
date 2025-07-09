@@ -76,7 +76,7 @@ if (empty($groupedLetters)) {
         <div class="error-container">
             <h1>Không có giấy giới thiệu để in</h1>
             <p>Hiện tại không có giấy giới thiệu nào ở trạng thái "Đã duyệt".</p>
-            <a href="/datn/pages/canbo/quanlygiaygioithieu.php">← Quay lại danh sách</a>
+            <a href="/datn/admin/pages/quanlygiaygioithieu.php">← Quay lại danh sách</a>
         </div>
     </body>
     </html>

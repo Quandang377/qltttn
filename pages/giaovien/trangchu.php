@@ -3,7 +3,7 @@
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
 $idTaiKhoan = $_SESSION['user_id'] ?? null;
-
+$today = date('Y-m-d');
 // Lấy danh sách ID đợt mà giáo viên này hướng dẫn sinh viên
 $stmt = $conn->prepare("
     SELECT DISTINCT sv.ID_Dot
@@ -94,7 +94,7 @@ if (!$activeDot && !empty($allDots)) {
     $activeDot = $allDots[0];
 }
 
-$today = date('Y-m-d');
+
 
 // Cập nhật trạng thái kết thúc
 $updateStmt = $conn->prepare("UPDATE DotThucTap 
