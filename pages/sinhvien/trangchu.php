@@ -43,7 +43,7 @@ $stmt = $conn->prepare("SELECT dt.TrangThai
 $stmt->execute([$idTaiKhoan]);
 $trangThaiDot = $stmt->fetchColumn();
 
-$panelActive = -1;
+$panelActive = [];
 $statusInfo = [
   'message' => '',
   'class' => '',
@@ -53,21 +53,21 @@ $statusInfo = [
 if($idTaiKhoan){
   if ($trangThaiDot >= 3) {
     if ($trangThaiDot == 3) {
-      $panelActive = 0; // Nổi bật tìm công ty và xin giấy giới thiệu
+      $panelActive = [0, 1]; // Nổi bật cả tìm công ty và xin giấy giới thiệu
       $statusInfo = [
-        'message' => 'Giai đoạn: Tìm công ty và xin giấy giới thiệu thực tập',
+        'message' => 'Giai đoạn: Tìm công ty và xin giấy giới thiệu thực tập (cùng thực hiện)',
         'class' => 'status-finding',
         'icon' => 'fa-search'
       ];
     } elseif ($trangThaiDot == 4) {
-      $panelActive = 1; // Thực tập và báo cáo
+      $panelActive = [2]; // Thực tập và báo cáo
       $statusInfo = [
         'message' => 'Giai đoạn: Thực tập và báo cáo tuần',
         'class' => 'status-internship',
         'icon' => 'fa-briefcase'
       ];
     } elseif ($trangThaiDot == 5) {
-      $panelActive = 2; // Kết thúc và nộp báo cáo
+      $panelActive = [3]; // Kết thúc và nộp báo cáo
       $statusInfo = [
         'message' => 'Giai đoạn: Kết thúc và nộp báo cáo',
         'class' => 'status-completion',
@@ -91,11 +91,11 @@ if($idTaiKhoan){
   } else {
     // Trạng thái cũ cho các đợt khác
     if ($trangThaiDot == 1)
-      $panelActive = 0;
+      $panelActive = [0];
     elseif ($trangThaiDot == 2)
-      $panelActive = 1;
+      $panelActive = [1];
     elseif ($trangThaiDot == 0)
-      $panelActive = 2;
+      $panelActive = [2];
   }
 }
 
@@ -150,7 +150,7 @@ $updateStmt2->execute(['today' => $today]);
         <div class="row panel-row">
           <div class="col-md-3 panel-container">
             <a href="pages/sinhvien/xemdanhsachcongty" style="text-decoration: none; color: inherit;">
-              <div class="panel panel-default <?= $panelActive === 0 ? 'active-step' : '' ?>" style="min-height: 180px;">
+              <div class="panel panel-default <?= in_array(0, $panelActive) ? 'active-step' : '' ?>" style="min-height: 180px;">
                 <div class="panel-heading">
                   <i class="fa fa-search"></i> Tìm công ty thực tập
                 </div>
@@ -165,7 +165,7 @@ $updateStmt2->execute(['today' => $today]);
           <div class="col-md-3 panel-container">
             <a <?= ($trangThaiDot >= 3) ? 'href="pages/sinhvien/dangkygiaygioithieu"' : '' ?>
               style="text-decoration: none; color: inherit;">
-              <div class="panel panel-default <?= $panelActive === 1 ? 'active-step' : '' ?>" style="min-height: 180px;">
+              <div class="panel panel-default <?= in_array(1, $panelActive) ? 'active-step' : '' ?>" style="min-height: 180px;">
                 <div class="panel-heading">
                   <i class="fa fa-file-text"></i> Xin giấy giới thiệu thực tập
                 </div>
@@ -182,7 +182,7 @@ $updateStmt2->execute(['today' => $today]);
           <div class="col-md-3 panel-container">
             <a <?= ($trangThaiDot == 4) ? 'href="pages/sinhvien/baocaotuan"' : '' ?>
               style="text-decoration: none; color: inherit;">
-              <div class="panel panel-default <?= $panelActive === 2 ? 'active-step' : '' ?>" style="min-height: 180px;">
+              <div class="panel panel-default <?= in_array(2, $panelActive) ? 'active-step' : '' ?>" style="min-height: 180px;">
                 <div class="panel-heading">
                   <i class="fa fa-briefcase"></i> Thực tập, báo cáo tuần
                 </div>
@@ -199,7 +199,7 @@ $updateStmt2->execute(['today' => $today]);
           <div class="col-md-3 panel-container">
             <a <?= ($trangThaiDot == 5) ? 'href="pages/sinhvien/nopketqua"' : 'href="#" data-toggle="modal" data-target="#detailModal"' ?> 
               style="text-decoration: none; color: inherit;">
-              <div class="panel panel-default <?= $panelActive === 3 ? 'active-step' : '' ?>" style="min-height: 180px;">
+              <div class="panel panel-default <?= in_array(3, $panelActive) ? 'active-step' : '' ?>" style="min-height: 180px;">
                 <div class="panel-heading">
                   <i class="fa fa-check-circle"></i> Kết thúc và nộp báo cáo
                 </div>
@@ -376,6 +376,18 @@ $updateStmt2->execute(['today' => $today]);
         });
       }
     });
+
+    // Thêm class has-active cho các panel container có panel active
+    document.addEventListener('DOMContentLoaded', function() {
+      const activePanels = document.querySelectorAll('.panel.active-step');
+      activePanels.forEach(panel => {
+        const container = panel.closest('.panel-container');
+        if (container) {
+          container.classList.add('has-active');
+        }
+      });
+    });
+
     history.pushState(null, "", location.href);
     window.onpopstate = function () {
         history.pushState(null, "", location.href);
@@ -396,10 +408,12 @@ $updateStmt2->execute(['today' => $today]);
     box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
     font-size: 16px;
     font-weight: 500;
+    animation: fadeInDown 0.8s ease-out;
   }
   
   .status-indicator.status-finding {
     background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    animation: pulse-status 3s infinite;
   }
   
   .status-indicator.status-internship {
@@ -421,6 +435,17 @@ $updateStmt2->execute(['today' => $today]);
   .status-indicator i {
     margin-right: 10px;
     font-size: 18px;
+  }
+
+  @keyframes pulse-status {
+    0%, 100% { 
+      transform: scale(1);
+      box-shadow: 0 4px 15px rgba(240, 147, 251, 0.3);
+    }
+    50% { 
+      transform: scale(1.02);
+      box-shadow: 0 6px 25px rgba(240, 147, 251, 0.5);
+    }
   }
 
   /* === PANEL STYLES === */
@@ -458,6 +483,38 @@ $updateStmt2->execute(['today' => $today]);
     color: #007bff;
     z-index: 1;
     font-weight: bold;
+    transition: all 0.3s ease;
+  }
+
+  /* Hiệu ứng đặc biệt cho mũi tên khi 2 panel đầu cùng active */
+  .panel-container:first-child.has-active + .panel-container.has-active::before {
+    content: "↔";
+    position: absolute;
+    top: 50%;
+    left: -20px;
+    transform: translateY(-50%);
+    font-size: 24px;
+    color: #28a745;
+    z-index: 2;
+    font-weight: bold;
+    animation: pulse-arrow 2s infinite;
+  }
+
+  @keyframes pulse-arrow {
+    0%, 100% { 
+      transform: translateY(-50%) scale(1);
+      color: #28a745;
+    }
+    50% { 
+      transform: translateY(-50%) scale(1.2);
+      color: #20c997;
+    }
+  }
+
+  /* Màu mũi tên khi panel đang active */
+  .panel-container.has-active:not(:last-child)::after {
+    color: #28a745;
+    animation: pulse-arrow 2s infinite;
   }
 
   .panel {
@@ -477,10 +534,32 @@ $updateStmt2->execute(['today' => $today]);
   }
 
   .panel.active-step {
-    border: 2.5px solid #007bff !important;
-    box-shadow: 0 4px 24px rgba(0, 123, 255, 0.3);
-    background: linear-gradient(135deg, #e3f0ff 0%, #f8fdff 100%);
+    border: 2.5px solid #28a745 !important;
+    box-shadow: 0 4px 24px rgba(40, 167, 69, 0.3);
+    background: linear-gradient(135deg, #e8f5e8 0%, #f0fff0 100%);
     transform: scale(1.02);
+    position: relative;
+  }
+
+  /* Hiệu ứng đặc biệt khi 2 panel đầu cùng active */
+  .panel-container:first-child .panel.active-step + 
+  .panel-container:nth-child(2) .panel.active-step {
+    animation: sync-pulse 2s infinite;
+  }
+
+  .panel-container:first-child .panel.active-step {
+    animation: sync-pulse 2s infinite;
+  }
+
+  @keyframes sync-pulse {
+    0%, 100% { 
+      transform: scale(1.02);
+      box-shadow: 0 4px 24px rgba(40, 167, 69, 0.3);
+    }
+    50% { 
+      transform: scale(1.05);
+      box-shadow: 0 8px 35px rgba(40, 167, 69, 0.5);
+    }
   }
 
   .panel.active-step::before {
@@ -488,7 +567,7 @@ $updateStmt2->execute(['today' => $today]);
     position: absolute;
     top: 0;
     right: 0;
-    background: linear-gradient(135deg, #007bff, #0056b3);
+    background: linear-gradient(135deg, #28a745, #20c997);
     color: white;
     padding: 5px 15px;
     font-size: 10px;
@@ -497,6 +576,16 @@ $updateStmt2->execute(['today' => $today]);
     transform-origin: center;
     width: 120px;
     text-align: center;
+    animation: glow 2s infinite alternate;
+  }
+
+  @keyframes glow {
+    from {
+      box-shadow: 0 0 5px rgba(40, 167, 69, 0.5);
+    }
+    to {
+      box-shadow: 0 0 20px rgba(40, 167, 69, 0.8);
+    }
   }
 
   .panel.active-step:hover {
@@ -516,9 +605,19 @@ $updateStmt2->execute(['today' => $today]);
   }
 
   .panel.active-step .panel-heading {
-    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%) !important;
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
     color: white !important;
-    border-bottom: 2px solid #0056b3 !important;
+    border-bottom: 2px solid #20c997 !important;
+    animation: header-glow 3s infinite alternate;
+  }
+
+  @keyframes header-glow {
+    from {
+      box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.2);
+    }
+    to {
+      box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.4);
+    }
   }
 
   .panel-heading i {

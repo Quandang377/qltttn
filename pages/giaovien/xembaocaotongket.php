@@ -1020,12 +1020,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['diem_baocao'], $_POST
     /* === ALERT STYLES === */
     .alert {
         border: none;
-        border-radius: 12px;
-        padding: 20px;
+        border-radius: 16px;
+        padding: 24px;
         margin-bottom: 25px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
         position: relative;
         overflow: hidden;
+        animation: slideInRight 0.6s ease-out;
     }
     
     .alert::before {
@@ -1034,32 +1035,83 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['diem_baocao'], $_POST
         left: 0;
         top: 0;
         bottom: 0;
-        width: 4px;
+        width: 5px;
         background: currentColor;
+        border-radius: 0 3px 3px 0;
+    }
+    
+    .alert::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: right 0.6s ease;
+    }
+    
+    .alert:hover::after {
+        right: 100%;
     }
     
     .alert-success {
         background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
         color: #059669;
-        border-left: 4px solid #10b981;
+        border: 1px solid rgba(16, 185, 129, 0.2);
     }
     
     .alert-danger {
         background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
         color: #dc2626;
-        border-left: 4px solid #ef4444;
+        border: 1px solid rgba(239, 68, 68, 0.2);
     }
     
     .alert-warning {
         background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
         color: #d97706;
-        border-left: 4px solid #f59e0b;
+        border: 1px solid rgba(245, 158, 11, 0.2);
     }
     
     .alert-info {
         background: linear-gradient(135deg, #f0f9ff 0%, #dbeafe 100%);
         color: #0284c7;
-        border-left: 4px solid #0ea5e9;
+        border: 1px solid rgba(14, 165, 233, 0.2);
+    }
+    
+    .alert-dismissible .close {
+        position: absolute;
+        top: 15px;
+        right: 20px;
+        background: none;
+        border: none;
+        font-size: 20px;
+        color: currentColor;
+        opacity: 0.7;
+        transition: all 0.3s ease;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .alert-dismissible .close:hover {
+        opacity: 1;
+        background: rgba(0, 0, 0, 0.1);
+        transform: scale(1.1);
+    }
+    
+    @keyframes slideInRight {
+        from {
+            opacity: 0;
+            transform: translateX(100px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
     }
 
     /* === STATUS ICONS === */
