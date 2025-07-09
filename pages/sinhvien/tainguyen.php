@@ -380,6 +380,74 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
         }
     }
     
+    /* Styles cho modal xem file */
+    #modalXemFile .modal-dialog {
+        max-width: 95% !important;
+        width: 95% !important;
+        margin: 30px auto;
+    }
+    
+    #modalXemFile .modal-content {
+        border-radius: 12px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        border: none;
+    }
+    
+    #modalXemFile .modal-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 12px 12px 0 0;
+        padding: 20px 25px;
+        border-bottom: none;
+    }
+    
+    #modalXemFile .modal-title {
+        font-weight: 600;
+        font-size: 18px;
+    }
+    
+    #modalXemFile .modal-body {
+        padding: 25px;
+        background: #f8f9fa;
+        min-height: 500px;
+    }
+    
+    #modalXemFile .modal-footer {
+        border-top: 1px solid #dee2e6;
+        padding: 15px 25px;
+        background: white;
+        border-radius: 0 0 12px 12px;
+    }
+    
+    /* Responsive cho modal xem file */
+    @media (max-width: 768px) {
+        #modalXemFile .modal-dialog {
+            max-width: 98% !important;
+            width: 98% !important;
+            margin: 10px auto;
+        }
+        
+        #modalXemFile .modal-body {
+            padding: 15px;
+        }
+        
+        .office-viewer-container .viewer-tabs {
+            flex-direction: column;
+        }
+        
+        .office-viewer-container .viewer-tab {
+            margin-right: 0;
+            margin-bottom: 2px;
+            border-radius: 8px;
+        }
+        
+        .download-info-panel {
+            flex-direction: column;
+            text-align: center;
+            gap: 20px;
+        }
+    }
+    
     /* Styles cho modal */
     .download-info {
         display: flex;
@@ -629,20 +697,34 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
                                 $uploadDate = date('d/m/Y', strtotime($resource['NgayNop']));
                                 
                                 echo '<div class="col-md-3" style="margin-bottom: 20px;">';
+                                // Debug: hiển thị thông tin file path
+                                $originalDir = $resource['DIR'];
+                                
                                 // Escape data for JavaScript and ensure correct path format
                                 $fileDir = $resource['DIR'];
-                                // Ensure the path is relative to the web root
-                                if (substr($fileDir, 0, 1) !== '/') {
-                                    $fileDir = '/' . $fileDir;
-                                }
-                                // Convert backslashes to forward slashes for web
+                                
+                                // Remove 'datn/' prefix if exists and ensure proper web path
                                 $fileDir = str_replace('\\', '/', $fileDir);
+                                if (strpos($fileDir, 'datn/') === 0) {
+                                    $fileDir = substr($fileDir, 5); // Remove 'datn/' prefix
+                                }
+                                
+                                // Ensure the path starts with 'datn/' for web access
+                                if (strpos($fileDir, 'datn/') !== 0) {
+                                    $fileDir = 'datn/' . ltrim($fileDir, '/');
+                                }
+                                
+                                // Debug: thêm comment HTML để debug
+                                echo '<!-- DEBUG: Original DIR: ' . htmlspecialchars($originalDir) . ' -->';
+                                echo '<!-- DEBUG: Processed DIR: ' . htmlspecialchars($fileDir) . ' -->';
+                                echo '<!-- DEBUG: File extension: ' . htmlspecialchars($fileExtension) . ' -->';
                                 
                                 $jsDir = str_replace("'", "\\'", $fileDir);
-                                $jsName = str_replace("'", "\\'", $resource['TenHienThi']);
+                                $jsDisplayName = str_replace("'", "\\'", $resource['TenHienThi']); // Tên hiển thị
+                                $jsFileName = str_replace("'", "\\'", $resource['TenFile']); // Tên file thực tế để tải
                                 $jsAuthor = str_replace("'", "\\'", $resource['TenSinhVien']);
                                 
-                                echo '<div class="resource-panel ' . $panelClass . '" onclick="showDownloadModal(\'' . $jsDir . '\', \'' . $jsName . '\', \'' . $fileExtension . '\', \'' . $uploadDate . '\', \'' . $jsAuthor . '\')">';
+                                echo '<div class="resource-panel ' . $panelClass . '" onclick="showDownloadModal(\'' . $jsDir . '\', \'' . $jsDisplayName . '\', \'' . $jsFileName . '\', \'' . $fileExtension . '\', \'' . $uploadDate . '\', \'' . $jsAuthor . '\')">';
                                 echo '<div style="display: flex; align-items: center;">';
                                 echo '<i class="fa ' . $icon . ' fa-fw fa-2x resource-icon"></i>';
                                 echo '<div style="flex: 1;">';
@@ -842,6 +924,12 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
                             <button type="button" class="btn btn-success btn-preview" onclick="previewFile()">
                                 <i class="fa fa-eye"></i> Xem trước
                             </button>
+                            <button type="button" class="btn btn-info btn-online" onclick="viewOnline()">
+                                <i class="fa fa-globe"></i> Xem online
+                            </button>
+                            <button type="button" class="btn btn-warning btn-debug" onclick="debugFile()">
+                                <i class="fa fa-bug"></i> Debug
+                            </button>
                             <button type="button" class="btn btn-default" data-dismiss="modal">
                                 <i class="fa fa-times"></i> Hủy
                             </button>
@@ -878,6 +966,31 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
             </div>
         </div>
     </div>
+    
+    <!-- Modal xem file online -->
+    <div class="modal fade" id="modalXemFile" tabindex="-1" role="dialog" aria-labelledby="modalXemFileLabel">
+        <div class="modal-dialog modal-lg" role="document" style="max-width: 90%; width: 90%;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    <h4 class="modal-title" id="modalXemFileLabel">
+                        <i class="fa fa-file-o"></i> Xem file online
+                    </h4>
+                </div>
+                <div class="modal-body" style="padding: 20px;">
+                    <div id="xemFileBody"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">
+                        <i class="fa fa-times"></i> Đóng
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <?php
     require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
         ?>
@@ -885,44 +998,55 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
         // Biến global để lưu thông tin file hiện tại
         var currentFile = {
             url: '',
-            name: '',
+            displayName: '',  // Tên hiển thị
+            fileName: '',     // Tên file thực tế
             type: '',
             date: '',
             author: ''
         };
         
         // Hàm hiển thị modal tải xuống
-        function showDownloadModal(fileUrl, fileName, fileType, uploadDate, author) {
+        function showDownloadModal(fileUrl, displayName, fileName, fileType, uploadDate, author) {
             try {
                 // Sanitize inputs
                 fileUrl = fileUrl || '';
-                fileName = fileName || 'Unknown file';
+                displayName = displayName || 'Unknown file';
+                fileName = fileName || displayName || 'Unknown file';
                 fileType = fileType || '';
                 uploadDate = uploadDate || '';
                 author = author || 'Tài nguyên chung';
                 
-                // Debug: log the file URL to console
-                console.log('File URL:', fileUrl);
+                // Debug: log thông tin file
+                console.log('=== FILE DEBUG INFO ===');
+                console.log('Original File URL:', fileUrl);
+                console.log('Display Name:', displayName);
+                console.log('File Name:', fileName);
+                console.log('File Type:', fileType);
+                console.log('Upload Date:', uploadDate);
+                console.log('Author:', author);
                 
                 // Ensure the URL is properly formatted
                 if (fileUrl && !fileUrl.startsWith('http') && !fileUrl.startsWith('/')) {
                     fileUrl = '/' + fileUrl;
                 }
                 
+                console.log('Processed File URL:', fileUrl);
+                
                 currentFile.url = fileUrl;
-                currentFile.name = fileName;
+                currentFile.displayName = displayName;
+                currentFile.fileName = fileName;
                 currentFile.type = fileType;
                 currentFile.date = uploadDate;
                 currentFile.author = author;
                 
-                // Cập nhật nội dung modal
+                // Cập nhật nội dung modal (hiển thị tên hiển thị)
                 var modalFileName = document.getElementById('modalFileName');
                 var modalFileType = document.getElementById('modalFileType');
                 var modalUploadDate = document.getElementById('modalUploadDate');
                 var modalAuthor = document.getElementById('modalAuthor');
                 var modalFileIcon = document.getElementById('modalFileIcon');
                 
-                if (modalFileName) modalFileName.textContent = fileName;
+                if (modalFileName) modalFileName.textContent = displayName;
                 if (modalFileType) modalFileType.textContent = getFileTypeName(fileType);
                 if (modalUploadDate) modalUploadDate.textContent = uploadDate;
                 if (modalAuthor) modalAuthor.textContent = author;
@@ -947,18 +1071,26 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
                     return;
                 }
                 
-                // Chuẩn hóa đường dẫn file - đảm bảo đường dẫn bắt đầu từ root
+                // Chuẩn hóa đường dẫn file
                 var fileUrl = currentFile.url.replace(/\\/g, '/');
-                if (!fileUrl.startsWith('/')) {
-                    fileUrl = '/' + fileUrl;
-                }
                 
-                // Tạo link tải xuống
+                // Tạo URL download thông qua script download.php với tên file tùy chỉnh
+                var downloadUrl = '/datn/download.php?file=' + encodeURIComponent(fileUrl) + '&name=' + encodeURIComponent(currentFile.fileName);
+                
+                // Hiển thị thông báo đang tải (với tên hiển thị)
+                showNotification('info', 'Đang chuẩn bị tải file: ' + currentFile.displayName);
+                
+                // Tạo link tải xuống (sử dụng tên file thực tế)
                 var link = document.createElement('a');
-                link.href = fileUrl;
-                link.download = currentFile.name;
+                link.href = downloadUrl;
+                link.download = currentFile.fileName; // Sử dụng tên file thực tế
                 link.target = '_blank';
                 link.style.display = 'none';
+                
+                // Xử lý lỗi tải file
+                link.onerror = function() {
+                    showNotification('error', 'Có lỗi xảy ra khi tải file. Vui lòng thử lại.');
+                };
                 
                 document.body.appendChild(link);
                 link.click();
@@ -966,11 +1098,16 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
                 
                 $('#downloadModal').modal('hide');
                 
-                // Hiển thị thông báo thành công
-                showNotification('success', 'Đang tải file xuống: ' + currentFile.name);
+                // Hiển thị thông báo thành công sau 1 giây (với tên file thực tế)
+                setTimeout(function() {
+                    showNotification('success', 'File đã được tải xuống: ' + currentFile.fileName);
+                }, 1000);
+                
             } catch (error) {
                 console.error('Error in downloadFile:', error);
-                showNotification('error', 'Có lỗi xảy ra khi tải file xuống.');
+                console.error('Current file URL:', currentFile.url);
+                console.error('Current file name:', currentFile.fileName);
+                showNotification('error', 'Có lỗi xảy ra khi tải file xuống. Vui lòng thử lại.');
             }
         }
         
@@ -992,26 +1129,27 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
                     }
                     
                     var ext = currentFile.type.toLowerCase();
-                    var url = currentFile.url.replace(/\\/g, '/');
-                    
-                    // Đảm bảo đường dẫn bắt đầu từ root
-                    if (!url.startsWith('/')) {
-                        url = '/' + url;
-                    }
+                    var downloadUrl = '/datn/download.php?file=' + encodeURIComponent(currentFile.url);
+                    var previewUrl = '/datn/download.php?file=' + encodeURIComponent(currentFile.url) + '&preview=1';
                     
                     var html = '';
                     
                     if (['pdf'].includes(ext)) {
-                        html = '<iframe src="' + url + '" style="width:100%;height:500px;border:none;border-radius:8px;"></iframe>';
-                    } else if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(ext)) {
-                        html = '<img src="' + url + '" style="max-width:100%;height:auto;border-radius:8px;" alt="' + currentFile.name + '" onerror="this.style.display=\'none\'; this.nextSibling.style.display=\'block\';">';
+                        html = '<iframe src="' + previewUrl + '" style="width:100%;height:500px;border:none;border-radius:8px;"></iframe>';
+                    } else                    if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(ext)) {
+                        html = '<img src="' + previewUrl + '" style="max-width:100%;height:auto;border-radius:8px;" alt="' + currentFile.displayName + '" onerror="this.style.display=\'none\'; this.nextSibling.style.display=\'block\';">';
                         html += '<div style="display:none;" class="alert alert-warning">Không thể tải ảnh.</div>';
                     } else if (['mp4', 'webm', 'ogg', 'avi', 'mov', 'wmv'].includes(ext)) {
-                        html = '<video src="' + url + '" controls style="max-width:100%;height:400px;border-radius:8px;"></video>';
+                        html = '<video src="' + previewUrl + '" controls style="max-width:100%;max-height:400px;border-radius:8px;"></video>';
                     } else if (['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(ext)) {
-                        html = '<iframe src="https://docs.google.com/gview?url=' + encodeURIComponent(window.location.origin + url) + '&embedded=true" style="width:100%;height:500px;border:none;border-radius:8px;"></iframe>';
+                        // Sử dụng hàm mới để xem file Office
+                        $('#previewModal').modal('hide');
+                        setTimeout(function() {
+                            viewOfficeFile(currentFile.url, currentFile.displayName);
+                        }, 300);
+                        return; // Kết thúc function vì đã xử lý riêng
                     } else if (ext === 'txt') {
-                        fetch(url)
+                        fetch(previewUrl)
                             .then(res => res.text())
                             .then(text => {
                                 previewContent.innerHTML = '<pre style="text-align:left;background:#f8f9fa;padding:20px;border-radius:8px;max-height:500px;overflow-y:auto;white-space:pre-wrap;">' + text + '</pre>';
@@ -1058,7 +1196,202 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
             }
         }
         
-        // Hàm lấy class icon
+        // Hàm xem file Word/Excel/PowerPoint với nhiều phương thức
+        function viewOfficeFile(url, displayName) {
+            try {
+                // Chuẩn hóa đường dẫn
+                url = url.replace(/\\/g, '/');
+                var downloadUrl = '/datn/download.php?file=' + encodeURIComponent(url);
+                var previewUrl = '/datn/download.php?file=' + encodeURIComponent(url) + '&preview=1';
+                
+                // Tạo URL tuyệt đối cho Google Docs Viewer
+                var absoluteUrl = window.location.protocol + '//' + window.location.host + previewUrl;
+                
+                var html = `
+                    <div class="office-viewer-container">
+                        <div class="viewer-tabs">
+                            <button class="viewer-tab active" onclick="switchViewer('google', this)">
+                                <i class="fa fa-google"></i> Google Docs
+                            </button>
+                            <button class="viewer-tab" onclick="switchViewer('office', this)">
+                                <i class="fa fa-microsoft"></i> Office Online
+                            </button>
+                            <button class="viewer-tab" onclick="switchViewer('download', this)">
+                                <i class="fa fa-download"></i> Tải xuống
+                            </button>
+                        </div>
+                        
+                        <div id="google-viewer" class="viewer-content active">
+                            <iframe src="https://docs.google.com/gview?url=${encodeURIComponent(absoluteUrl)}&embedded=true" 
+                                style="width:100%;height:550px;border:none;border-radius:8px;" 
+                                frameborder="0"
+                                onload="handleViewerLoad(this)"
+                                onerror="handleViewerError(this)">
+                            </iframe>
+                            <div class="viewer-loading">
+                                <i class="fa fa-spinner fa-spin"></i> Đang tải...
+                            </div>
+                        </div>
+                        
+                        <div id="office-viewer" class="viewer-content">
+                            <iframe src="https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(absoluteUrl)}" 
+                                style="width:100%;height:550px;border:none;border-radius:8px;" 
+                                frameborder="0"
+                                onload="handleViewerLoad(this)"
+                                onerror="handleViewerError(this)">
+                            </iframe>
+                            <div class="viewer-loading">
+                                <i class="fa fa-spinner fa-spin"></i> Đang tải...
+                            </div>
+                        </div>
+                        
+                        <div id="download-viewer" class="viewer-content">
+                            <div class="download-info-panel">
+                                <div class="download-icon">
+                                    <i class="fa fa-file-word-o fa-4x"></i>
+                                </div>
+                                <div class="download-details">
+                                    <h4>${displayName}</h4>
+                                    <p>Không thể xem trước file này trực tuyến. Hãy tải xuống để xem nội dung.</p>
+                                    <a href="${downloadUrl}" class="btn btn-primary btn-lg" target="_blank">
+                                        <i class="fa fa-download"></i> Tải xuống ngay
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <style>
+                    .office-viewer-container {
+                        position: relative;
+                    }
+                    .viewer-tabs {
+                        display: flex;
+                        border-bottom: 2px solid #e9ecef;
+                        margin-bottom: 15px;
+                    }
+                    .viewer-tab {
+                        flex: 1;
+                        padding: 12px 20px;
+                        border: none;
+                        background: #f8f9fa;
+                        color: #495057;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        border-radius: 8px 8px 0 0;
+                        margin-right: 2px;
+                        font-weight: 500;
+                    }
+                    .viewer-tab:hover {
+                        background: #e9ecef;
+                        color: #007bff;
+                    }
+                    .viewer-tab.active {
+                        background: #007bff;
+                        color: white;
+                    }
+                    .viewer-content {
+                        display: none;
+                        position: relative;
+                    }
+                    .viewer-content.active {
+                        display: block;
+                    }
+                    .viewer-loading {
+                        position: absolute;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%, -50%);
+                        color: #6c757d;
+                        font-size: 16px;
+                        display: block;
+                    }
+                    .download-info-panel {
+                        display: flex;
+                        align-items: center;
+                        gap: 30px;
+                        padding: 40px;
+                        background: #f8f9fa;
+                        border-radius: 8px;
+                        text-align: center;
+                        justify-content: center;
+                    }
+                    .download-icon {
+                        color: #007bff;
+                    }
+                    .download-details h4 {
+                        margin-bottom: 15px;
+                        color: #495057;
+                    }
+                    .download-details p {
+                        margin-bottom: 20px;
+                        color: #6c757d;
+                    }
+                    </style>
+                `;
+                
+                var xemFileBody = document.getElementById('xemFileBody');
+                if (xemFileBody) {
+                    xemFileBody.innerHTML = html;
+                }
+                
+                var modalXemFile = document.getElementById('modalXemFile');
+                if (modalXemFile) {
+                    $(modalXemFile).modal('show');
+                }
+            } catch (error) {
+                console.error('Error in viewOfficeFile:', error);
+                showNotification('error', 'Có lỗi xảy ra khi xem file Office.');
+            }
+        }
+        
+        // Hàm chuyển đổi giữa các viewer
+        function switchViewer(type, button) {
+            try {
+                // Cập nhật tab active
+                var tabs = document.querySelectorAll('.viewer-tab');
+                tabs.forEach(tab => tab.classList.remove('active'));
+                button.classList.add('active');
+                
+                // Cập nhật viewer content
+                var contents = document.querySelectorAll('.viewer-content');
+                contents.forEach(content => content.classList.remove('active'));
+                
+                var targetContent = document.getElementById(type + '-viewer');
+                if (targetContent) {
+                    targetContent.classList.add('active');
+                }
+            } catch (error) {
+                console.error('Error in switchViewer:', error);
+            }
+        }
+        
+        // Hàm xử lý khi iframe load thành công
+        function handleViewerLoad(iframe) {
+            try {
+                var loading = iframe.nextElementSibling;
+                if (loading && loading.classList.contains('viewer-loading')) {
+                    loading.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error in handleViewerLoad:', error);
+            }
+        }
+        
+        // Hàm xử lý khi iframe load thất bại
+        function handleViewerError(iframe) {
+            try {
+                var loading = iframe.nextElementSibling;
+                if (loading && loading.classList.contains('viewer-loading')) {
+                    loading.innerHTML = '<i class="fa fa-exclamation-triangle"></i> Không thể tải nội dung';
+                    loading.style.color = '#dc3545';
+                }
+            } catch (error) {
+                console.error('Error in handleViewerError:', error);
+            }
+        }
+        
+        // Hàm xem file Word/Excel/PowerPoint với nhiều phương thức
         function getFileIconClass(fileType) {
             var type = fileType.toLowerCase();
             switch (type) {
@@ -1116,30 +1449,30 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
                 // Chuẩn hóa đường dẫn
                 url = url.replace(/\\/g, '/');
                 
-                // Đảm bảo đường dẫn bắt đầu từ root
-                if (!url.startsWith('/')) {
-                    url = '/' + url;
-                }
+                var downloadUrl = '/datn/download.php?file=' + encodeURIComponent(url);
+                var previewUrl = '/datn/download.php?file=' + encodeURIComponent(url) + '&preview=1';
 
                 const ext = url.split('.').pop().toLowerCase();
                 let html = '';
 
                 if (['pdf'].includes(ext)) {
-                    html = `<iframe src="${url}" style="width:100%;height:600px;border:none;border-radius:8px;"></iframe>`;
+                    html = `<iframe src="${previewUrl}" style="width:100%;height:600px;border:none;border-radius:8px;"></iframe>`;
                 } else if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(ext)) {
-                    html = `<img src="${url}" style="max-width:100%;max-height:600px;border-radius:8px;" alt="Preview">`;
+                    html = `<img src="${previewUrl}" style="max-width:100%;max-height:600px;border-radius:8px;" alt="Preview">`;
                 } else if (['mp4', 'webm', 'ogg', 'avi', 'mov', 'wmv'].includes(ext)) {
-                    html = `<video src="${url}" controls style="max-width:100%;max-height:600px;border-radius:8px;"></video>`;
+                    html = `<video src="${previewUrl}" controls style="max-width:100%;max-height:600px;border-radius:8px;"></video>`;
                 } else if (['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(ext)) {
-                    html = `<iframe src="https://docs.google.com/gview?url=${encodeURIComponent(location.origin + url)}&embedded=true" 
-                         style="width:100%;height:600px;border:none;border-radius:8px;" frameborder="0"></iframe>`;
+                    // Sử dụng hàm mới để xem file Office
+                    var displayName = url.split('/').pop();
+                    viewOfficeFile(url, displayName);
+                    return; // Kết thúc function vì đã xử lý riêng
                 } else if (url.startsWith('http')) {
                     html = `<iframe src="${url}" style="width:100%;height:600px;border:none;border-radius:8px;"></iframe>`;
                 } else if (ext === 'txt') {
-                    fetch(url).then(res => res.text()).then(text => {
+                    fetch(previewUrl).then(res => res.text()).then(text => {
                         var xemFileBody = document.getElementById('xemFileBody');
                         if (xemFileBody) {
-                            xemFileBody.innerHTML = '<pre style="text-align:left;background:#f8f9fa;padding:20px;border-radius:8px;white-space:pre-wrap;">' + text + '</pre>';
+                            xemFileBody.innerHTML = '<pre style="text-align:left;background:#f9f9f9;padding:20px;border-radius:8px;white-space:pre-wrap;">' + text + '</pre>';
                         }
                     }).catch(err => {
                         var xemFileBody = document.getElementById('xemFileBody');
@@ -1156,7 +1489,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
                 } else {
                     html = `<div class="alert alert-info">
                         <i class="fa fa-info-circle"></i> Không thể xem trực tuyến. 
-                        <a href="${url}" target="_blank" class="btn btn-primary btn-sm">
+                        <a href="${downloadUrl}" target="_blank" class="btn btn-primary btn-sm">
                             <i class="fa fa-download"></i> Tải xuống để xem
                         </a>
                     </div>`;
@@ -1264,6 +1597,26 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
                 console.error('Error in DOMContentLoaded:', error);
             }
         });
+        
+        // Hàm debug file path
+        function debugFile() {
+            try {
+                if (!currentFile.url) {
+                    showNotification('error', 'Không tìm thấy đường dẫn file.');
+                    return;
+                }
+                
+                var fileUrl = currentFile.url.replace(/\\/g, '/');
+                var debugUrl = '/datn/download.php?file=' + encodeURIComponent(fileUrl) + '&name=' + encodeURIComponent(currentFile.fileName) + '&debug=1';
+                
+                // Mở tab mới để xem thông tin debug
+                window.open(debugUrl, '_blank');
+                
+            } catch (error) {
+                console.error('Error in debugFile:', error);
+                showNotification('error', 'Có lỗi xảy ra khi debug file.');
+            }
+        }
     </script>
 </body>
 
