@@ -93,8 +93,30 @@ if ($cheDo === 'them') {
     }
 } elseif ($cheDo == 'mo_khoa' && isset($_POST['id_tai_khoan'])) {
     $id = $_POST['id_tai_khoan'];
+
+    // Cập nhật trạng thái trong bảng TaiKhoan
     $stmt = $conn->prepare("UPDATE TaiKhoan SET TrangThai = 1 WHERE ID_TaiKhoan = ?");
     $stmt->execute([$id]);
+
+    // Lấy vai trò tài khoản
+    $stmtRole = $conn->prepare("SELECT VaiTro FROM TaiKhoan WHERE ID_TaiKhoan = ?");
+    $stmtRole->execute([$id]);
+    $vaiTro = $stmtRole->fetchColumn();
+
+    // Mở khóa theo vai trò
+    if ($vaiTro == 'Sinh viên') {
+        $sql = $conn->prepare("UPDATE SinhVien SET TrangThai = 1 WHERE ID_TaiKhoan = ?");
+        $sql->execute([$id]);
+    } elseif ($vaiTro == 'Giáo viên') {
+        $sql = $conn->prepare("UPDATE GiaoVien SET TrangThai = 1 WHERE ID_TaiKhoan = ?");
+        $sql->execute([$id]);
+    } elseif ($vaiTro == 'Cán bộ Khoa/Bộ môn') {
+        $sql = $conn->prepare("UPDATE CanBoKhoa SET TrangThai = 1 WHERE ID_TaiKhoan = ?");
+        $sql->execute([$id]);
+    } elseif ($vaiTro == 'Admin') {
+        $sql = $conn->prepare("UPDATE Admin SET TrangThai = 1 WHERE ID_TaiKhoan = ?");
+        $sql->execute([$id]);
+    }
     header("Location: /datn/admin/pages/quanlythanhvien?msg=unlocked");
     exit;
 }

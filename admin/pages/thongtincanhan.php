@@ -42,6 +42,10 @@ $dsDotDangThamGia = $stmtDot->fetchAll(PDO::FETCH_ASSOC);
     <div id="wrapper">
         <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/admin/template/slidebar.php"; ?>
         <div id="page-wrapper">
+            <div id="pages-heading">
+                <H1>Thông tin cá nhân</H1>
+            </div>
+
             <div class="container-fluid"></div>
             <div class="row" style="margin-top: 40px;">
                 <div class="col-md-4 text-center">
@@ -96,7 +100,7 @@ $dsDotDangThamGia = $stmtDot->fetchAll(PDO::FETCH_ASSOC);
                 </div>
                 <div class="row">
                     <div class="col-md-12 text-center">
-                        <a href="doimatkhau" class="btn btn-primary btn-lg" style="margin-top: 20px;">
+                        <a href="/datn/pages/chung/doimatkhau" class="btn btn-primary btn-lg" style="margin-top: 20px;">
                             <span class="glyphicon glyphicon-lock"></span> Đổi mật khẩu
                         </a>
                     </div>
@@ -104,7 +108,7 @@ $dsDotDangThamGia = $stmtDot->fetchAll(PDO::FETCH_ASSOC);
             </div>
         </div>
 
-            <?php require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"; ?>
+        <?php require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"; ?>
 </body>
 
 </html>

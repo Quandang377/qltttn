@@ -22,7 +22,6 @@ if ($vaiTro != 'Tất cả') {
 $stmt = $conn->prepare($sql);
 $stmt->execute($params);
 $danhSachThanhVien = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
 $dsHoatDong = [];
 $dsNgung = [];
 foreach ($danhSachThanhVien as $tv) {

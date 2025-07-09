@@ -21,6 +21,7 @@
             <li><a href="admin/pages/trangchu"><i class="fa fa-home fa-fw"></i> Trang Chủ</a></li>
             <li><a href="admin/pages/modotthuctap"><i class="fa fa-briefcase fa-fw"></i> Quản lý đợt thực tập</a></li>
             <li><a href="admin/pages/quanlythongbao"><i class="fa fa-bell fa-fw"></i> Quản lý thông báo</a></li>
+            <li><a href="admin/pages/quanlygiaygioithieu"><i class="fa fa-file fa-fw"></i> Quản lý giấy giới thiệu</a></li>
             <li><a href="admin/pages/quanlytainguyen"><i class="fa fa-folder fa-fw"></i> Quản lý tài nguyên</a></li>
             <li><a href="admin/pages/khaosat"><i class="fa fa-table fa-fw"></i> Khảo sát</a></li>
             <li><a href="admin/pages/quanlythanhvien"><i class="fa fa-user fa-fw"></i> Quản lý thành viên</a></li>

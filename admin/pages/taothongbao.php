@@ -53,6 +53,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <?php
   require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php";
   ?>
+  <style>
+    .ck-editor__editable_inline {
+        min-height: 200px;
+    }
+  </style>
 </head>
 
 <body>
@@ -104,7 +109,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
           </div>
         </div>
-
       </div>
     </div>
   </div>

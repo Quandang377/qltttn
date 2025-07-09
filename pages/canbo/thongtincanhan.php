@@ -44,6 +44,8 @@ $dsDotDangThamGia = $stmtDot->fetchAll(PDO::FETCH_ASSOC);
     <div id="wrapper">
         <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_CanBo.php"; ?>
         <div id="page-wrapper">
+            <div id="pages-heading"><H1>Thông tin cá nhân</H1> </div>
+
             <div class="container-fluid"></div>
             <div class="row" style="margin-top: 40px;">
                 <div class="col-md-4 text-center">

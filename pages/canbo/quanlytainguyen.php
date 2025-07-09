@@ -60,11 +60,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $idFile = $conn->lastInsertId();
 
             if (!empty($dsDot)) {
-                $stmt = $conn->prepare("INSERT INTO tainguyen_dot (ID_File, ID_Dot) VALUES (?, ?)");
-                foreach ($dsDot as $idDot) {
-                    $stmt->execute([$idFile, $idDot]);
+                // Nếu chọn "Tất cả sinh viên" thì không insert vào tainguyen_dot
+                if (in_array('0', $dsDot)) {
+                    // không cần insert, tài nguyên sẽ áp dụng cho tất cả
+                } else {
+                    $stmt = $conn->prepare("INSERT INTO tainguyen_dot (ID_File, ID_Dot) VALUES (?, ?)");
+                    foreach ($dsDot as $idDot) {
+                        $stmt->execute([$idFile, $idDot]);
+                    }
                 }
             }
+
             respond('success', 'Thêm tài nguyên thành công!');
         } else {
             respond('error', 'Vui lòng nhập đủ thông tin và chọn file hoặc đường dẫn!');
@@ -145,7 +151,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <title>Quản lý tài nguyên thực tập</title>
     <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php"; ?>
-    <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_CanBo.php"; ?>
     <style>
         .container,
         .container-fluid,
@@ -159,7 +164,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <body>
     <div id="wrapper">
-        <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_CanBo.php"; ?>
+        <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_CanBo.php";
+        ?>
         <div id="page-wrapper">
             <div class="container-fluid">
                 <div class="row"></div>
@@ -215,6 +221,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <th>Tên tài nguyên</th>
                                 <th>File</th>
                                 <th>Áp dụng cho đợt</th>
+                                <th>Ngày tải lên</th>
                                 <th>Thao tác</th>
                             </tr>
                         </thead>
@@ -227,7 +234,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <td>
                                         <?= htmlspecialchars($row['TenFile']) ?>
                                     </td>
-                                    <td><?= htmlspecialchars($row['DotThucTap']) ?></td>
+                                    <td><?= htmlspecialchars($row['DotThucTap']??"Tất cả") ?></td>
+                                    <td><?= htmlspecialchars($row['NgayNop']) ?></td>
+
                                     <td>
                                         <?php
 
@@ -288,7 +297,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                                 </option>
                                             <?php endwhile; ?>
                                         </select>
-                                        <small class="text-muted">Giữ Ctrl (hoặc Cmd) để chọn nhiều đợt</small>
+                                        <small class="text-muted">Giữ Ctrl/Shift (hoặc Cmd trên Mac) để chọn nhiều đợt</small>
                                     </div>
                                 </div>
                                 <div class="modal-footer">
@@ -353,6 +362,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             });
         }
         $(document).ready(function () {
+            $('#selectDot').on('change', function () {
+                const selected = $(this).val();
+                if (selected.includes('0')) {
+                    // Nếu chọn "Tất cả", bỏ chọn các đợt khác
+                    $('#selectDot option').not('[value="0"]').prop('selected', false);
+                } else {
+                    // Nếu chọn đợt khác, bỏ chọn "Tất cả"
+                    $('#selectDot option[value="0"]').prop('selected', false);
+                }
+            });
             $('#btnLuuDot').on('click', function () {
                 const selectedOptions = $('#selectDot option:selected');
                 const dotContainer = $('#dot-container');
@@ -427,11 +446,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 e.preventDefault();
                 const formData = new FormData(this);
                 formData.append('ajax', '1');
-
-                // ❌ Đừng thêm lại ds_dot nữa nếu đã có sẵn hidden input
-                // $('#edit-ds-dot option:selected').each(function () {
-                //     formData.append('ds_dot[]', $(this).val());
-                // });
 
                 $.ajax({
                     url: '',
@@ -549,6 +563,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 <div class="modal-body">
                     <select multiple class="form-control" id="selectDot" size="8">
+                        <option value="0">Tất cả</option>
                         <?php
                         $stmt = $conn->query("SELECT ID, TenDot FROM DotThucTap WHERE TrangThai >= 0 ORDER BY ID DESC");
                         while ($dot = $stmt->fetch(PDO::FETCH_ASSOC)):
@@ -556,7 +571,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <option value="<?= $dot['ID'] ?>"><?= htmlspecialchars($dot['TenDot']) ?></option>
                         <?php endwhile; ?>
                     </select>
-                    <small class="text-muted">Giữ Ctrl (hoặc Cmd trên Mac) để chọn nhiều đợt</small>
+                    <small class="text-muted">Giữ Ctrl/Shift (hoặc Cmd trên Mac) để chọn nhiều đợt</small>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>

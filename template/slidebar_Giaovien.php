@@ -281,7 +281,7 @@ foreach ($stmt as $row) {
     <form id="menuSearchForm" class="form-inline text-right" style="margin-right: -50px;"
         onsubmit="return submitSearchForm();">
         <input type="text" name="q" id="searchInput" class="form-control" placeholder="Tìm kiếm thông tin..."
-            style="width: 300px;" required>
+            style="width: 300px;" required> 
         <button type="submit" class="btn btn-primary">Tìm kiếm</button>
     </form>
 </div>

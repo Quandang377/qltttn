@@ -50,6 +50,7 @@ elseif ($trangThaiDot == 0)
     <div id="wrapper">
         <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_SinhVien.php"; ?>
         <div id="page-wrapper">
+            <div id="pages-heading"><H1>Thông tin cá nhân</H1> </div>
             <div class="container-fluid">
                 <div class="row" style="margin-top: 40px;">
                     <div class="col-md-12">

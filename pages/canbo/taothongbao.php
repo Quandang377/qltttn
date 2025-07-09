@@ -53,6 +53,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <?php
   require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php";
   ?>
+  <style>
+    
+    .ck-editor__editable_inline {
+        min-height: 200px;
+    }
+</style>
 </head>
 
 <body>
@@ -87,7 +93,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                   </div>
                   <div class="form-group">
                     <label>Nội dung thông báo</label>
-                    <script src="/datn/access/ckeditor/classic/ckeditor.js"></script>
                     <textarea name="noidung" id="editor" style="height:500px"></textarea>
                     <script>
                       ClassicEditor

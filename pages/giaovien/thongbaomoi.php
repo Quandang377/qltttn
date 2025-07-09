@@ -2,25 +2,34 @@
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 $idTaiKhoan = $_SESSION['user']['ID_TaiKhoan'] ?? null;
+$thongbao_moi = [];
 
-$stmt = $conn->prepare("SELECT ID_Dot FROM SinhVien WHERE ID_TaiKhoan = ?");
-$stmt->execute([$idTaiKhoan]);
-$idDot = $stmt->fetchColumn();
+if ($idTaiKhoan) {
+    // Lấy các ID đợt giáo viên đang phụ trách
+    $stmt = $conn->prepare("SELECT ID_Dot FROM dot_giaovien WHERE ID_GVHD = ?");
+    $stmt->execute([$idTaiKhoan]);
+    $dsDot = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
-$stmt = $conn->prepare("
-    SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.ID_TAIKHOAN, tb.NGAYDANG, tb.TRANGTHAI, tb.ID_Dot, dt.TenDot
-    FROM THONGBAO tb
-    LEFT JOIN DotThucTap dt ON tb.ID_Dot = dt.ID
-    WHERE tb.TRANGTHAI = 1 
-        AND tb.ID_Dot = ? 
-        AND NOT EXISTS (
-            SELECT 1 FROM ThongBao_Xem xem 
-            WHERE xem.ID_TaiKhoan = ? AND xem.ID_ThongBao = tb.ID
-        )
-    ORDER BY tb.NGAYDANG DESC
-");
-$stmt->execute([$idDot, $idTaiKhoan]);
-$thongbao_moi = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    if (!empty($dsDot)) {
+        $placeholders = implode(',', array_fill(0, count($dsDot), '?'));
+        $params = array_merge($dsDot, [$idTaiKhoan]);
+
+        $stmt = $conn->prepare("
+            SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.ID_TAIKHOAN, tb.NGAYDANG, tb.TRANGTHAI, tb.ID_Dot, dt.TenDot
+            FROM THONGBAO tb
+            LEFT JOIN DotThucTap dt ON tb.ID_Dot = dt.ID
+            WHERE tb.TRANGTHAI = 1
+                AND tb.ID_Dot IN ($placeholders)
+                AND NOT EXISTS (
+                    SELECT 1 FROM ThongBao_Xem xem 
+                    WHERE xem.ID_TaiKhoan = ? AND xem.ID_ThongBao = tb.ID
+                )
+            ORDER BY tb.NGAYDANG DESC
+        ");
+        $stmt->execute($params);
+        $thongbao_moi = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -29,11 +38,82 @@ $thongbao_moi = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <meta charset="UTF-8">
     <title>Thông báo mới</title>
     <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php"; ?>
+    <style>
+        /* Notification Container */
+  .notification-container {
+    min-height: 300px;
+  }
+
+  .notification-card {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+
+  .notification-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+
+  .notification-image-container {
+    text-align: center;
+  }
+
+  .notification-image {
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 2px solid #ddd;
+    transition: all 0.3s ease;
+  }
+
+  .notification-image:hover {
+    border-color: #337ab7;
+  }
+
+  .notification-content {
+    padding-left: 15px;
+  }
+
+  .notification-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+    text-decoration: none;
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  .notification-title:hover {
+    color: #337ab7;
+    text-decoration: none;
+  }
+
+  .notification-meta {
+    color: #666;
+    font-size: 14px;
+  }
+
+  .meta-item {
+    margin-right: 8px;
+  }
+
+  .meta-separator {
+    margin: 0 8px;
+    color: #ccc;
+  }
+
+    </style>
 </head>
 
 <body>
     <div id="wrapper">
-        <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_SinhVien.php"; ?>
+        <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_GiaoVien.php"; ?>
         <div id="page-wrapper">
             <div class="container-fluid">
                 <div class="row">
@@ -76,25 +156,37 @@ function renderNotifications() {
 
         list.forEach(tb => {
             const html = `
-                    <div class="row" style="margin-bottom: 15px; border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
-                        <div class="col-md-2 text-center">
-                            <a href="#" class="thongbao-link" data-id="${tb.ID}">
-                                <img src="/datn/uploads/Images/ThongBao.jpg" alt="${tb.TIEUDE}" style="width: 100px; height: 70px; object-fit: cover;">
-                            </a>
+                    <div class="notification-card">
+                    <div class="row">
+                    <div class="col-sm-2 col-xs-3 notification-image-container">
+                        <a href="#" class="thongbao-link" data-id="${tb.ID}">
+                        <img src="/datn/uploads/Images/ThongBao.jpg" alt="${tb.TIEUDE}" class="notification-image">
+                        </a>
+                    </div>
+                    <div class="col-sm-10 col-xs-9">
+                        <div class="notification-content">
+                        <a href="#" class="thongbao-link" data-id="${tb.ID}" class="notification-title">
+                            ${tb.TIEUDE}
+                        </a>
+                        <div class="notification-meta">
+                            <span class="meta-item">
+                            <i class="fa fa-bullhorn"></i> Thông báo
+                            </span>
+                            <span class="meta-separator">|</span>
+                            <span class="meta-item">
+                            <i class="fa fa-calendar"></i> ${new Date(tb.NGAYDANG).toLocaleDateString('vi-VN')}
+                            </span>
+                            ${tb.TenDot ? `
+                            <span class="meta-separator">|</span>
+                            <span class="meta-item">
+                                <i class="fa fa-tag"></i> ${tb.TenDot}
+                            </span>
+                            ` : ''}
                         </div>
-                        <div class="col-lg-10">
-                            <p style="margin-bottom: 5px;">
-                                <a href="#" class="thongbao-link" data-id="${tb.ID}" style="font-weight: bold; text-decoration: none;">
-                                    ${tb.TIEUDE}
-                                </a>
-                            </p>
-                            <ul class="list-inline" style="color: #888; font-size: 13px; margin: 0;">
-                                <li>Thông báo</li>
-                                <li>|</li>
-                                <li>${new Date(tb.NGAYDANG).toLocaleDateString('vi-VN')}</li>
-                            </ul>
                         </div>
                     </div>
+                    </div>
+                </div>
                     `;
             container.insertAdjacentHTML('beforeend', html);
         });
@@ -129,12 +221,12 @@ function renderNotifications() {
   if (link) {
     e.preventDefault();
     const id = link.getAttribute('data-id');
-    fetch('pages/sinhvien/ajax_danhdau_thongbao.php', {
+    fetch('pages/giaovien/ajax_danhdau_thongbao.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: 'idThongBao=' + encodeURIComponent(id)
     }).then(() => {
-      window.location.href = 'pages/sinhvien/chitietthongbao.php?id=' + id;
+      window.location.href = 'pages/giaovien/chitietthongbao.php?id=' + id;
     });
   }
 });

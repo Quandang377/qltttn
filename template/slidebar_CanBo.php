@@ -26,8 +26,8 @@
                     tập</a>
             </li>
             <li>
-                <a href="pages/canbo/quanlydanhsachsinhvien"  ><i class="fa fa-users fa-fw"></i> Quản
-                    lý sinh viên</a>
+                <a href="pages/canbo/quanlygiaygioithieu"  ><i class="fa fa-file fa-fw"></i> Quản
+                    lý giấy giới thiệu</a>
             </li>
             <li>
                 <a href="pages/canbo/quanlytainguyen"  ><i class="fa fa-folder fa-fw"></i> Quản lý tài
