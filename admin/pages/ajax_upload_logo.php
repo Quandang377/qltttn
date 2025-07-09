@@ -1,4 +1,5 @@
 <?php
+require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 $uploadDir = $_SERVER['DOCUMENT_ROOT'] . '/datn/uploads/Images/';
 $uploadUrl = '/datn/uploads/Images/';
 
