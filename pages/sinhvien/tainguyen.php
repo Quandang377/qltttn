@@ -1,6 +1,6 @@
 <?php
- require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
-                    require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
+require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -13,7 +13,7 @@
     ?>
     <meta charset="UTF-8">
     <title>Tài nguyên</title>
-   
+
     <style>
     #page-wrapper {
         padding: 30px;
@@ -559,7 +559,8 @@
                     $stmt = $conn->prepare($sql);
                     $stmt->execute();
                     $resources = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                    
+
+
                     if (count($resources) > 0) {
                         // Nhóm tài nguyên theo đợt
                         $resourcesByDot = [];
@@ -719,39 +720,81 @@
                         echo '<p>Hiện tại chưa có tài nguyên học tập nào được tải lên.</p>';
                         echo '</div>';
                     }
-                } catch(PDOException $e) {
+                } catch (PDOException $e) {
                     echo '<div class="alert alert-danger">Lỗi khi tải tài nguyên: ' . $e->getMessage() . '</div>';
                 }
-                
+
                 // Hàm xác định icon dựa trên loại file
-                function getFileIcon($fileType) {
+                function getFileIcon($fileType)
+                {
                     $fileType = strtolower($fileType);
                     switch ($fileType) {
-                        case 'pdf': return 'fa-file-pdf-o';
-                        case 'doc': case 'docx': return 'fa-file-word-o';
-                        case 'xls': case 'xlsx': return 'fa-file-excel-o';
-                        case 'ppt': case 'pptx': return 'fa-file-powerpoint-o';
-                        case 'mp4': case 'avi': case 'mov': return 'fa-file-video-o';
-                        case 'zip': case 'rar': return 'fa-file-archive-o';
-                        case 'jpg': case 'png': case 'gif': return 'fa-file-image-o';
-                        case 'php': case 'html': case 'js': case 'css': return 'fa-file-code-o';
-                        default: return 'fa-file-o';
+                        case 'pdf':
+                            return 'fa-file-pdf-o';
+                        case 'doc':
+                        case 'docx':
+                            return 'fa-file-word-o';
+                        case 'xls':
+                        case 'xlsx':
+                            return 'fa-file-excel-o';
+                        case 'ppt':
+                        case 'pptx':
+                            return 'fa-file-powerpoint-o';
+                        case 'mp4':
+                        case 'avi':
+                        case 'mov':
+                            return 'fa-file-video-o';
+                        case 'zip':
+                        case 'rar':
+                            return 'fa-file-archive-o';
+                        case 'jpg':
+                        case 'png':
+                        case 'gif':
+                            return 'fa-file-image-o';
+                        case 'php':
+                        case 'html':
+                        case 'js':
+                        case 'css':
+                            return 'fa-file-code-o';
+                        default:
+                            return 'fa-file-o';
                     }
                 }
-                
+
                 // Hàm xác định class màu cho panel dựa trên loại file
-                function getPanelClass($fileType) {
+                function getPanelClass($fileType)
+                {
                     $fileType = strtolower($fileType);
                     switch ($fileType) {
-                        case 'pdf': return 'pdf';
-                        case 'doc': case 'docx': return 'word';
-                        case 'xls': case 'xlsx': return 'excel';
-                        case 'ppt': case 'pptx': return 'powerpoint';
-                        case 'mp4': case 'avi': case 'mov': return 'video';
-                        case 'zip': case 'rar': return 'archive';
-                        case 'jpg': case 'png': case 'gif': return 'image';
-                        case 'php': case 'html': case 'js': case 'css': return 'code';
-                        default: return 'default';
+                        case 'pdf':
+                            return 'pdf';
+                        case 'doc':
+                        case 'docx':
+                            return 'word';
+                        case 'xls':
+                        case 'xlsx':
+                            return 'excel';
+                        case 'ppt':
+                        case 'pptx':
+                            return 'powerpoint';
+                        case 'mp4':
+                        case 'avi':
+                        case 'mov':
+                            return 'video';
+                        case 'zip':
+                        case 'rar':
+                            return 'archive';
+                        case 'jpg':
+                        case 'png':
+                        case 'gif':
+                            return 'image';
+                        case 'php':
+                        case 'html':
+                        case 'js':
+                        case 'css':
+                            return 'code';
+                        default:
+                            return 'default';
                     }
                 }
                 ?>

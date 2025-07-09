@@ -289,6 +289,7 @@ if (isset($_GET['export_excel']) && $_GET['export_excel'] == 2) {
         "Trạng thái:" => match ($dot['TrangThai']) {
             1 => 'Đang chuẩn bị',
             2 => 'Đã bắt đầu',
+            4 => 'Đã bắt đầu',
             3 => 'Hoàn tất phân công',
             default => 'Đã kết thúc'
         },
