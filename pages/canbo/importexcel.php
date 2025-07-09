@@ -198,5 +198,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_excel'])) {
             </div>
         </div>
     </div>
+    <?php
+        require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
+    ?>
 </body>
 </html>

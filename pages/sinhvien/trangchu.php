@@ -339,6 +339,7 @@ $updateStmt2->execute(['today' => $today]);
     margin-right: 0;
   }
 
+<<<<<<< HEAD
   @media (max-width: 768px) {
     .panel-container:not(:last-child)::after {
       display: none;
@@ -349,3 +350,33 @@ $updateStmt2->execute(['today' => $today]);
     }
   }
 </style>
+=======
+  .panel {
+    border: 2px solid #e3eafc !important;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 2px 8px #007bff11;
+    transition: box-shadow 0.2s, border 0.2s, background 0.2s, transform 0.2s;
+  }
+
+  .panel.active-step {
+    border: 2.5px solid #007bff !important;
+    box-shadow: 0 4px 24px #007bff33;
+    background: linear-gradient(90deg, #e3f0ff 70%, #fafdff 100%);
+    transform: scale(1.04);
+  }
+
+  .panel.active-step .panel-heading {
+    color: #007bff;
+    font-weight: bold;
+    font-size: 18px;
+    letter-spacing: 1px;
+  }
+</style>
+<?php
+$idSinhVien = 3;
+$stmt = $conn->prepare("SELECT TrangThaiDot FROM sinhvien WHERE ID = ?");
+$stmt->execute([$idSinhVien]);
+$trangThaiDot = $stmt->fetchColumn();
+?>
+>>>>>>> e1fe1c817054eb265447979f13f3d59a4d81b821

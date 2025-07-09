@@ -96,9 +96,82 @@ if ($tuanDuocNhap) {
     <title>Báo Cáo Tuần</title>
     <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php"; ?>
     <style>
+        body {
+            background: linear-gradient(135deg, #e3f0ff 0%, #f8fafc 100%);
+            font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+        }
+        #page-wrapper {
+            padding: 30px;
+            min-height: 100vh;
+            background: none;
+        }
+        .page-header h1, .page-header {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #007bff;
+            letter-spacing: 1px;
+            margin-bottom: 32px;
+            text-align: center;
+            text-shadow: 0 2px 8px #b6d4fe44;
+        }
+        .form-control, select.form-control {
+            border-radius: 8px;
+            border: 1.5px solid #b6d4fe;
+            font-size: 16px;
+            padding: 8px 14px;
+            background: #fafdff;
+            transition: border 0.2s;
+        }
+        .form-control:focus, select.form-control:focus {
+            border: 1.5px solid #007bff;
+            background: #f0f8ff;
+            outline: none;
+        }
         .readonly-field {
-            background-color: #f8f9fa;
+            background-color: #f8f9fa !important;
             cursor: not-allowed;
+            color: #888;
+        }
+        label {
+            font-weight: 600;
+            color: #007bff;
+            margin-bottom: 6px;
+        }
+        .badge-danger {
+            background: #ff4d4f;
+            color: #fff;
+            font-size: 15px;
+            padding: 6px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+        .btn-success, .btn-primary {
+            border-radius: 8px !important;
+            font-weight: 600;
+            box-shadow: 0 2px 8px #007bff22;
+            border: none;
+            background: linear-gradient(90deg, #007bff 70%, #5bc0f7 100%) !important;
+            color: #fff !important;
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+        .btn-success:hover, .btn-primary:hover {
+            background: linear-gradient(90deg, #0056d2 70%, #3fa9f5 100%) !important;
+            color: #fff !important;
+            box-shadow: 0 4px 16px #007bff33;
+        }
+        .alert {
+            border-radius: 10px;
+            font-size: 16px;
+        }
+        select.form-control {
+            width: auto;
+            display: inline-block;
+            min-width: 120px;
+            margin-left: 8px;
+        }
+        @media (max-width: 991px) {
+            #page-wrapper { padding: 10px; }
+            .page-header h1 { font-size: 1.5rem; }
         }
     </style>
 </head>
@@ -121,11 +194,10 @@ if ($tuanDuocNhap) {
                     <!-- Chọn tuần (hiển thị tất cả tuần đã từng mở) -->
                     <form method="get" style="margin-bottom:20px;">
                         <label for="tuanChon"><strong>Chọn tuần báo cáo:</strong></label>
-                        <select name="tuan" id="tuanChon" onchange="this.form.submit()" class="form-control" style="width:auto;display:inline-block;">
+                        <select name="tuan" id="tuanChon" onchange="this.form.submit()" class="form-control" style="height:50px;display:inline-block;">
                             <?php foreach ($tatCaTuan as $tuan): ?>
                                 <option value="<?php echo $tuan; ?>" <?php if ($tuan == $tuanDuocNhap) echo 'selected'; ?>>
-                                    Tuần <?php echo $tuan; ?>
-                                    <?php if (!in_array($tuan, $tuanMo)) echo ' (Đã đóng)'; ?>
+                                    Tuần <?php echo $tuan; ?><?php if (!in_array($tuan, $tuanMo)) echo ' (Đã đóng)'; ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
@@ -142,13 +214,15 @@ if ($tuanDuocNhap) {
                         <?php for ($i = 2; $i <= 7; $i++): ?>
                             <div class="row" style="padding-top: 10px;">
                                 <label for="Thu-<?php echo $i; ?>">Thứ <?php echo $i; ?></label>
-                                <input type="text" class="form-control <?php if (!$tuanHienTaiMo) echo 'readonly-field'; ?>" 
-                                       id="Thu-<?php echo $i; ?>" name="Thu-<?php echo $i; ?>"
-                                       value="<?php echo isset($baoCaoDaNop[$i]) ? htmlspecialchars($baoCaoDaNop[$i]) : ''; ?>"
-                                       placeholder="Công việc thực hiện" maxlength="255"
-                                       pattern="^[a-zA-Z0-9À-ỹà-ỹ\s.,-]*$"
-                                       title="Không được nhập ký tự đặc biệt"
-                                       <?php if (!$tuanHienTaiMo) echo 'readonly'; ?>>
+                                <textarea class="form-control <?php if (!$tuanHienTaiMo) echo 'readonly-field'; ?>" 
+                                    id="Thu-<?php echo $i; ?>" 
+                                    name="Thu-<?php echo $i; ?>"
+                                    placeholder="Công việc thực hiện" 
+                                    maxlength="250"
+                                    rows="4"
+                                    style="resize: none;"
+                                    <?php if (!$tuanHienTaiMo) echo 'readonly'; ?>
+                            ><?php echo isset($baoCaoDaNop[$i]) ? htmlspecialchars($baoCaoDaNop[$i]) : ''; ?></textarea>
                             </div>
                         <?php endfor; ?>
                         

@@ -70,6 +70,11 @@ foreach ($stmt as $row) {
         align-items: center;
         justify-content: space-between;
         flex-wrap: wrap;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        z-index: 1000;
     }
 
     .topbar-left {
@@ -114,6 +119,11 @@ foreach ($stmt as $row) {
         gap: 25px;
         padding: 12px 0;
         border-bottom: 1px solid #e5e7eb;
+        position: fixed;
+        top: 50px; /* chiều cao của .topbar */
+        left: 0;
+        width: 100%;
+        z-index: 999;
     }
 
     .nav-bar a {
@@ -194,6 +204,11 @@ foreach ($stmt as $row) {
         .topbar-center {
             display: none;
         }
+    }
+
+    /* Thêm padding-top cho phần nội dung bên dưới để tránh bị che khuất */
+    body {
+        padding-top: 102px; /* 50px topbar + 52px nav-bar (điều chỉnh nếu cần) */
     }
 </style>
 

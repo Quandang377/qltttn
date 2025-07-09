@@ -202,6 +202,9 @@
         </div>
     </div>
 </div>
+ <?php
+        require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
+    ?>
 <script>
 function resetCongTyForm() {
     $('#id_cong_ty').val('');
