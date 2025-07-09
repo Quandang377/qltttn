@@ -44,15 +44,59 @@ $stmt->execute([$idTaiKhoan]);
 $trangThaiDot = $stmt->fetchColumn();
 
 $panelActive = -1;
+$statusInfo = [
+  'message' => '',
+  'class' => '',
+  'icon' => ''
+];
+
 if($idTaiKhoan){
-if ($trangThaiDot == 1)
-  $panelActive = 0;
-elseif ($trangThaiDot == 3)
-  $panelActive = 1;
-elseif ($trangThaiDot == 2)
-  $panelActive = 2;
-elseif ($trangThaiDot == 0)
-  $panelActive = 3;
+  if ($trangThaiDot >= 3) {
+    if ($trangThaiDot == 3) {
+      $panelActive = 0; // Nổi bật tìm công ty và xin giấy giới thiệu
+      $statusInfo = [
+        'message' => 'Giai đoạn: Tìm công ty và xin giấy giới thiệu thực tập',
+        'class' => 'status-finding',
+        'icon' => 'fa-search'
+      ];
+    } elseif ($trangThaiDot == 4) {
+      $panelActive = 1; // Thực tập và báo cáo
+      $statusInfo = [
+        'message' => 'Giai đoạn: Thực tập và báo cáo tuần',
+        'class' => 'status-internship',
+        'icon' => 'fa-briefcase'
+      ];
+    } elseif ($trangThaiDot == 5) {
+      $panelActive = 2; // Kết thúc và nộp báo cáo
+      $statusInfo = [
+        'message' => 'Giai đoạn: Kết thúc và nộp báo cáo',
+        'class' => 'status-completion',
+        'icon' => 'fa-check-circle'
+      ];
+    }
+  } elseif ($trangThaiDot == -1) {
+    // Đợt đã kết thúc
+    $statusInfo = [
+      'message' => 'Đợt thực tập đã kết thúc',
+      'class' => 'status-ended',
+      'icon' => 'fa-flag-checkered'
+    ];
+  } elseif ($trangThaiDot < 3 && $trangThaiDot >= 0) {
+    // Đợt đang chuẩn bị bắt đầu
+    $statusInfo = [
+      'message' => 'Đợt đang chuẩn bị bắt đầu',
+      'class' => 'status-preparing',
+      'icon' => 'fa-clock-o'
+    ];
+  } else {
+    // Trạng thái cũ cho các đợt khác
+    if ($trangThaiDot == 1)
+      $panelActive = 0;
+    elseif ($trangThaiDot == 2)
+      $panelActive = 1;
+    elseif ($trangThaiDot == 0)
+      $panelActive = 2;
+  }
 }
 
 $today = date('Y-m-d');
@@ -94,55 +138,82 @@ $updateStmt2->execute(['today' => $today]);
         <div class="row">
           <div class="col-lg-12">
             <h1 class="page-header">Quy Trình Thực Tập Tốt Nghiệp</h1>
+            
+            <?php if ($idTaiKhoan && $statusInfo['message']): ?>
+            <div class="status-indicator <?= $statusInfo['class'] ?>">
+              <i class="fa <?= $statusInfo['icon'] ?>"></i>
+              <span class="status-message"><?= $statusInfo['message'] ?></span>
+            </div>
+            <?php endif; ?>
           </div>
         </div>
         <div class="row panel-row">
-          <div class="col-lg-12">
-            <div class="col-md-3 panel-container">
-              <a href="pages/sinhvien/xemdanhsachcongty" style="text-decoration: none; color: inherit;">
-                <div class="panel panel-default <?= $panelActive === 0 ? 'panel-success' : '' ?>" <?= $panelActive === 0 ? 'data-toggle="tooltip" title="Giai đoạn hiện tại"' : '' ?> style="min-height: 170px;">
-                  <div class="panel-heading">Tìm công ty thực tập</div>
-                  <div class="panel-body">
-                    <p>&bull; Xem danh sách công ty từ các khóa trước</p>
-                    <p>&bull; Tìm trên các trang web</p>
-                  </div>
+          <div class="col-md-3 panel-container">
+            <a href="pages/sinhvien/xemdanhsachcongty" style="text-decoration: none; color: inherit;">
+              <div class="panel panel-default <?= $panelActive === 0 ? 'active-step' : '' ?>" style="min-height: 180px;">
+                <div class="panel-heading">
+                  <i class="fa fa-search"></i> Tìm công ty thực tập
                 </div>
-              </a>
-            </div>
-            <div class="col-md-3 panel-container">
-              <a <?= ($trangThaiDot != 3) ? '' : 'href="pages/sinhvien/dangkygiaygioithieu"' ?>
-                style="text-decoration: none; color: inherit;">
-                <div class="panel panel-default <?= $panelActive === 1 ? 'panel-success' : '' ?>" <?= $panelActive === 1 ? 'data-toggle="tooltip" title="Giai đoạn hiện tại"' : '' ?> style="min-height: 170px;">
-                  <div class="panel-heading">Xin giấy giới thiệu thực tập</div>
-                  <div class="panel-body">
-                    <p>&bull; Gửi thông tin đăng ký xin giấy giới thiệu thực tập</p>
-                  </div>
+                <div class="panel-body">
+                  <p><i class="fa fa-check-circle text-success"></i> Xem danh sách công ty từ các khóa trước</p>
+                  <p><i class="fa fa-check-circle text-success"></i> Tìm trên các trang web</p>
+                  <p><i class="fa fa-check-circle text-success"></i> Liên hệ với các công ty</p>
                 </div>
-              </a>
-            </div>
-            <div class="col-md-3 panel-container">
-              <a <?= ($trangThaiDot != 2) ? '' : 'href="pages/sinhvien/baocaotuan"' ?>
-                style="text-decoration: none; color: inherit;">
-                <div class="panel panel-default <?= $panelActive === 2 ? 'panel-success' : '' ?>" <?= $panelActive === 2 ? 'data-toggle="tooltip" title="Giai đoạn hiện tại"' : '' ?> style="min-height: 170px;">
-                  <div class="panel-heading">Thực tập, báo cáo tuần</div>
-                  <div class="panel-body">
-                    <p>&bull; Bắt dầu thực tập, gửi báo cáo hằng tuần cho giáo viên hướng dẫn</p>
-                  </div>
+              </div>
+            </a>
+          </div>
+          <div class="col-md-3 panel-container">
+            <a <?= ($trangThaiDot >= 3) ? 'href="pages/sinhvien/dangkygiaygioithieu"' : '' ?>
+              style="text-decoration: none; color: inherit;">
+              <div class="panel panel-default <?= $panelActive === 1 ? 'active-step' : '' ?>" style="min-height: 180px;">
+                <div class="panel-heading">
+                  <i class="fa fa-file-text"></i> Xin giấy giới thiệu thực tập
                 </div>
-              </a>
-            </div>
-            <div class="col-md-3 ">
-              <a href="#" data-toggle="modal" data-target="#detailModal" style="text-decoration: none; color: inherit;">
-                <div class="panel panel-default <?= $panelActive === 3 ? 'panel-success' : '' ?>" <?= $panelActive === 3 ? 'data-toggle="tooltip" title="Giai đoạn hiện tại"' : '' ?> style="min-height: 170px;">
-                  <div class="panel-heading">Chấm điểm kết thúc</div>
-                  <div class="panel-body">
-                    <p>&bull; Phiếu chấm điểm...</p>
-                    <p>&bull; Nhận xét thực tập...</p>
-                    <p>&bull; Quyển báo cáo...</p>
-                  </div>
+                <div class="panel-body">
+                  <p><i class="fa fa-info-circle text-info"></i> Gửi thông tin đăng ký xin giấy giới thiệu thực tập</p>
+                  <p><i class="fa fa-clock-o text-warning"></i> Chờ phê duyệt từ khoa</p>
+                  <?php if ($trangThaiDot < 3): ?>
+                  <p><i class="fa fa-lock text-muted"></i> <small>Chưa mở</small></p>
+                  <?php endif; ?>
                 </div>
-              </a>
-            </div>
+              </div>
+            </a>
+          </div>
+          <div class="col-md-3 panel-container">
+            <a <?= ($trangThaiDot == 4) ? 'href="pages/sinhvien/baocaotuan"' : '' ?>
+              style="text-decoration: none; color: inherit;">
+              <div class="panel panel-default <?= $panelActive === 2 ? 'active-step' : '' ?>" style="min-height: 180px;">
+                <div class="panel-heading">
+                  <i class="fa fa-briefcase"></i> Thực tập, báo cáo tuần
+                </div>
+                <div class="panel-body">
+                  <p><i class="fa fa-calendar text-primary"></i> Bắt đầu thực tập</p>
+                  <p><i class="fa fa-file-text-o text-primary"></i> Gửi báo cáo hằng tuần</p>
+                  <?php if ($trangThaiDot < 4): ?>
+                  <p><i class="fa fa-lock text-muted"></i> <small>Chưa mở</small></p>
+                  <?php endif; ?>
+                </div>
+              </div>
+            </a>
+          </div>
+          <div class="col-md-3 panel-container">
+            <a <?= ($trangThaiDot == 5) ? 'href="pages/sinhvien/nopketqua"' : 'href="#" data-toggle="modal" data-target="#detailModal"' ?> 
+              style="text-decoration: none; color: inherit;">
+              <div class="panel panel-default <?= $panelActive === 3 ? 'active-step' : '' ?>" style="min-height: 180px;">
+                <div class="panel-heading">
+                  <i class="fa fa-check-circle"></i> Kết thúc và nộp báo cáo
+                </div>
+                <div class="panel-body">
+                  <p><i class="fa fa-file-pdf-o text-danger"></i> Phiếu chấm điểm...</p>
+                  <p><i class="fa fa-comment text-info"></i> Nhận xét thực tập...</p>
+                  <p><i class="fa fa-book text-success"></i> Quyển báo cáo...</p>
+                  <?php if ($trangThaiDot < 5): ?>
+                  <p><i class="fa fa-lock text-muted"></i> <small>Chưa mở</small></p>
+                  <?php endif; ?>
+                </div>
+              </div>
+            </a>
+          </div>
             <div class="modal fade" id="detailModal" tabindex="-1" role="dialog">
               <div class="modal-dialog">
                 <div class="modal-content">
@@ -160,7 +231,7 @@ $updateStmt2->execute(['today' => $today]);
                   </div>
                   <div class="modal-footer">
                     <button class="btn btn-default" data-dismiss="modal">Đóng</button>
-                    <a <?= ($panelActive != 3) ? 'disabled' : '' ?> href="pages/sinhvien/nopketqua"
+                    <a <?= ($trangThaiDot != 5) ? 'disabled' : '' ?> href="pages/sinhvien/nopketqua"
                       class="btn btn-primary">Đến nộp</a>
                   </div>
                 </div>
@@ -204,33 +275,68 @@ $updateStmt2->execute(['today' => $today]);
 
         container.innerHTML = '';
 
-        list.forEach(tb => {
-          const html = `
-    <div class="row" style="margin-bottom: 15px; border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
-      <div class="col-sm-2 text-center">
-        <a href="pages/sinhvien/chitietthongbao?id=${tb.ID}">
-          <img src="/datn/uploads/Images/ThongBao.jpg" alt="${tb.TIEUDE}" style="width: 100px; height: 70px; object-fit: cover;">
-        </a>
+        if (thongbaos.length === 0) {
+          // Hiển thị thông báo khi không có thông báo nào
+          const emptyHtml = `
+            <div class="empty-notification">
+              <div class="text-center">
+                <i class="fa fa-bell-slash fa-3x text-muted" style="margin-bottom: 15px;"></i>
+                <h4 class="text-muted">Không có thông báo</h4>
+                <p class="text-muted">Hiện tại chưa có thông báo nào được đăng tải.</p>
+              </div>
+            </div>
+          `;
+          container.innerHTML = emptyHtml;
+        } else if (list.length === 0) {
+          // Hiển thị khi hết thông báo trong trang hiện tại
+          const noMoreHtml = `
+            <div class="empty-notification">
+              <div class="text-center">
+                <i class="fa fa-info-circle fa-2x text-info" style="margin-bottom: 15px;"></i>
+                <h5 class="text-muted">Đã hết thông báo</h5>
+                <p class="text-muted">Bạn đã xem hết tất cả thông báo.</p>
+              </div>
+            </div>
+          `;
+          container.innerHTML = noMoreHtml;
+        } else {
+          list.forEach(tb => {
+            const html = `
+      <div class="notification-card">
+        <div class="row">
+          <div class="col-sm-2 text-center">
+            <a href="pages/sinhvien/chitietthongbao?id=${tb.ID}">
+              <img src="/datn/uploads/Images/ThongBao.jpg" alt="${tb.TIEUDE}" class="notification-image">
+            </a>
+          </div>
+          <div class="col-sm-10">
+            <a href="#" class="thongbao-link notification-title" data-id="${tb.ID}">
+              ${tb.TIEUDE}
+            </a>
+            <ul class="list-inline notification-meta">
+              <li><i class="fa fa-bullhorn"></i> Thông báo</li>
+              <li>|</li>
+              <li><i class="fa fa-calendar"></i> ${new Date(tb.NGAYDANG).toLocaleDateString('vi-VN')}</li>
+              ${tb.TenDot ? `<li>|</li><li><i class="fa fa-tag"></i> ${tb.TenDot}</li>` : ''}
+            </ul>
+          </div>
+        </div>
       </div>
-      <div class="col-lg-10">
-        <p style="margin-bottom: 5px;">
-          <a href="#" class="thongbao-link" data-id="${tb.ID}" style="font-weight: bold; text-decoration: none;">
-            ${tb.TIEUDE}
-          </a>
-        </p>
-        <ul class="list-inline" style="color: #888; font-size: 13px; margin: 0;">
-          <li>Thông báo</li>
-          <li>|</li>
-          <li>${new Date(tb.NGAYDANG).toLocaleDateString('vi-VN')}</li>
-        </ul>
-      </div>
-    </div>
-  `;
-          container.insertAdjacentHTML('beforeend', html);
-        });
+    `;
+            container.insertAdjacentHTML('beforeend', html);
+          });
+        }
 
         document.getElementById('prevBtn').disabled = currentPage === 0;
         document.getElementById('nextBtn').disabled = end >= thongbaos.length;
+
+        // Ẩn/hiện nút phân trang
+        const paginationButtons = document.querySelector('.text-center');
+        if (thongbaos.length === 0) {
+          paginationButtons.style.display = 'none';
+        } else {
+          paginationButtons.style.display = 'block';
+        }
 
         container.classList.remove('fade-out');
         container.classList.add('fade-in');
@@ -279,29 +385,166 @@ $updateStmt2->execute(['today' => $today]);
 
 </html>
 <style>
+  /* === STATUS INDICATOR === */
+  .status-indicator {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 15px 25px;
+    border-radius: 25px;
+    margin-bottom: 25px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    font-size: 16px;
+    font-weight: 500;
+  }
+  
+  .status-indicator.status-finding {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  }
+  
+  .status-indicator.status-internship {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  }
+  
+  .status-indicator.status-completion {
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  }
+  
+  .status-indicator.status-preparing {
+    background: linear-gradient(135deg, #fdbb2d 0%, #22c1c3 100%);
+  }
+  
+  .status-indicator.status-ended {
+    background: linear-gradient(135deg, #bdc3c7 0%, #2c3e50 100%);
+  }
+  
+  .status-indicator i {
+    margin-right: 10px;
+    font-size: 18px;
+  }
+
+  /* === PANEL STYLES === */
   .panel-row {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: stretch;
     position: relative;
     margin-bottom: 30px;
+    flex-wrap: nowrap;
   }
 
   .panel-container {
     position: relative;
+    flex: 1;
+    margin: 0 10px;
+    max-width: 25%;
+  }
+
+  .panel-container:first-child {
+    margin-left: 0;
+  }
+
+  .panel-container:last-child {
+    margin-right: 0;
   }
 
   .panel-container:not(:last-child)::after {
-    content: "";
+    content: "→";
     position: absolute;
     top: 50%;
-    right: -15px;
-    width: 30px;
-    height: 2px;
-    background-color: rgb(0, 0, 0);
+    right: -20px;
+    transform: translateY(-50%);
+    font-size: 24px;
+    color: #007bff;
     z-index: 1;
+    font-weight: bold;
   }
 
+  .panel {
+    border: 2px solid #e3eafc !important;
+    border-radius: 16px !important;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.1);
+    transition: all 0.3s ease;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .panel:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 123, 255, 0.2);
+  }
+
+  .panel.active-step {
+    border: 2.5px solid #007bff !important;
+    box-shadow: 0 4px 24px rgba(0, 123, 255, 0.3);
+    background: linear-gradient(135deg, #e3f0ff 0%, #f8fdff 100%);
+    transform: scale(1.02);
+  }
+
+  .panel.active-step::before {
+    content: "ĐANG HOẠT ĐỘNG";
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    padding: 5px 15px;
+    font-size: 10px;
+    font-weight: bold;
+    transform: rotate(45deg) translate(25%, -50%);
+    transform-origin: center;
+    width: 120px;
+    text-align: center;
+  }
+
+  .panel.active-step:hover {
+    transform: scale(1.04);
+    box-shadow: 0 8px 30px rgba(0, 123, 255, 0.4);
+  }
+
+  .panel-heading {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+    border-bottom: 2px solid #dee2e6 !important;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 15px 20px;
+    color: #495057;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .panel.active-step .panel-heading {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%) !important;
+    color: white !important;
+    border-bottom: 2px solid #0056b3 !important;
+  }
+
+  .panel-heading i {
+    margin-right: 8px;
+    font-size: 16px;
+  }
+
+  .panel-body {
+    padding: 20px !important;
+  }
+
+  .panel-body p {
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .panel-body p i {
+    margin-right: 8px;
+    width: 16px;
+    text-align: center;
+  }
+
+  /* === NOTIFICATION STYLES === */
   .ls-list {
     margin-bottom: 20px;
   }
@@ -326,6 +569,7 @@ $updateStmt2->execute(['today' => $today]);
     opacity: 1;
   }
 
+  /* === RESPONSIVE === */
   .container,
   .container-fluid,
   #wrapper,
@@ -339,44 +583,116 @@ $updateStmt2->execute(['today' => $today]);
     margin-right: 0;
   }
 
-<<<<<<< HEAD
   @media (max-width: 768px) {
+    .panel-row {
+      flex-direction: column;
+      flex-wrap: wrap;
+    }
+    
+    .panel-container {
+      margin: 10px 0;
+      max-width: 100%;
+      flex: none;
+    }
+    
     .panel-container:not(:last-child)::after {
       display: none;
     }
 
-    .thongbao-link {
-      text-alight: center;
+    .status-indicator {
+      font-size: 14px;
+      padding: 12px 20px;
+    }
+
+    .panel-heading {
+      font-size: 12px;
+    }
+
+    .panel-body p {
+      font-size: 12px;
     }
   }
-</style>
-=======
-  .panel {
-    border: 2px solid #e3eafc !important;
-    border-radius: 16px;
-    background: #fff;
-    box-shadow: 0 2px 8px #007bff11;
-    transition: box-shadow 0.2s, border 0.2s, background 0.2s, transform 0.2s;
+
+  @media (max-width: 992px) and (min-width: 769px) {
+    .panel-container {
+      max-width: 50%;
+    }
+    
+    .panel-row {
+      flex-wrap: wrap;
+    }
   }
 
-  .panel.active-step {
-    border: 2.5px solid #007bff !important;
-    box-shadow: 0 4px 24px #007bff33;
-    background: linear-gradient(90deg, #e3f0ff 70%, #fafdff 100%);
-    transform: scale(1.04);
+  /* === NOTIFICATION CARD STYLES === */
+  .notification-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    margin-bottom: 15px;
+    padding: 15px;
+    border-left: 4px solid #007bff;
+    transition: all 0.3s ease;
   }
 
-  .panel.active-step .panel-heading {
+  .notification-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  }
+
+  .notification-title {
+    font-weight: 600;
+    color: #2c3e50;
+    text-decoration: none;
+    font-size: 16px;
+    margin-bottom: 5px;
+    display: block;
+  }
+
+  .notification-title:hover {
     color: #007bff;
-    font-weight: bold;
-    font-size: 18px;
-    letter-spacing: 1px;
+    text-decoration: none;
+  }
+
+  .notification-meta {
+    color: #6c757d;
+    font-size: 13px;
+    margin: 0;
+  }
+
+  .notification-meta li {
+    display: inline-block;
+    margin-right: 10px;
+  }
+
+  .notification-image {
+    width: 80px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+  }
+
+  /* === EMPTY NOTIFICATION STYLES === */
+  .empty-notification {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 40px 20px;
+    text-align: center;
+    margin: 20px 0;
+    border: 2px dashed #e0e0e0;
+  }
+
+  .empty-notification i {
+    opacity: 0.5;
+  }
+
+  .empty-notification h4, .empty-notification h5 {
+    margin: 15px 0 10px 0;
+  }
+
+  .empty-notification p {
+    margin-bottom: 0;
+    font-size: 14px;
   }
 </style>
-<?php
-$idSinhVien = 3;
-$stmt = $conn->prepare("SELECT TrangThaiDot FROM sinhvien WHERE ID = ?");
-$stmt->execute([$idSinhVien]);
-$trangThaiDot = $stmt->fetchColumn();
-?>
->>>>>>> e1fe1c817054eb265447979f13f3d59a4d81b821
