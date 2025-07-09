@@ -490,7 +490,7 @@ function groupLettersByCompany($letters) {
 </head>
 <body>
     <div id="wrapper">
-       <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_Giaovien.php"; ?>
+       <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_canbo.php"; ?>
         
         <div id="page-wrapper">
             <div class="container-fluid">
