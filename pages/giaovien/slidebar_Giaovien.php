@@ -4,31 +4,20 @@ $isLoggedIn = isset($_SESSION['user']);
 $idTaiKhoan = $_SESSION['user']['ID_TaiKhoan'] ?? null;
 $currentPage = basename($_SERVER['PHP_SELF']);
 $currentPath = $_SERVER['REQUEST_URI'];
-$tenDot = '';
-if ($idTaiKhoan) {
-    $stmt = $conn->prepare("SELECT dt.TenDot 
-        FROM SinhVien sv 
-        LEFT JOIN DotThucTap dt ON sv.ID_Dot = dt.ID 
-        WHERE sv.ID_TaiKhoan = ?");
-    $stmt->execute([$idTaiKhoan]);
-    $tenDot = $stmt->fetchColumn();
-}
 
 $coThongBaoMoi = false;
-if ($idTaiKhoan) {
-    $stmt = $conn->prepare("SELECT ID_Dot FROM SinhVien WHERE ID_TaiKhoan = ?");
-    $stmt->execute([$idTaiKhoan]);
-    $idDot = $stmt->fetchColumn();
+$stmt = $conn->prepare("SELECT ID_Dot FROM dot_giaovien WHERE ID_GVHD = ?");
+$stmt->execute([$idTaiKhoan]);
+$idDot = $stmt->fetchColumn();
 
-    $stmt = $conn->prepare("
-        SELECT COUNT(*) FROM THONGBAO tb
-        WHERE tb.TRANGTHAI = 1 AND tb.ID_Dot = ? AND tb.ID NOT IN (
-            SELECT ID_ThongBao FROM ThongBao_Xem WHERE ID_TaiKhoan = ?
-        )
-    ");
-    $stmt->execute([$idDot, $idTaiKhoan]);
-    $coThongBaoMoi = $stmt->fetchColumn() > 0;
-}
+$stmt = $conn->prepare("
+    SELECT COUNT(*) FROM THONGBAO tb
+    WHERE tb.TRANGTHAI = 1 AND tb.ID_Dot = ? AND tb.ID NOT IN (
+        SELECT ID_ThongBao FROM ThongBao_Xem WHERE ID_TaiKhoan = ?
+    )
+");
+$stmt->execute([$idDot, $idTaiKhoan]);
+$coThongBaoMoi = $stmt->fetchColumn() > 0;
 if ($idTaiKhoan) {
     $stmt = $conn->prepare("
     SELECT COUNT(*) FROM KhaoSat ks
@@ -36,10 +25,10 @@ if ($idTaiKhoan) {
     AND (
         ks.NguoiNhan IN ('Tất cả', ?) 
         OR (
-            ks.NguoiNhan = 'Sinh viên thuộc hướng dẫn'
+            ks.NguoiNhan = 'Giáo viên'
             AND EXISTS (
-                SELECT 1 FROM SinhVien sv
-                WHERE sv.ID_TaiKhoan = ? AND sv.ID_GVHD = ks.NguoiTao
+                SELECT 1 FROM GiaoVien gv
+                WHERE gv.ID_TaiKhoan = ?
             )
         )
     )
@@ -215,9 +204,7 @@ foreach ($stmt as $row) {
 
 <!-- Top Bar -->
 <div class="topbar">
-    <div class="topbar-left">
-        <?= $tenDot ? 'Đợt: ' . htmlspecialchars($tenDot) : 'Chưa có đợt thực tập' ?>
-    </div>
+    
     <div class="topbar-center">
 
         <a style="color:rgb(255, 255, 255);" title="Đến trang web của Khoa">
@@ -225,26 +212,20 @@ foreach ($stmt as $row) {
     </div>
     <div class="topbar-right">
 
-        <a href="<?= $isLoggedIn ? 'pages/sinhvien/thongbaomoi' : '#' ?>" class="<?= $isLoggedIn ? '' : 'guest-link' ?>"
+        <a href="<?= $isLoggedIn ? 'pages/giaovien/thongbaomoi' : '#' ?>" class="<?= $isLoggedIn ? '' : 'guest-link' ?>"
             title="Thông báo mới" style="color: #ffffff;">
             <i class="fa fa-bell"></i><?php if ($coThongBaoMoi): ?><span style="color:red;">●</span><?php endif; ?>
         </a>
-        <a href="<?= $isLoggedIn ? 'pages/sinhvien/thongtincanhan' : '#' ?>"
+        <a href="<?= $isLoggedIn ? 'pages/giaovien/thongtincanhan' : '#' ?>"
             class="<?= $isLoggedIn ? '' : 'guest-link' ?>" title="Tài khoản" style="color: #ffffff;">
             <i class="fa fa-user"></i>
         </a>
 
-        <?php if ($isLoggedIn): ?>
             <!-- Nếu đã đăng nhập, hiển thị nút Đăng xuất -->
             <a href="/datn/logout" title="Đăng xuất" style="color: #ffffff;">
                 <i class="fa-solid fa-arrow-right-from-bracket"></i>
             </a>
-        <?php else: ?>
-            <!-- Nếu chưa đăng nhập, hiển thị nút Đăng nhập -->
-            <a href="/datn/login" title="Đăng nhập" style="color: #ffffff;">
-                <i class="fa-solid fa-right-to-bracket"></i>
-            </a>
-        <?php endif; ?>
+        
         <a href="<?= $cauhinh['website_khoa'] ?? 'https://cntt.caothang.edu.vn/' ?>" title="Khoa Công Nghệ Thông Tin">
             <img src="<?= htmlspecialchars($cauhinh['logo'] ?? '/datn/uploads/Images/logo.jpg') ?>" alt="Logo"
                 style="height: 30px; margin-left: 10px; vertical-align: middle;">
@@ -257,28 +238,23 @@ foreach ($stmt as $row) {
 
 <!-- Navigation Menu -->
 <div class="nav-bar">
-    <a href="pages/sinhvien/trangchu" class="<?= strpos($currentPath, 'trangchu') !== false ? 'active' : '' ?>">Trang
+    <a href="pages/giaovien/trangchu" class="<?= strpos($currentPath, 'trangchu') !== false ? 'active' : '' ?>">Trang
         chủ</a>
 
-    <a href="<?= $isLoggedIn ? 'pages/sinhvien/dangkygiaygioithieu' : '#' ?>"
-        class="<?= strpos($currentPath, 'dangkygiaygioithieu') !== false ? 'active' : '' ?> <?= !$isLoggedIn ? 'guest-link' : '' ?>">
-        Giấy giới thiệu
+    <a href="<?= $isLoggedIn ? 'pages/giaovien/xemdanhsachsinhvien' : '#' ?>"
+        class="<?= strpos($currentPath, 'xemdanhsachsinhvien') !== false ? 'active' : '' ?> <?= !$isLoggedIn ? 'guest-link' : '' ?>">
+        Danh sách SV
     </a>
 
-    <a href="<?= $isLoggedIn ? 'pages/sinhvien/baocaotuan' : '#' ?>"
-        class="<?= strpos($currentPath, 'baocaotuan') !== false ? 'active' : '' ?> <?= !$isLoggedIn ? 'guest-link' : '' ?>">
+    <a href="<?= $isLoggedIn ? 'pages/giaovien/quanlybaocaotuan' : '#' ?>"
+        class="<?= strpos($currentPath, 'quanlybaocaotuan') !== false ? 'active' : '' ?> <?= !$isLoggedIn ? 'guest-link' : '' ?>">
         Báo cáo tuần
     </a>
 
-    <a href="pages/sinhvien/tainguyen" class="<?= strpos($currentPath, 'tainguyen') !== false ? 'active' : '' ?>">Tài
-        nguyên</a>
+    <a href="pages/giaovien/xembaocaotongket" class="<?= strpos($currentPath, 'xembaocaotongket') !== false ? 'active' : '' ?>">Tổng kết</a>
 
-    <a href="<?= $isLoggedIn ? 'pages/sinhvien/nopketqua' : '#' ?>"
-        class="<?= strpos($currentPath, 'nopketqua') !== false ? 'active' : '' ?> <?= !$isLoggedIn ? 'guest-link' : '' ?>">
-        Nộp kết quả
-    </a>
 
-    <a href="<?= $isLoggedIn ? 'pages/sinhvien/khaosat' : '#' ?>"
+    <a href="<?= $isLoggedIn ? 'pages/giaovien/khaosat' : '#' ?>"
         class="<?= strpos($currentPath, 'khaosat') !== false ? 'active' : '' ?> <?= !$isLoggedIn ? 'guest-link' : '' ?>">
         Khảo sát
         <?php if (!empty($coKhaoSatMoi)): ?>
@@ -297,33 +273,31 @@ foreach ($stmt as $row) {
         const navBar = document.querySelector('.nav-bar');
         navBar.classList.toggle('active');
     }
-    function submitSearchForm() {
-        const keyword = document.getElementById('searchInput').value.trim();
-        if (keyword) {
-            window.location.href = '/datn/pages/sinhvien/timkiem?q=' + encodeURIComponent(keyword);
-        }
-        return false;
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-        const guestLinks = document.querySelectorAll('.guest-link');
-
-        guestLinks.forEach(link => {
-            link.addEventListener('click', function (e) {
-                e.preventDefault();
-                Swal.fire({
-                    title: 'Yêu cầu đăng nhập',
-                    text: 'Bạn cần đăng nhập để sử dụng chức năng này.',
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonText: 'Đăng nhập',
-                    cancelButtonText: 'Hủy'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        window.location.href = '/datn/login';
-                    }
-                });
-            });
-        });
-    });
+    
 </script>
+<!-- 
+<ul class="nav" id="side-menu">
+            <li>
+                <a href="pages/giaovien/trangchu" ><i class="fa fa-home fa-fw"></i> Trang chủ</a>
+            </li>
+            <li>
+                <a href="pages/giaovien/baocaotuan" ><i class="fa fa-file fa-fw"></i>
+                    Xem báo cáo tuần</a>
+            </li>
+            <li>
+                <a href="pages/giaovien/xemdanhsachsinhvien" ><i class="fa fa-user fa-fw"></i>
+                    Danh sách sinh viên</a>
+            </li>
+            <li>
+                <a href="pages/giaovien/khaosat" ><i class="fa fa-table fa-fw"></i> Khảo sát</a>
+            </li>
+            <li>
+                <a href="pages/giaovien/xembaocaotongket" ><i class="fa fa-dashboard fa-fw"></i> Xem báo cáo tổng kết</a>
+            </li>
+            <li>
+                <a href="pages/giaovien/thongtincanhan">
+                    <i class="fa fa-user fa-fw"></i> Thông tin cá nhân
+                </a>
+            </li>
+            <li><a href="/datn/logout"><i class="fa fa-sign-out"></i> Đăng xuất</a></li>
+        </ul> -->

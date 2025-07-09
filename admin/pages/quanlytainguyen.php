@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($ten && $duongdan) {
-            $stmt = $conn->prepare("INSERT INTO file (TenFile, DIR, ID_SV, ID_GVHD, TrangThai, Loai, NgayNop, Ten)
+            $stmt = $conn->prepare("INSERT INTO file (TenFile, DIR, ID_SV, ID_GVHD, TrangThai, Loai, NgayNop, TenHienThi)
                                     VALUES (?, ?, NULL, NULL, 1, 'Tainguyen', NOW(), ?)");
             $stmt->execute([$tenfile, $duongdan, $ten]);
             $idFile = $conn->lastInsertId();
@@ -103,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($ten && $duongdan) {
-            $stmt = $conn->prepare("UPDATE file SET TenFile=?, DIR=?, Ten=? WHERE ID=?");
+            $stmt = $conn->prepare("UPDATE file SET TenFile=?, DIR=?, TenHienThi=? WHERE ID=?");
             $stmt->execute([$tenfile, $duongdan, $ten, $id]);
 
             $stmt = $conn->prepare("DELETE FROM tainguyen_dot WHERE ID_File=?");
@@ -223,7 +223,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             foreach ($tainguyen as $i => $row): ?>
                                 <tr>
                                     <td><?= $i + 1 ?></td>
-                                    <td><?= htmlspecialchars($row['Ten']) ?></td>
+                                    <td><?= htmlspecialchars($row['TenHienThi']) ?></td>
                                     <td>
                                         <?= htmlspecialchars($row['TenFile']) ?>
                                     </td>
@@ -474,7 +474,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $('.btn-edit').on('click', function () {
                 const data = $(this).data('row');
                 $('#edit-id').val(data.ID);
-                $('#edit-ten').val(data.Ten);
+                $('#edit-ten').val(data.TenHienThi);
                 $('#edit-duongdan-old').val(data.DuongDan);
                 $('#edit-tenfile-old').val(data.TenFile);
                 $('#edit-link').val(data.Link || '');

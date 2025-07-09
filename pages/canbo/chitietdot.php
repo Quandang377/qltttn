@@ -289,6 +289,7 @@ if (isset($_GET['export_excel']) && $_GET['export_excel'] == 2) {
         "Trạng thái:" => match ($dot['TrangThai']) {
             1 => 'Đang chuẩn bị',
             2 => 'Đã bắt đầu',
+            4 => 'Đã bắt đầu',
             3 => 'Hoàn tất phân công',
             default => 'Đã kết thúc'
         },
@@ -934,9 +935,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                 <?php
                                 if ($dot['TrangThai'] == 1)
                                     echo 'Đang chuẩn bị';
-                                elseif ($dot['TrangThai'] == 2)
+                                elseif ($dot['TrangThai'] == 2||$dot['TrangThai'] == 4)
                                     echo 'Đã bắt đầu';
-                                elseif ($dot['TrangThai'] == 3)
+                                elseif ($dot['TrangThai'] == 3||$dot['TrangThai'] == 5)
                                     echo 'Hoàn tất phân công';
                                 else
                                     echo 'Đã kết thúc';

@@ -330,13 +330,13 @@ if (isset($_SESSION['deleted'])) {
                                                         case 1:
                                                             $trangthai = 'Đang chuẩn bị';
                                                             break;
-                                                        case 2:
+                                                        case 2: case 4:
                                                             $trangthai = 'Đã bắt đầu';
                                                             break;
                                                         case 3:
                                                             $trangthai = 'Hoàn tất phân công';
                                                             break;
-                                                        case 0:
+                                                         case 0:case 5:
                                                             $trangthai = 'Đã kết thúc';
                                                             break;
                                                         default:
