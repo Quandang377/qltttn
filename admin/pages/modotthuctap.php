@@ -24,7 +24,7 @@ function getAllInternships($conn)
         ORDER BY d.ThoiGianBatDau DESC
     ");
     $stmt->execute();
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);   
 }
 
 function countSimilar($conn, $tendot)
@@ -344,8 +344,9 @@ if (isset($_SESSION['deleted'])) {
                                                         case 3:
                                                             $trangthai = 'Hoàn tất phân công';
                                                             break;
-                                                        case 0:
-                                                        case 5: 
+                                                        case 5:
+                                                            $trangthai = 'Nộp kết quả';
+                                                         case 0:
                                                             $trangthai = 'Đã kết thúc';
                                                             break;
                                                         default:
@@ -406,7 +407,7 @@ if (isset($_SESSION['deleted'])) {
             document.getElementById('btnShowFormMoDot').style.display = 'inline-block';
         });
 
-        var table; // Khai báo ngoài
+        var table;
         $(document).ready(function () {
             table = $('#TableDotTT').DataTable({
                 responsive: true,

@@ -200,9 +200,10 @@ if (
                                     <div class="survey-meta"><?= date("d/m/Y H:i", strtotime($ks['ThoiGianTao'])) ?></div>
                                 </div>
                                 <p><?= nl2br(htmlspecialchars($ks['MoTa'])) ?></p>
-                                <div class="survey-meta">Người gửi: <strong><?= htmlspecialchars($ks['TenNguoiTao']) ?></strong></div>
+                                <div class="survey-meta">Người gửi:
+                                    <strong><?= htmlspecialchars($ks['TenNguoiTao']) ?></strong></div>
                                 <button class="btn btn-sm btn-primary btn-respond" data-toggle="modal"
-                                        data-target="#modalPhanHoi<?= $ks['ID'] ?>">Phản hồi</button>
+                                    data-target="#modalPhanHoi<?= $ks['ID'] ?>">Phản hồi</button>
                             </div>
                         </div>
                     <?php endforeach; ?>
@@ -210,7 +211,8 @@ if (
 
                 <!-- Modal phản hồi khảo sát -->
                 <?php foreach ($dsKhaoSat as $ks): ?>
-                    <div class="modal fade" id="modalPhanHoi<?= $ks['ID'] ?>" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+                    <div class="modal fade" id="modalPhanHoi<?= $ks['ID'] ?>" tabindex="-1" role="dialog"
+                        data-backdrop="static" data-keyboard="false">
                         <div class="modal-dialog">
                             <form method="post">
                                 <div class="modal-content">
@@ -227,26 +229,25 @@ if (
                                                 <div class="form-group">
                                                     <label>Câu <?= $index + 1 ?>: <?= htmlspecialchars($ch['NoiDung']) ?></label>
                                                     <input type="hidden" name="id_cauhoi[]" value="<?= $ch['ID'] ?>">
+                                                    <br>
                                                     <?php
                                                     if (($ch['Loai'] ?? 'text') === 'choice' && !empty($ch['DapAn'])):
                                                         $dapanArr = array_map('trim', explode(';', $ch['DapAn']));
                                                         foreach ($dapanArr as $da): ?>
-                                                            <div class="form-check">
-                                                                <label>
-                                                                    <input type="radio" name="traloi[<?= $index ?>]" value="<?= htmlspecialchars($da) ?>" required>
-                                                                    <?= htmlspecialchars($da) ?>
-                                                                </label>
-                                                            </div>
+                                                            <label class="form-check-inline mr-3">
+                                                                <input type="radio" name="traloi[<?= $index ?>]"
+                                                                    value="<?= htmlspecialchars($da) ?>" required>
+                                                                <?= htmlspecialchars($da) ?>
+                                                            </label>
                                                         <?php endforeach;
                                                     elseif (($ch['Loai'] ?? 'text') === 'multiple' && !empty($ch['DapAn'])):
                                                         $dapanArr = array_map('trim', explode(';', $ch['DapAn']));
                                                         foreach ($dapanArr as $da): ?>
-                                                            <div class="form-check">
-                                                                <label>
-                                                                    <input type="checkbox" name="traloi[<?= $index ?>][]" value="<?= htmlspecialchars($da) ?>">
-                                                                    <?= htmlspecialchars($da) ?>
-                                                                </label>
-                                                            </div>
+                                                            <label class="form-check-inline mr-3">
+                                                                <input type="checkbox" name="traloi[<?= $index ?>][]"
+                                                                    value="<?= htmlspecialchars($da) ?>">
+                                                                <?= htmlspecialchars($da) ?>
+                                                            </label>
                                                         <?php endforeach;
                                                     else: ?>
                                                         <input type="text" class="form-control" name="traloi[<?= $index ?>]" required>
@@ -275,7 +276,7 @@ if (
         document.addEventListener("DOMContentLoaded", function () {
             const forms = document.querySelectorAll("form");
             forms.forEach(form => {
-            if (form.id === "menuSearchForm") return;
+                if (form.id === "menuSearchForm") return;
                 form.addEventListener("submit", function (e) {
                     e.preventDefault(); // Ngăn submit mặc định
                     Swal.fire({
@@ -296,4 +297,5 @@ if (
         });
     </script>
 </body>
+
 </html>

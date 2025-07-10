@@ -932,18 +932,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
                         </div>
                         <div class="col-sm-4 col-xs-12">
-                            <p><b>Thời gian bắt đầu:</b> <?= htmlspecialchars($dot['ThoiGianBatDau']) ?></p>
-                            <p><b>Thời gian kết thúc:</b> <?= htmlspecialchars($dot['ThoiGianKetThuc']) ?></p>
+                            <p><b>Thời gian bắt đầu: </b> <?= htmlspecialchars($dot['ThoiGianBatDau']) ?></p>
+                            <p><b>Thời gian kết thúc: </b> <?= htmlspecialchars($dot['ThoiGianKetThuc']) ?></p>
                             <p><b>Trạng thái:</b>
                                 <?php
                                 if ($dot['TrangThai'] == 1)
                                     echo 'Đang chuẩn bị';
-                                elseif ($dot['TrangThai'] == 2)
+                                elseif ($dot['TrangThai'] == 2 || $dot['TrangThai'] == 4)
                                     echo 'Đã bắt đầu';
                                 elseif ($dot['TrangThai'] == 3)
                                     echo 'Hoàn tất phân công';
-                                else
+                                elseif($dot['TrangThai'] == 0)
                                     echo 'Đã kết thúc';
+                                else echo 'Nộp kết quả'
                                 ?>
                             </p>
                         </div>

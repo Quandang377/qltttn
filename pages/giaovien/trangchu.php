@@ -5,46 +5,56 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 $idTaiKhoan = $_SESSION['user_id'] ?? null;
 $today = date('Y-m-d');
 // Lấy danh sách ID đợt mà giáo viên này hướng dẫn sinh viên
-$stmt = $conn->prepare("
-    SELECT DISTINCT sv.ID_Dot
-    FROM SinhVien sv
-    WHERE sv.ID_GVHD = ?
+// 1. Lấy danh sách đợt theo giáo viên hướng dẫn
+$stmt2 = $conn->prepare("
+    SELECT DISTINCT dt.ID, dt.TenDot
+    FROM dot_giaovien dg
+    JOIN dotthuctap dt ON dg.ID_Dot = dt.ID
+    WHERE dg.ID_GVHD = ?
+    ORDER BY dt.ID DESC
 ");
-$stmt->execute([$idTaiKhoan]);
-$dsDot = $stmt->fetchAll(PDO::FETCH_COLUMN);
+$stmt2->execute([$idTaiKhoan]);
+$dsDot = $stmt2->fetchAll(PDO::FETCH_ASSOC);
 
-// Lấy thông báo thuộc các đợt này
+// ⚠️ Tách mảng ID từ $dsDot để sử dụng trong IN (...)
+$dsDotIDs = array_column($dsDot, 'ID');  // [1, 2, 3, ...]
+
+// 2. Lấy thông báo thuộc các đợt này
 $thongbaos = [];
-if (!empty($dsDot)) {
-    $placeholders = implode(',', array_fill(0, count($dsDot), '?'));
+if (!empty($dsDotIDs)) {
+    $placeholders = implode(',', array_fill(0, count($dsDotIDs), '?'));
     $stmt = $conn->prepare("
         SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.NGAYDANG, tb.ID_Dot, dt.TenDot
         FROM THONGBAO tb
         LEFT JOIN DotThucTap dt ON tb.ID_Dot = dt.ID
-        WHERE tb.ID_Dot IN ($placeholders) AND tb.TRANGTHAI=1
+        WHERE tb.ID_Dot IN ($placeholders) AND tb.TRANGTHAI = 1
         ORDER BY tb.NGAYDANG DESC
         LIMIT 50
     ");
-    $stmt->execute($dsDot);
+    $stmt->execute($dsDotIDs);
     $thongbaos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-// Lấy thông tin tất cả các đợt thực tập mà giáo viên đang hướng dẫn
+// 3. Lấy thông tin chi tiết các đợt mà giáo viên hướng dẫn
 $currentDots = [];
-if (!empty($dsDot)) {
+if (!empty($dsDotIDs)) {
+    $placeholders = implode(',', array_fill(0, count($dsDotIDs), '?'));
     $stmt = $conn->prepare("
         SELECT dt.ID, dt.TenDot, dt.ThoiGianBatDau, dt.ThoiGianKetThuc, dt.TrangThai, 
                COUNT(sv.ID_TaiKhoan) as SoLuongSV
         FROM DotThucTap dt
         LEFT JOIN SinhVien sv ON dt.ID = sv.ID_Dot AND sv.ID_GVHD = ?
-        WHERE dt.ID IN (" . implode(',', array_fill(0, count($dsDot), '?')) . ")
+        WHERE dt.ID IN ($placeholders)
         GROUP BY dt.ID, dt.TenDot, dt.ThoiGianBatDau, dt.ThoiGianKetThuc, dt.TrangThai
         ORDER BY dt.ThoiGianBatDau DESC
     ");
-    $params = array_merge([$idTaiKhoan], $dsDot);
+
+    // ⚠️ Ghép $idTaiKhoan + mảng ID
+    $params = array_merge([$idTaiKhoan], $dsDotIDs);
     $stmt->execute($params);
     $currentDots = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
+
 
 // Tìm đợt đang hoạt động (ưu tiên trạng thái 3, 4, 5)
 $activeDot = null;
@@ -93,8 +103,6 @@ foreach ($currentDots as $dot) {
 if (!$activeDot && !empty($allDots)) {
     $activeDot = $allDots[0];
 }
-
-
 
 // Cập nhật trạng thái kết thúc
 $updateStmt = $conn->prepare("UPDATE DotThucTap 

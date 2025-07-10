@@ -1,9 +1,196 @@
 <?php
-ob_start();
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/vendor/autoload.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
 $ID_TaiKhoan = $_SESSION['user_id'];
 
+
+// Lấy danh sách phản hồi của sinh viên
+$stmt = $conn->prepare("
+    SELECT tk.ID_TaiKhoan, tk.VaiTro, sv.MSSV, sv.Ten, sv.Lop, ph.ID AS ID_PhanHoi
+    FROM phanhoikhaosat ph
+    JOIN taikhoan tk ON ph.ID_TaiKhoan = tk.ID_TaiKhoan
+    LEFT JOIN sinhvien sv ON sv.ID_TaiKhoan = tk.ID_TaiKhoan
+    WHERE ph.ID_KhaoSat = ? AND tk.VaiTro = 'Sinh viên'
+    ORDER BY sv.MSSV ASC
+");
+$dsPhanHoi = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+if (isset($_GET['export_excel'])) {
+    $id_KhaoSat = intval($_GET['export_excel']);
+    // Lấy câu hỏi
+    $stmt = $conn->prepare("SELECT * FROM cauhoikhaosat WHERE ID_KhaoSat = ? AND TrangThai = 1");
+    $stmt->execute([$id_KhaoSat]);
+    $cauHoi = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Tạo file Excel
+    $spreadsheet = new Spreadsheet();
+    $sheet = $spreadsheet->getActiveSheet();
+    $sheet->setTitle("Phản hồi khảo sát");
+
+    // Header sinh viên
+    $headerStudent = ['MSSV', 'Họ tên', 'Lớp', 'Thời gian trả lời'];
+    foreach ($cauHoi as $ch) {
+        $headerStudent[] = $ch['NoiDung'];
+    }
+
+    // Ghi header sinh viên
+    $sheet->fromArray($headerStudent, null, 'A1');
+    $sheet->getStyle('A1:' . $sheet->getHighestColumn() . '1')->applyFromArray([
+        'font' => ['bold' => true],
+        'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+    ]);
+    // ==== PHẢN HỒI SINH VIÊN ====
+    $stmt = $conn->prepare("
+    SELECT tk.ID_TaiKhoan, sv.MSSV, sv.Ten, sv.Lop, ph.ID AS ID_PhanHoi, ph.ThoiGianTraLoi
+    FROM phanhoikhaosat ph
+    JOIN taikhoan tk ON ph.ID_TaiKhoan = tk.ID_TaiKhoan
+    JOIN sinhvien sv ON tk.ID_TaiKhoan = sv.ID_TaiKhoan
+    WHERE ph.ID_KhaoSat = ? AND tk.VaiTro = 'Sinh viên'
+    ORDER BY ph.ThoiGianTraLoi ASC
+");
+    $stmt->execute([$id_KhaoSat]);
+    $dsPhanHoiSV = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $rowNum = 2;
+    foreach ($dsPhanHoiSV as $sv) {
+        $rowData = [$sv['MSSV'], $sv['Ten'], $sv['Lop'], date('d/m/Y H:i', strtotime($sv['ThoiGianTraLoi']))];
+        foreach ($cauHoi as $ch) {
+            $stmt = $conn->prepare("SELECT TraLoi FROM cautraloi WHERE ID_PhanHoi = ? AND ID_CauHoi = ?");
+            $stmt->execute([$sv['ID_PhanHoi'], $ch['ID']]);
+            $traloi = $stmt->fetchColumn();
+            $rowData[] = $traloi ?? '';
+
+        }
+        $sheet->fromArray($rowData, null, 'A' . $rowNum++);
+    }
+    $styleArray = [
+        'borders' => [
+            'allBorders' => [
+                'borderStyle' => Border::BORDER_THIN,
+                'color' => ['argb' => '000000'],
+            ],
+        ],
+    ];
+    $sheet->getStyle('A1:E' . ($rowNum - 1))->applyFromArray($styleArray);
+
+    foreach (range('A', $sheet->getHighestColumn()) as $col) {
+        $sheet->getColumnDimension($col)->setAutoSize(true);
+    }
+    ob_clean();
+    // Xuất file
+    $filename = 'phanhoi_khaosat_' . $id_KhaoSat . '.xlsx';
+    header("Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    header("Content-Disposition: attachment;filename=\"$filename\"");
+    header("Cache-Control: max-age=0");
+
+    $writer = new Xlsx($spreadsheet);
+    $writer->save('php://output');
+    exit;
+}
+if (
+    $_SERVER['REQUEST_METHOD'] === 'POST'
+    && isset($_POST['id_khaosat'], $_POST['id_cauhoi'], $_POST['traloi'])
+) {
+
+    $idKhaoSat = $_POST['id_khaosat'];
+    $idTaiKhoan = $ID_TaiKhoan;
+    $dsIDCauHoi = $_POST['id_cauhoi'];
+    $dsTraLoi = $_POST['traloi'];
+
+    try {
+        $conn->beginTransaction();
+
+        $stmtPhanHoi = $conn->prepare("
+                        INSERT INTO PhanHoiKhaoSat (ID_KhaoSat, ID_TaiKhoan, ThoiGianTraLoi, TrangThai)
+                        VALUES (?, ?, NOW(), 1)
+                    ");
+        $stmtPhanHoi->execute([$idKhaoSat, $idTaiKhoan]);
+
+        $idPhanHoi = $conn->lastInsertId();
+
+        $stmtTraLoi = $conn->prepare("
+                        INSERT INTO CauTraLoi (ID_PhanHoi, ID_CauHoi, TraLoi, TrangThai)
+                        VALUES (?, ?, ?, 1)
+                    ");
+
+        foreach ($dsIDCauHoi as $i => $idCauHoi) {
+            $traLoi = $dsTraLoi[$i];
+            if (is_array($traLoi)) {
+                $traLoi = implode(';', $traLoi); // Nối các đáp án được chọn
+            }
+            $traLoi = trim($traLoi);
+            if ($traLoi !== '') {
+                $stmtTraLoi->execute([$idPhanHoi, $idCauHoi, $traLoi]);
+            }
+        }
+
+        $conn->commit();
+        $_SESSION['success'] = "Phản hồi khảo sát thành công!";
+    } catch (Exception $e) {
+        $conn->rollBack();
+        $_SESSION['error'] = "Đã xảy ra lỗi khi phản hồi: " . $e->getMessage();
+    }
+
+    header("Location: /datn/pages/giaovien/khaosat");
+    exit;
+}
+// Lấy danh sách đợt thực tập
+$stmt = $conn->prepare("SELECT ID, TenDot FROM DotThucTap WHERE TrangThai >= 0 ORDER BY ID DESC");
+$stmt->execute();
+$dsDot = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// AJAX: Tạo khảo sát
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'tao') {
+    $tieude = trim($_POST['tieude'] ?? '');
+    $mota = trim($_POST['mota'] ?? '');
+    $nguoiNhan = $_POST['to'] ?? '';
+    $cauHoiList = $_POST['cauhoi'] ?? [];
+    $loaiList = $_POST['loaicauhoi'] ?? [];
+    $dapanList = $_POST['dapan'] ?? [];
+    $nguoiTao = $ID_TaiKhoan;
+    $idDot = $_POST['id_dot'] ?? null;
+
+    try {
+        $conn->beginTransaction();
+
+        // 1. Tạo khảo sát trước
+        $stmt = $conn->prepare("INSERT INTO KhaoSat (TieuDe, MoTa, NguoiNhan, NguoiTao, ThoiGianTao, TrangThai, ID_Dot) 
+            VALUES (?, ?, ?, ?, NOW(), 1, ?)");
+        $stmt->execute([$tieude, $mota, $nguoiNhan, $nguoiTao, $idDot]);
+        $idKhaoSat = $conn->lastInsertId();
+
+        // 2. Thêm câu hỏi (có loại và đáp án)
+        $stmtCauHoi = $conn->prepare("INSERT INTO CauHoiKhaoSat (ID_KhaoSat, NoiDung, Loai, DapAn, TrangThai) VALUES (?, ?, ?, ?, 1)");
+        foreach ($cauHoiList as $i => $cauhoi) {
+            $noiDung = trim($cauhoi);
+            $loai = $loaiList[$i] ?? 'text';
+            $dapan = ($loai === 'choice') ? trim($dapanList[$i] ?? '') : null;
+            // Xử lý đáp án: bỏ khoảng trắng và dấu ; ở cuối
+
+            if ($loai === 'choice' || $loai === 'multiple') {
+                $dapan = trim($dapanList[$i] ?? '');
+                $dapan = preg_replace('/\s*;\s*$/', '', $dapan); // Xóa dấu ; và khoảng trắng cuối
+            } else {
+                $dapan = null;
+            }
+            if ($noiDung !== '') {
+                $stmtCauHoi->execute([$idKhaoSat, $noiDung, $loai, $dapan]);
+            }
+        }
+
+        $conn->commit();
+        echo json_encode(['status' => 'OK']);
+    } catch (Exception $e) {
+        $conn->rollBack();
+        echo json_encode(['status' => 'ERROR', 'message' => $e->getMessage()]);
+    }
+    exit;
+}
 $stmt = $conn->prepare("SELECT VaiTro FROM TaiKhoan WHERE ID_TaiKhoan = ?");
 $stmt->execute([$ID_TaiKhoan]);
 $vaiTro = $stmt->fetchColumn();
@@ -54,7 +241,6 @@ if (!empty($dsID)) {
         $dsCauHoiTheoKhaoSat[$ch['ID_KhaoSat']][] = $ch;
     }
 }
-// 3. Lấy các đợt thực tập mà GVHD sinh viên
 $stmt2 = $conn->prepare("
     SELECT DISTINCT dt.ID, dt.TenDot
     FROM dot_giaovien dg
@@ -64,6 +250,8 @@ $stmt2 = $conn->prepare("
 ");
 $stmt2->execute([$ID_TaiKhoan]);
 $dsDot = $stmt2->fetchAll(PDO::FETCH_ASSOC);
+
+$dotIDs = array_column($dsDot, 'ID');
 
 // AJAX: Tạo khảo sát
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'tao') {
@@ -147,7 +335,8 @@ if (isset($_GET['ajax'])) {
                 <th>Ngày tạo</th>
                 <th>Đợt thực tập</th>
                 <th>Phản hồi</th>
-                <th>Hành động</th>
+                <th>Xem phản hồi</th>
+                <th>Xóa</th>
             </tr>
         </thead>
         <tbody>
@@ -177,6 +366,10 @@ if (isset($_GET['ajax'])) {
                     <td onclick="window.location='pages/giaovien/chitietkhaosat?id=<?= $ks['ID'] ?>';" style="cursor: pointer;">
                         <?= $ks['SoLuongPhanHoi'] ?>
                     </td>
+                    <td><a href="pages/giaovien/khaosat?export_excel=<?= $ks['ID'] ?>" class="btn btn-success btn-sm"
+                            title="Xuất phản hồi">
+                            <i class="glyphicon glyphicon-download-alt"></i> Xem
+                        </a></td>
                     <td>
                         <button type="button" class="btn btn-danger btn-sm" onclick="xoaKhaoSat(<?= $ks['ID'] ?>)">Xoá</button>
                     </td>
@@ -192,6 +385,7 @@ if (isset($_GET['ajax'])) {
     <?php
     exit;
 }
+
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -213,52 +407,12 @@ if (isset($_GET['ajax'])) {
             <div class="container-fluid">
                 <div class="page-header">
                     <h1>
-                        Tạo khảo sát
+                        Khảo Sát
                     </h1>
                 </div>
                 <?php
-                if (
-                    $_SERVER['REQUEST_METHOD'] === 'POST'
-                    && isset($_POST['id_khaosat'], $_POST['id_cauhoi'], $_POST['traloi'])
-                ) {
 
-                    $idKhaoSat = $_POST['id_khaosat'];
-                    $idTaiKhoan = $ID_TaiKhoan;
-                    $dsIDCauHoi = $_POST['id_cauhoi'];
-                    $dsTraLoi = $_POST['traloi'];
 
-                    try {
-                        $conn->beginTransaction();
-
-                        $stmtPhanHoi = $conn->prepare("
-                                INSERT INTO PhanHoiKhaoSat (ID_KhaoSat, ID_TaiKhoan, ThoiGianTraLoi, TrangThai)
-                                VALUES (?, ?, NOW(), 1)
-                            ");
-                        $stmtPhanHoi->execute([$idKhaoSat, $idTaiKhoan]);
-
-                        $idPhanHoi = $conn->lastInsertId();
-
-                        $stmtTraLoi = $conn->prepare("
-                                INSERT INTO CauTraLoi (ID_PhanHoi, ID_CauHoi, TraLoi, TrangThai)
-                                VALUES (?, ?, ?, 1)
-                            ");
-
-                        foreach ($dsIDCauHoi as $i => $idCauHoi) {
-                            $traLoi = trim($dsTraLoi[$i]);
-                            if ($traLoi !== '') {
-                                $stmtTraLoi->execute([$idPhanHoi, $idCauHoi, $traLoi]);
-                            }
-                        }
-
-                        $conn->commit();
-                        $_SESSION['success'] = "Phản hồi khảo sát thành công!";
-                    } catch (Exception $e) {
-                        $conn->rollBack();
-                        $_SESSION['error'] = "Đã xảy ra lỗi khi phản hồi: " . $e->getMessage();
-                    }
-                    header("Location: /datn/pages/giaovien/khaosat");
-                    exit;
-                }
                 $stmt = $conn->prepare("SELECT ks.ID, ks.TieuDe, ks.ThoiGianTao,
                     (SELECT COUNT(*) FROM PhanHoiKhaoSat WHERE ID_KhaoSat = ks.ID ) AS SoLuongPhanHoi
                     FROM KhaoSat ks
@@ -267,16 +421,28 @@ if (isset($_GET['ajax'])) {
                 $stmt->execute([$ID_TaiKhoan]);
                 $dsKhaoSatTao = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+                $stmt3 = $conn->prepare("
+                    SELECT DISTINCT dt.ID, dt.TenDot
+                    FROM dot_giaovien dg
+                    JOIN dotthuctap dt ON dg.ID_Dot = dt.ID
+                    WHERE dg.ID_GVHD = ?
+                    ORDER BY dt.ID DESC
+                ");
+                $stmt3->execute([$ID_TaiKhoan]);
+                $dsDot2 = $stmt3->fetchAll(PDO::FETCH_ASSOC);
                 ?>
-                <div class="form-container">
+                <button class="btn btn-lg btn-primary mb-3" id="btnShowFormKhaoSat" style="margin-bottom:20px">Tạo khảo
+                    sát</button>
+                <div id="formKhaoSatWrapper" style="display: none; margin-top: 20px;">
                     <form id="formKhaoSat" method="post">
                         <div class="form-group">
                             <label><strong>Chọn đợt thực tập</strong></label>
                             <select id="id_dot" name="id_dot" class="form-control" style="width: 250px;" required>
                                 <option value="">-- Chọn đợt --</option>
-                                <?php foreach ($dsDot as $dot): ?>
-                                    <option value="<?= $dot['ID'] ?>"><?= htmlspecialchars($dot['TenDot']) ?>
-                                    </option>
+                                <?php foreach ($dsDot2 as $dot1): ?>
+                                    <?php if (is_array($dot1)): ?>
+                                        <option value="<?= $dot1['ID'] ?>"><?= htmlspecialchars($dot1['TenDot']) ?></option>
+                                    <?php endif; ?>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -335,8 +501,9 @@ if (isset($_GET['ajax'])) {
                             <button type="button" class="btn btn-primary" id="btnThemCauHoi">Thêm câu hỏi</button>
                         </div>
                         <div class="form-group text-center">
-                            <button type="submit" class="btn btn-success btn-lg" name="action"
-                                value="guikhaosat">Gửi</button>
+                            <button type="submit" class="btn btn-success btn-lg" name="action" value="guikhaosat">
+                                Xác nhận </button>
+                            <button type="button" class="btn btn-secondary btn-lg" id="btnHideFormKhaoSat">Đóng</button>
                         </div>
                     </form>
                 </div>
@@ -394,7 +561,8 @@ if (isset($_GET['ajax'])) {
                             <form method="post">
                                 <div class="modal-content">
                                     <div class="modal-header">
-                                        <h4 class="modal-title"><?= htmlspecialchars($ks['TieuDe']) ?></h4>
+                                        <h4 class="modal-title"><strong><?= htmlspecialchars($ks['TieuDe']) ?></strong>
+                                        </h4>
                                         <p class="text-muted"><?= htmlspecialchars($ks['MoTa']) ?></p>
                                         <input type="hidden" name="id_khaosat" value="<?= $ks['ID'] ?>">
                                     </div>
@@ -407,7 +575,29 @@ if (isset($_GET['ajax'])) {
                                                     <label>Câu <?= $index + 1 ?>:
                                                         <?= htmlspecialchars($ch['NoiDung']) ?></label>
                                                     <input type="hidden" name="id_cauhoi[]" value="<?= $ch['ID'] ?>">
-                                                    <input type="text" class="form-control" name="traloi[]" required>
+                                                    <br>
+                                                    <?php
+                                                    if (($ch['Loai'] ?? 'text') === 'choice' && !empty($ch['DapAn'])):
+                                                        $dapanArr = array_map('trim', explode(';', $ch['DapAn']));
+                                                        foreach ($dapanArr as $da): ?>
+                                                            <label class="form-check-inline mr-3">
+                                                                <input type="radio" name="traloi[<?= $index ?>]"
+                                                                    value="<?= htmlspecialchars($da) ?>" required>
+                                                                <?= htmlspecialchars($da) ?>
+                                                            </label>
+                                                        <?php endforeach;
+                                                    elseif (($ch['Loai'] ?? 'text') === 'multiple' && !empty($ch['DapAn'])):
+                                                        $dapanArr = array_map('trim', explode(';', $ch['DapAn']));
+                                                        foreach ($dapanArr as $da): ?>
+                                                            <label class="form-check-inline mr-3">
+                                                                <input type="checkbox" name="traloi[<?= $index ?>][]"
+                                                                    value="<?= htmlspecialchars($da) ?>">
+                                                                <?= htmlspecialchars($da) ?>
+                                                            </label>
+                                                        <?php endforeach;
+                                                    else: ?>
+                                                        <input type="text" class="form-control" name="traloi[<?= $index ?>]" required>
+                                                    <?php endif; ?>
                                                 </div>
                                             <?php endforeach;
                                         else: ?>
@@ -415,9 +605,8 @@ if (isset($_GET['ajax'])) {
                                         <?php endif; ?>
                                     </div>
                                     <div class="modal-footer">
-                                        <button type="submit" class="btn btn-success" name="action" value="phanhoi">Gửi
-                                            phản hồi</button>
-                                        <button type="button" class="btn btn-default" data-dismiss="modal">Đóng</button>
+                                        <button type="submit" class="btn btn-success">Gửi phản hồi</button>
+                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
                                     </div>
                                 </div>
                             </form>
@@ -434,8 +623,8 @@ if (isset($_GET['ajax'])) {
                             <label for="dot_filter">Lọc theo đợt: </label>
                             <select name="dot_filter" id="dot_filter" class="form-control">
                                 <option value="">-- Tất cả --</option>
-                                <?php foreach ($dsDot as $dot): ?>
-                                    <option value="<?= $dot['ID'] ?>"><?= htmlspecialchars($dot['TenDot']) ?></option>
+                                <?php foreach ($dsDot2 as $dot2): ?>
+                                    <option value="<?= $dot2['ID'] ?>"><?= htmlspecialchars($dot2['TenDot']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </form>
@@ -459,6 +648,25 @@ if (isset($_GET['ajax'])) {
     require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
         ?>
     <script>
+        $(document).ready(function () {
+            loadBangKhaoSat(); // gọi ngay khi trang vừa vào
+        });
+        document.getElementById('btnShowFormKhaoSat').addEventListener('click', function () {
+            document.getElementById('formKhaoSatWrapper').style.display = 'block';
+            this.style.display = 'none';
+        });
+
+        document.getElementById('btnHideFormKhaoSat').addEventListener('click', function () {
+            // Xóa focus khỏi input đang bị required để tránh lỗi trình duyệt hiện cảnh báo
+            document.activeElement.blur();
+
+            document.getElementById('formKhaoSatWrapper').style.display = 'none';
+            document.getElementById('btnShowFormKhaoSat').style.display = 'inline-block';
+
+            // Reset lại form nếu muốn:
+            document.getElementById('formKhaoSat').reset();
+        });
+
         let clickedButton = null;
 
         // Ghi lại nút được nhấn (dùng để xác định hành động)
