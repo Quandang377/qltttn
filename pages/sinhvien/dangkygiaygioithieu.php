@@ -627,9 +627,23 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
                     $messageType = 'danger';
                 } else {
                     try {
-                        $stmt = $conn->prepare("INSERT INTO giaygioithieu (TenCty, MaSoThue, DiaChi, LinhVuc, Sdt, Email, IdSinhVien, id_dot, TrangThai) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)");
-                        $stmt->execute([$name, $taxCode, $address, $field, $phone, $email, $idSinhVien, $idDot]);
-                        $message = 'Đã gửi phiếu đăng ký thực tập, vui lòng chờ duyệt!';
+                        // Kiểm tra xem công ty đã có trong database hay chưa
+                        $checkStmt = $conn->prepare("SELECT ID FROM congty WHERE MaSoThue = ? AND TrangThai = 1");
+                        $checkStmt->execute([$taxCode]);
+                        $existingCompany = $checkStmt->fetch(PDO::FETCH_ASSOC);
+                        
+                        // Nếu công ty đã có trong DB và trạng thái active thì set trạng thái = 1 (đã duyệt)
+                        // Ngược lại set trạng thái = 0 (chờ duyệt)
+                        $trangThai = $existingCompany ? 1 : 0;
+                        
+                        $stmt = $conn->prepare("INSERT INTO giaygioithieu (TenCty, MaSoThue, DiaChi, LinhVuc, Sdt, Email, IdSinhVien, id_dot, TrangThai) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                        $stmt->execute([$name, $taxCode, $address, $field, $phone, $email, $idSinhVien, $idDot, $trangThai]);
+                        
+                        if ($trangThai == 1) {
+                            $message = 'Đã gửi phiếu đăng ký thực tập và tự động duyệt (công ty đã có trong hệ thống)!';
+                        } else {
+                            $message = 'Đã gửi phiếu đăng ký thực tập, vui lòng chờ duyệt!';
+                        }
                         $messageType = 'success';
                     } catch (Exception $e) {
                         $message = 'Có lỗi xảy ra khi lưu dữ liệu: ' . $e->getMessage();

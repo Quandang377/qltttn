@@ -23,17 +23,17 @@ function getLettersByStatus() {
     try {
         // Optimized query - lấy tất cả trong một lần và group theo status
         $stmt = $conn->prepare("
-            SELECT 
-                g.ID, g.TenCty, g.DiaChi, g.IdSinhVien, g.TrangThai, g.id_dot, 
-                g.id_nguoinhan, g.ngay_nhan, g.ghi_chu,
-                s.Ten AS TenSinhVien, s.MSSV,
-                sn.Ten AS TenNguoiNhan, sn.MSSV AS MSSVNguoiNhan,
-                d.TenDot, d.ThoiGianBatDau, d.ThoiGianKetThuc
-            FROM giaygioithieu g
-            LEFT JOIN sinhvien s ON g.IdSinhVien = s.ID_TaiKhoan
-            LEFT JOIN sinhvien sn ON g.id_nguoinhan = sn.ID_TaiKhoan
-            LEFT JOIN dotthuctap d ON g.id_dot = d.ID
-            ORDER BY g.TrangThai ASC, g.ID DESC
+                SELECT 
+                    g.ID, g.TenCty, g.DiaChi, g.IdSinhVien, g.TrangThai, g.id_dot, 
+                    g.id_nguoinhan, g.ngay_nhan, g.ghi_chu,
+                    s.Ten AS TenSinhVien, s.MSSV,
+                    sn.Ten AS TenNguoiNhan, sn.MSSV AS MSSVNguoiNhan,
+                    d.TenDot, d.ThoiGianBatDau, d.ThoiGianKetThuc
+                FROM giaygioithieu g
+                LEFT JOIN sinhvien s ON g.IdSinhVien = s.ID_TaiKhoan
+                LEFT JOIN sinhvien sn ON g.id_nguoinhan = sn.ID_TaiKhoan
+                LEFT JOIN dotthuctap d ON g.id_dot = d.ID
+                ORDER BY g.TrangThai ASC, g.ID DESC
         ");
         $stmt->execute();
         $allLetters = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -1023,7 +1023,7 @@ function groupLettersByCompany($letters) {
         // Tạo form ẩn để submit
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = '/datn/pages/giaovien/chitietgiaygioithieu';
+        form.action = '/datn/pages/canbo/chitietgiaygioithieu';
         
         const input = document.createElement('input');
         input.type = 'hidden';
@@ -1048,7 +1048,7 @@ function groupLettersByCompany($letters) {
         
         // Gửi AJAX request
         const xhr = new XMLHttpRequest();
-        xhr.open('POST', '/datn/pages/giaovien/approve_letter_ajax.php', true);
+        xhr.open('POST', '/datn/pages/canbo/approve_letter_ajax.php', true);
         xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
         
         xhr.onreadystatechange = function() {
@@ -1106,7 +1106,7 @@ function groupLettersByCompany($letters) {
         
         // Load thông tin công ty và danh sách sinh viên
         const xhr = new XMLHttpRequest();
-        xhr.open('POST', '/datn/pages/giaovien/get_company_students.php', true);
+        xhr.open('POST', '/datn/pages/canbo/get_company_students.php', true);
         xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
         
         xhr.onreadystatechange = function() {
@@ -1213,7 +1213,7 @@ function groupLettersByCompany($letters) {
         
         // Send request
         const xhr = new XMLHttpRequest();
-        xhr.open('POST', '/datn/pages/giaovien/save_receive_info.php', true);
+        xhr.open('POST', '/datn/pages/canbo/save_receive_info.php', true);
         
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4) {
@@ -1260,7 +1260,7 @@ function groupLettersByCompany($letters) {
         printBtn.disabled = true;
         
         // Mở file in trước, chưa cập nhật trạng thái
-        const printUrl = '/datn/pages/giaovien/print_grouped_letters.php';
+        const printUrl = '/datn/pages/canbo/print_grouped_letters.php';
         const printWindow = window.open(printUrl, '_blank', 'width=1024,height=768,scrollbars=yes,resizable=yes');
         
         // Khôi phục nút sau khi mở
@@ -1288,7 +1288,7 @@ function groupLettersByCompany($letters) {
         
         // Cập nhật trạng thái đã in
         const xhr = new XMLHttpRequest();
-        xhr.open('POST', '/datn/pages/giaovien/mark_as_printed.php', true);
+        xhr.open('POST', '/datn/pages/canbo/mark_as_printed.php', true);
         xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
         
         xhr.onreadystatechange = function() {
@@ -1330,7 +1330,7 @@ function groupLettersByCompany($letters) {
         btn.disabled = true;
         
         // Mở trang in trước, chưa cập nhật trạng thái
-        const printUrl = '/datn/pages/giaovien/print_letter_template.php?id=' + letterId;
+        const printUrl = '/datn/pages/canbo/print_letter_template.php?id=' + letterId;
         const printWindow = window.open(printUrl, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
         
         // Khôi phục nút sau khi mở
@@ -1352,7 +1352,7 @@ function groupLettersByCompany($letters) {
     function confirmPrintSingleCompleted(letterId) {
         // Cập nhật trạng thái đã in
         const xhr = new XMLHttpRequest();
-        xhr.open('POST', '/datn/pages/giaovien/mark_as_printed.php', true);
+        xhr.open('POST', '/datn/pages/canbo/mark_as_printed.php', true);
         xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
         
         xhr.onreadystatechange = function() {
@@ -1399,7 +1399,7 @@ function groupLettersByCompany($letters) {
         
         letterIds.forEach((id, index) => {
             setTimeout(() => {
-                const printUrl = '/datn/pages/giaovien/print_letter_template.php?id=' + id;
+                const printUrl = '/datn/pages/canbo/print_letter_template.php?id=' + id;
                 window.open(printUrl, '_blank' + index, 'width=800,height=600,scrollbars=yes,resizable=yes');
             }, index * 500); // Delay 500ms giữa các tab
         });
@@ -1429,7 +1429,7 @@ function groupLettersByCompany($letters) {
         
         // Cập nhật trạng thái đã in cho tất cả
         const xhr = new XMLHttpRequest();
-        xhr.open('POST', '/datn/pages/giaovien/mark_as_printed.php', true);
+        xhr.open('POST', '/datn/pages/canbo/mark_as_printed.php', true);
         xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
         
         xhr.onreadystatechange = function() {

@@ -433,7 +433,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['duyet']) && $id) {
                 <form method="post" id="approvalForm">
                     <input type="hidden" name="giay_id" value="<?php echo htmlspecialchars($giay['ID']); ?>">
                     <div class="action-bar">
-                        <a href="/datn/pages/giaovien/quanlygiaygioithieu" class="btn btn-default">
+                        <a href="/datn/pages/canbo/quanlygiaygioithieu" class="btn btn-default">
                             <i class="fa fa-arrow-left"></i>
                             Quay lại
                         </a>
@@ -445,7 +445,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['duyet']) && $id) {
                 </form>
             <?php else: ?>
                 <div class="action-bar">
-                    <a href="/datn/pages/giaovien/quanlygiaygioithieu" class="btn btn-default">
+                    <a href="/datn/pages/canbo/quanlygiaygioithieu" class="btn btn-default">
                         <i class="fa fa-arrow-left"></i>
                         Quay lại
                     </a>
@@ -462,7 +462,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['duyet']) && $id) {
                 <i class="fa fa-file-text"></i>
                 <h3>Không tìm thấy giấy giới thiệu</h3>
                 <p>Giấy giới thiệu bạn tìm kiếm không tồn tại hoặc đã bị xóa.</p>
-                <a href="/datn/pages/giaovien/quanlygiaygioithieu" class="btn btn-primary">
+                <a href="/datn/pages/canbo/quanlygiaygioithieu" class="btn btn-primary">
                     <i class="fa fa-arrow-left"></i>
                     Quay lại danh sách
                 </a>
@@ -495,7 +495,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['duyet']) && $id) {
             // Lấy ID giấy giới thiệu từ form
             const letterId = <?php echo json_encode($giay['ID'] ?? 0); ?>;
             if (letterId) {
-                const printUrl = '/datn/pages/giaovien/print_letter_template.php?id=' + letterId;
+                const printUrl = '/datn/pages/canbo/print_letter_template.php?id=' + letterId;
                 window.open(printUrl, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
             } else {
                 alert('Không thể in giấy giới thiệu này!');
