@@ -2,7 +2,7 @@
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/template/config.php';
 
-// Lấy ID sinh viên từ session giống trang nộp kết quả
+
 $idSinhVien = isset($_SESSION['user']['ID_TaiKhoan']) ? $_SESSION['user']['ID_TaiKhoan'] : 0;
 
 // Lấy ID_Dot của sinh viên
@@ -13,9 +13,21 @@ $dotStmt->execute();
 $dotRow = $dotStmt->fetch(PDO::FETCH_ASSOC);
 $idDot = $dotRow ? $dotRow['ID_Dot'] : 0;
 
+// Lấy thông tin đợt thực tập và kiểm tra trạng thái
+$dotThucTapInfo = null;
+$isDotActive = false;
+if ($idDot > 0) {
+    $dotInfoSql = "SELECT TenDot, ThoiGianBatDau, ThoiGianKetThuc, TrangThai FROM DotThucTap WHERE ID = :id";
+    $dotInfoStmt = $conn->prepare($dotInfoSql);
+    $dotInfoStmt->bindParam(':id', $idDot, PDO::PARAM_INT);
+    $dotInfoStmt->execute();
+    $dotThucTapInfo = $dotInfoStmt->fetch(PDO::FETCH_ASSOC);
+    $isDotActive = $dotThucTapInfo && $dotThucTapInfo['TrangThai'] >= 3;
+}
+
 // Fetch tasks for the entire month for calendar display
 $calendarTasks = [];
-if ($idSinhVien) {
+if ($idSinhVien && $isDotActive) {
     // Get the first and last day of the month based on calendarDate
     $calendarMonth = isset($_GET['month']) ? intval($_GET['month']) : date('n');
     $calendarYear = isset($_GET['year']) ? intval($_GET['year']) : date('Y');
@@ -60,6 +72,9 @@ if ($idSinhVien) {
 // Xử lý thêm công việc bằng PHP thuần
 $addTaskMsg = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['add_task_submit']) || (isset($_POST['edit_task_action']) && $_POST['edit_task_action'] === 'edit'))) {
+    if (!$isDotActive) {
+        $addTaskMsg = '<div class="alert alert-danger">Đợt của bạn đã kết thúc hoặc chưa bắt đầu. Không thể thêm công việc!</div>';
+    } else {
     // Lấy dữ liệu từ form
     $taskName = trim($_POST['task_name'] ?? '');
     $taskDesc = trim($_POST['task_description'] ?? '');
@@ -116,6 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['add_task_submit']) |
         }
     }
 }
+}
 
 $selectedDate = $_GET['date'] ?? date('Y-m-d');
 $taskList = [];
@@ -126,7 +142,7 @@ $tasksPerPage = 3;
 $totalTasks = 0;
 $totalPages = 1;
 
-if ($idSinhVien && $selectedDate) {
+if ($idSinhVien && $selectedDate && $isDotActive) {
     // Đếm tổng số task
     $stmtCount = $conn->prepare("SELECT COUNT(*) FROM congviec_baocao WHERE IDSV = :idsv AND Ngay = :ngay");
     $stmtCount->bindParam(':idsv', $idSinhVien, PDO::PARAM_INT);
@@ -148,6 +164,9 @@ if ($idSinhVien && $selectedDate) {
 
 // Xử lý cập nhật tiến độ hoặc sửa task
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_task_id'])) {
+    if (!$isDotActive) {
+        // Không làm gì cả nếu đợt không active
+    } else {
     $taskId = intval($_POST['update_task_id']);
     $action = $_POST['update_task_action'] ?? '';
     if ($taskId > 0) {
@@ -176,6 +195,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_task_id'])) {
         echo "<script>location.href=location.href;</script>";
         exit;
     }
+}
 }
 ?>
 <!DOCTYPE html>
@@ -749,6 +769,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_task_id'])) {
             <div class="container-fluid">
                 <h1 class="page-header text-primary">Báo Cáo Tuần</h1>
                 <?php if (!empty($addTaskMsg)) echo $addTaskMsg; ?>
+                
+                <?php if (!$isDotActive): ?>
+                    <div class="alert alert-warning">
+                        <i class="fa fa-exclamation-triangle"></i> 
+                        <strong>Thông báo:</strong> Đợt của bạn đã kết thúc hoặc chưa bắt đầu. Bạn không thể thêm hoặc chỉnh sửa công việc.
+                        <?php if ($dotThucTapInfo): ?>
+                            <br><small>Đợt thực tập: <?php echo htmlspecialchars($dotThucTapInfo['TenDot']); ?> 
+                            (<?php echo date('d/m/Y', strtotime($dotThucTapInfo['ThoiGianBatDau'])); ?> - 
+                            <?php echo date('d/m/Y', strtotime($dotThucTapInfo['ThoiGianKetThuc'])); ?>)</small>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
+                
                 <div class="row">
                     <!-- Left Column: Calendar -->
                     <div class="col-lg-9">
@@ -900,6 +933,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_task_id'])) {
     <script>
         // Pass PHP tasks data to JavaScript
         const calendarTasksData = <?php echo json_encode($calendarTasks); ?>;
+        const isDotActive = <?php echo $isDotActive ? 'true' : 'false'; ?>;
     </script>
     <script>
         // Update calendar headers with correct days and dates
@@ -1189,12 +1223,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_task_id'])) {
         // Cập nhật trạng thái nút "Thêm công việc"
         function updateAddTaskButton() {
             const btn = document.getElementById('add-task-btn');
-            if (!isToday(selectedDate)) {
+            if (!isDotActive) {
+                btn.disabled = true;
+                btn.title = "Đợt của bạn đã kết thúc hoặc chưa bắt đầu";
+                btn.style.opacity = "0.6";
+            } else if (!isToday(selectedDate)) {
                 btn.disabled = true;
                 btn.title = "Chỉ được thêm công việc cho ngày hôm nay";
+                btn.style.opacity = "0.6";
             } else {
                 btn.disabled = false;
                 btn.title = "";
+                btn.style.opacity = "1";
             }
         }
 
@@ -1359,9 +1399,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_task_id'])) {
             updateAddTaskButton();
         }
 
-        // Khi click nút "Thêm công việc", chỉ mở modal nếu là hôm nay
+        // Khi click nút "Thêm công việc", chỉ mở modal nếu là hôm nay và đợt active
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('add-task-btn').addEventListener('click', function() {
+                if (!isDotActive) {
+                    alert('Đợt của bạn đã kết thúc hoặc chưa bắt đầu. Không thể thêm công việc!');
+                    return;
+                }
                 if (isToday(selectedDate)) {
                     // Reset form và set ngày cho input ẩn
                     document.getElementById('task-form').reset();
@@ -1376,8 +1420,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_task_id'])) {
             });
         });
 
-        // Trong openTaskModal, kiểm tra lại ngày (phòng trường hợp gọi trực tiếp)
+        // Trong openTaskModal, kiểm tra lại ngày và trạng thái đợt
         function openTaskModal(taskId, date) {
+            if (!isDotActive) {
+                alert('Đợt của bạn đã kết thúc hoặc chưa bắt đầu. Không thể thêm công việc!');
+                return;
+            }
             if (!isToday(date)) {
                 alert('Chỉ được thêm công việc cho ngày hôm nay!');
                 return;
@@ -1417,6 +1465,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_task_id'])) {
     });
     // Khi nhấn "Cập nhật tiến độ"
     document.getElementById('btn-update-progress').addEventListener('click', function() {
+        if (!isDotActive) {
+            alert('Đợt của bạn đã kết thúc hoặc chưa bắt đầu. Không thể cập nhật tiến độ!');
+            return;
+        }
         if (window.selectedTaskId) {
             document.getElementById('update-task-id').value = window.selectedTaskId;
             document.getElementById('update-task-progress').value = document.getElementById('progress-slider').value;
