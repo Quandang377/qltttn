@@ -185,6 +185,26 @@ foreach (['nhanxet', 'phieuthuctap', 'khoasat'] as $loai) {
     }
 }
 
+// Lấy thông tin điểm từ giáo viên (nếu đã chấm)
+$diem_data = null;
+$stmt = $conn->prepare("SELECT Diem_BaoCao, Diem_ChuyenCan, Diem_ChuanNghe, Diem_ThucTe, GhiChu FROM diem_tongket WHERE ID_SV = ?");
+$stmt->execute([$id_taikhoan]);
+$diem_data = $stmt->fetch(PDO::FETCH_ASSOC);
+
+// Tính điểm tổng kết bằng cách cộng tất cả các điểm lại
+$diem_tong = null;
+if ($diem_data && 
+    !is_null($diem_data['Diem_BaoCao']) && 
+    !is_null($diem_data['Diem_ChuyenCan']) && 
+    !is_null($diem_data['Diem_ChuanNghe']) && 
+    !is_null($diem_data['Diem_ThucTe'])) {
+    $diem_tong = $diem_data['Diem_BaoCao'] + 
+                 $diem_data['Diem_ChuyenCan'] + 
+                 $diem_data['Diem_ChuanNghe'] + 
+                 $diem_data['Diem_ThucTe'];
+    $diem_tong = round($diem_tong, 2);
+}
+
 // Xử lý upload file từ từng panel (modal mới)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_file_panel'])) {
     $type = $_POST['upload_type'] ?? '';
@@ -611,7 +631,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_file_panel']))
                                         </a>
                                         <?php if ($cho_phep_nop): ?>
                                         <form method="post" style="display:inline;">
-                                            <button type="submit" name="xoa_nhanxet" class="btn-action btn-delete" onclick="return confirm('Bạn có chắc muốn xóa file này?');" title="Xóa">
+                                            <button type="submit" name="xoa_nhanxet" class="btn-action btn-delete" onclick="return confirm('Bạn có chắc muốn xóa file nhận xét này?');" title="Xóa">
                                                 <i class="fa fa-trash"></i>
                                             </button>
                                         </form>
@@ -658,7 +678,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_file_panel']))
                                         </a>
                                         <?php if ($cho_phep_nop): ?>
                                         <form method="post" style="display:inline;">
-                                            <button type="submit" name="xoa_phieuthuctap" class="btn-action btn-delete" onclick="return confirm('Bạn có chắc muốn xóa file này?');" title="Xóa">
+                                            <button type="submit" name="xoa_phieuthuctap" class="btn-action btn-delete" onclick="return confirm('Bạn có chắc muốn xóa phiếu thực tập này?');" title="Xóa">
                                                 <i class="fa fa-trash"></i>
                                             </button>
                                         </form>
@@ -705,7 +725,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_file_panel']))
                                         </a>
                                         <?php if ($cho_phep_nop): ?>
                                         <form method="post" style="display:inline;">
-                                            <button type="submit" name="xoa_khoasat" class="btn-action btn-delete" onclick="return confirm('Bạn có chắc muốn xóa file này?');" title="Xóa">
+                                            <button type="submit" name="xoa_khoasat" class="btn-action btn-delete" onclick="return confirm('Bạn có chắc muốn xóa phiếu khảo sát này?');" title="Xóa">
                                                 <i class="fa fa-trash"></i>
                                             </button>
                                         </form>
@@ -724,6 +744,113 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_file_panel']))
                     </div>
                 </div>
             </div>
+            
+            <!-- Panel hiển thị điểm -->
+            <?php if ($diem_data): ?>
+            <div class="row" style="margin-top: 30px;">
+                <div class="col-md-12">
+                    <div class="panel panel-success" style="border-radius: 16px; box-shadow: 0 4px 18px rgba(40,167,69,0.15);">
+                        <div class="panel-heading" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; border-radius: 16px 16px 0 0; padding: 20px; border: none;">
+                            <h3 class="panel-title" style="font-size: 1.4rem; font-weight: 700; margin: 0;">
+                                <i class="fa fa-star" style="margin-right: 10px;"></i>
+                                Kết quả đánh giá từ giáo viên
+                            </h3>
+                        </div>
+                        <div class="panel-body" style="background: #f8fff9; border-radius: 0 0 16px 16px; padding: 25px;">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="score-item" style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                                        <div class="score-label" style="font-weight: 600; color: #495057; margin-bottom: 8px;">
+                                            <i class="fa fa-file-text-o" style="color: #28a745; margin-right: 8px;"></i>
+                                            Điểm Báo cáo
+                                        </div>
+                                        <div class="score-value" style="font-size: 2rem; font-weight: 700; color: #28a745;">
+                                            <?php echo !is_null($diem_data['Diem_BaoCao']) ? number_format($diem_data['Diem_BaoCao'], 1) : 'Chưa chấm'; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="score-item" style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                                        <div class="score-label" style="font-weight: 600; color: #495057; margin-bottom: 8px;">
+                                            <i class="fa fa-clock-o" style="color: #17a2b8; margin-right: 8px;"></i>
+                                            Điểm Chuyên cần
+                                        </div>
+                                        <div class="score-value" style="font-size: 2rem; font-weight: 700; color: #17a2b8;">
+                                            <?php echo !is_null($diem_data['Diem_ChuyenCan']) ? number_format($diem_data['Diem_ChuyenCan'], 1) : 'Chưa chấm'; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="score-item" style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                                        <div class="score-label" style="font-weight: 600; color: #495057; margin-bottom: 8px;">
+                                            <i class="fa fa-graduation-cap" style="color: #ffc107; margin-right: 8px;"></i>
+                                            Điểm Chuẩn nghề
+                                        </div>
+                                        <div class="score-value" style="font-size: 2rem; font-weight: 700; color: #ffc107;">
+                                            <?php echo !is_null($diem_data['Diem_ChuanNghe']) ? number_format($diem_data['Diem_ChuanNghe'], 1) : 'Chưa chấm'; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="score-item" style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                                        <div class="score-label" style="font-weight: 600; color: #495057; margin-bottom: 8px;">
+                                            <i class="fa fa-cogs" style="color: #6f42c1; margin-right: 8px;"></i>
+                                            Điểm Thực tế
+                                        </div>
+                                        <div class="score-value" style="font-size: 2rem; font-weight: 700; color: #6f42c1;">
+                                            <?php echo !is_null($diem_data['Diem_ThucTe']) ? number_format($diem_data['Diem_ThucTe'], 1) : 'Chưa chấm'; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <?php if ($diem_tong !== null): ?>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="total-score" style="background: linear-gradient(135deg, #007bff 0%, #6610f2 100%); border-radius: 16px; padding: 25px; text-align: center; margin-top: 20px; color: white; box-shadow: 0 4px 16px rgba(0,123,255,0.3);">
+                                        <div style="font-size: 1.2rem; font-weight: 600; margin-bottom: 10px;">
+                                            <i class="fa fa-trophy" style="margin-right: 10px;"></i>
+                                            ĐIỂM TỔNG KẾT
+                                        </div>
+                                        <div style="font-size: 3rem; font-weight: 800; margin-bottom: 10px;">
+                                            <?php echo number_format($diem_tong, 2); ?>
+                                        </div>
+                                        <div style="font-size: 1rem; opacity: 0.9;">
+                                            <?php 
+                                                if ($diem_tong >= 34) echo "Xuất sắc";
+                                                elseif ($diem_tong >= 28) echo "Giỏi";
+                                                elseif ($diem_tong >= 26) echo "Khá";
+                                                elseif ($diem_tong >= 20) echo "Trung bình";
+                                                else echo "Yếu";
+                                            ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <?php endif; ?>
+                            
+                            <?php if (!empty($diem_data['GhiChu'])): ?>
+                            <div class="row" style="margin-top: 20px;">
+                                <div class="col-md-12">
+                                    <div class="comment-section" style="background: white; border-radius: 12px; padding: 20px; border-left: 4px solid #007bff; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                                        <h5 style="color: #007bff; font-weight: 600; margin-bottom: 12px;">
+                                            <i class="fa fa-comment" style="margin-right: 8px;"></i>
+                                            Nhận xét từ giáo viên
+                                        </h5>
+                                        <p style="margin: 0; color: #495057; line-height: 1.6; font-size: 14px;">
+                                            <?php echo nl2br(htmlspecialchars($diem_data['GhiChu'])); ?>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
             
         </div>
     </div>

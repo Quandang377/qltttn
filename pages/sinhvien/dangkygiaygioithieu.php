@@ -1,5 +1,104 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
+
+$message = '';
+$messageType = 'success';
+
+// Kiểm tra thông báo từ URL sau khi redirect
+if (isset($_GET['success']) && $_GET['success'] == '1' && isset($_GET['msg'])) {
+    $message = urldecode($_GET['msg']);
+    $messageType = 'success';
+}
+
+// Lấy ID sinh viên từ session
+$idSinhVien = $_SESSION['user']['ID_TaiKhoan'] ?? 3;
+
+// Lấy thông tin đợt thực tập của sinh viên
+$stmt = $conn->prepare("SELECT ID_Dot FROM SinhVien WHERE ID_TaiKhoan = ?");
+$stmt->execute([$idSinhVien]);
+$sinhVienInfo = $stmt->fetch(PDO::FETCH_ASSOC);
+$idDot = $sinhVienInfo['ID_Dot'] ?? null;
+
+// Lấy thông tin chi tiết đợt thực tập
+$dotThucTapInfo = null;
+if ($idDot) {
+    $stmt = $conn->prepare("SELECT TenDot, ThoiGianBatDau, ThoiGianKetThuc, TrangThai FROM DotThucTap WHERE ID = ?");
+    $stmt->execute([$idDot]);
+    $dotThucTapInfo = $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
+// Xử lý form submit
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['from_panel'])) {
+    $taxCode = trim($_POST['ma_so_thue']);
+    $name = trim($_POST['ten_cong_ty']);
+    $address = trim($_POST['dia_chi']);
+    $field = trim($_POST['linh_vuc']);
+    $phone = trim($_POST['sdt']);
+    $email = trim($_POST['email']);
+
+    // Kiểm tra dữ liệu phía server
+    if (!$taxCode || !$name || !$address || !$field || !$phone || !$email) {
+        $message = 'Vui lòng nhập đầy đủ tất cả các trường!';
+        $messageType = 'danger';
+    } elseif (!$idDot) {
+        $message = 'Bạn chưa được phân công vào đợt thực tập nào!';
+        $messageType = 'danger';
+    } elseif ($dotThucTapInfo && $dotThucTapInfo['TrangThai'] < 3) {
+        $message = 'Đợt thực tập của bạn đã kết thúc hoặc chưa bắt đầu. Không thể đăng ký giấy giới thiệu!';
+        $messageType = 'danger';
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $message = 'Email không hợp lệ!';
+        $messageType = 'danger';
+    } elseif (!preg_match('/^[0-9\-\+\s]{8,}$/', $phone)) {
+        $message = 'Số điện thoại không hợp lệ!';
+        $messageType = 'danger';
+    } else {
+        try {
+            // Kiểm tra xem công ty đã có trong database hay chưa
+            $checkStmt = $conn->prepare("SELECT ID FROM congty WHERE MaSoThue = ? AND TrangThai = 1");
+            $checkStmt->execute([$taxCode]);
+            $existingCompany = $checkStmt->fetch(PDO::FETCH_ASSOC);
+            
+            // Nếu công ty đã có trong DB và trạng thái active thì set trạng thái = 1 (đã duyệt)
+            // Ngược lại set trạng thái = 0 (chờ duyệt)
+            $trangThai = $existingCompany ? 1 : 0;
+            
+            $stmt = $conn->prepare("INSERT INTO giaygioithieu (TenCty, MaSoThue, DiaChi, LinhVuc, Sdt, Email, IdSinhVien, id_dot, TrangThai) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$name, $taxCode, $address, $field, $phone, $email, $idSinhVien, $idDot, $trangThai]);
+            
+            if ($trangThai == 1) {
+                $message = 'Đã gửi phiếu đăng ký thực tập và tự động duyệt (công ty đã có trong hệ thống)!';
+            } else {
+                $message = 'Đã gửi phiếu đăng ký thực tập, vui lòng chờ duyệt!';
+            }
+            
+            // Redirect để tránh resubmit form khi refresh
+            header("Location: dangkygiaygioithieu");
+            exit();
+        } catch (Exception $e) {
+            $message = 'Có lỗi xảy ra khi lưu dữ liệu: ' . $e->getMessage();
+            $messageType = 'danger';
+        }
+    }
+}
+
+// Lấy danh sách công ty
+$stmt = $conn->prepare("SELECT ID, TenCty, MaSoThue, DiaChi, Sdt, Email, Linhvuc FROM congty WHERE TrangThai = 1");
+$stmt->execute();
+$companyList = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Lấy danh sách giấy giới thiệu của sinh viên với thông tin đợt thực tập
+$stmt = $conn->prepare("
+    SELECT g.ID, g.TenCty, g.MaSoThue, g.DiaChi, g.Sdt, g.Email, g.LinhVuc, g.TrangThai,
+           d.TenDot, d.ThoiGianBatDau, d.ThoiGianKetThuc
+    FROM giaygioithieu g
+    LEFT JOIN DotThucTap d ON g.id_dot = d.ID
+    WHERE g.IdSinhVien = ?
+    ORDER BY g.ID DESC
+");
+$stmt->execute([$idSinhVien]);
+$giayList = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -153,6 +252,24 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
             border-top: 1px solid #e2e8f0;
             padding: 12px 20px;
         }
+        .company-panel.disabled {
+            pointer-events: none;
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .company-panel.disabled:hover {
+            border-color: #e2e8f0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            transform: none;
+        }
+        
+        .search-bar input:disabled,
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
         .company-panel {
             background: white;
             border: 1px solid #e2e8f0;
@@ -590,6 +707,12 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
             $message = '';
             $messageType = 'success';
 
+            // Kiểm tra thông báo từ URL sau khi redirect
+            if (isset($_GET['success']) && $_GET['success'] == '1' && isset($_GET['msg'])) {
+                $message = urldecode($_GET['msg']);
+                $messageType = 'success';
+            }
+
             // Lấy ID sinh viên từ session
             $idSinhVien = $_SESSION['user']['ID_TaiKhoan'] ?? 3;
             
@@ -602,7 +725,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
             // Lấy thông tin chi tiết đợt thực tập
             $dotThucTapInfo = null;
             if ($idDot) {
-                $stmt = $conn->prepare("SELECT TenDot, ThoiGianBatDau, ThoiGianKetThuc FROM DotThucTap WHERE ID = ?");
+                $stmt = $conn->prepare("SELECT TenDot, ThoiGianBatDau, ThoiGianKetThuc, TrangThai FROM DotThucTap WHERE ID = ?");
                 $stmt->execute([$idDot]);
                 $dotThucTapInfo = $stmt->fetch(PDO::FETCH_ASSOC);
             }
@@ -618,6 +741,12 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
                 // Kiểm tra dữ liệu phía server
                 if (!$taxCode || !$name || !$address || !$field || !$phone || !$email) {
                     $message = 'Vui lòng nhập đầy đủ tất cả các trường!';
+                    $messageType = 'danger';
+                } elseif (!$idDot) {
+                    $message = 'Bạn chưa được phân công vào đợt thực tập nào!';
+                    $messageType = 'danger';
+                } elseif ($dotThucTapInfo && $dotThucTapInfo['TrangThai'] < 3) {
+                    $message = 'Đợt thực tập của bạn đã kết thúc hoặc chưa bắt đầu. Không thể đăng ký giấy giới thiệu!';
                     $messageType = 'danger';
                 } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
                     $message = 'Email không hợp lệ!';
@@ -645,6 +774,10 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
                             $message = 'Đã gửi phiếu đăng ký thực tập, vui lòng chờ duyệt!';
                         }
                         $messageType = 'success';
+                        
+                        // Redirect để tránh resubmit form khi refresh
+                        header("Location: " . $_SERVER['PHP_SELF'] . "?success=1&msg=" . urlencode($message));
+                        exit();
                     } catch (Exception $e) {
                         $message = 'Có lỗi xảy ra khi lưu dữ liệu: ' . $e->getMessage();
                         $messageType = 'danger';
@@ -675,15 +808,28 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
                 
                 <!-- Thông tin đợt thực tập -->
                 <?php if ($dotThucTapInfo): ?>
-                    <div class="alert alert-info" style="border-radius: 12px; background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%); border: 1px solid #b8daff;">
-                        <i class="fa fa-info-circle"></i>
-                        <strong>Đợt thực tập:</strong> <?php echo htmlspecialchars($dotThucTapInfo['TenDot']); ?>
-                        <?php if ($dotThucTapInfo['ThoiGianBatDau'] && $dotThucTapInfo['ThoiGianKetThuc']): ?>
-                            | <strong>Thời gian:</strong> 
-                            <?php echo date('d/m/Y', strtotime($dotThucTapInfo['ThoiGianBatDau'])); ?> - 
-                            <?php echo date('d/m/Y', strtotime($dotThucTapInfo['ThoiGianKetThuc'])); ?>
-                        <?php endif; ?>
-                    </div>
+                    <?php if ($dotThucTapInfo['TrangThai'] < 3): ?>
+                        <div class="alert alert-warning" style="border-radius: 12px; background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%); border: 1px solid #ffeaa7;">
+                            <i class="fa fa-exclamation-triangle"></i>
+                            <strong>Đợt của bạn đã kết thúc hoặc chưa bắt đầu:</strong> 
+                            <?php echo htmlspecialchars($dotThucTapInfo['TenDot']); ?>
+                            <?php if ($dotThucTapInfo['ThoiGianBatDau'] && $dotThucTapInfo['ThoiGianKetThuc']): ?>
+                                | <strong>Thời gian:</strong> 
+                                <?php echo date('d/m/Y', strtotime($dotThucTapInfo['ThoiGianBatDau'])); ?> - 
+                                <?php echo date('d/m/Y', strtotime($dotThucTapInfo['ThoiGianKetThuc'])); ?>
+                            <?php endif; ?>
+                        </div>
+                    <?php else: ?>
+                        <div class="alert alert-info" style="border-radius: 12px; background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%); border: 1px solid #b8daff;">
+                            <i class="fa fa-info-circle"></i>
+                            <strong>Đợt thực tập:</strong> <?php echo htmlspecialchars($dotThucTapInfo['TenDot']); ?>
+                            <?php if ($dotThucTapInfo['ThoiGianBatDau'] && $dotThucTapInfo['ThoiGianKetThuc']): ?>
+                                | <strong>Thời gian:</strong> 
+                                <?php echo date('d/m/Y', strtotime($dotThucTapInfo['ThoiGianBatDau'])); ?> - 
+                                <?php echo date('d/m/Y', strtotime($dotThucTapInfo['ThoiGianKetThuc'])); ?>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
                 <?php else: ?>
                     <div class="alert alert-warning" style="border-radius: 12px; background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%); border: 1px solid #ffeaa7;">
                         <i class="fa fa-exclamation-triangle"></i>
@@ -748,12 +894,21 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 <?php endif; ?>
 
                 <!-- Thanh tìm kiếm và nút tự điền -->
+                <?php if ($dotThucTapInfo && $dotThucTapInfo['TrangThai'] >= 3): ?>
                 <div class="search-bar">
                     <input type="text" id="search-company" placeholder="Tìm kiếm công ty theo tên, MST, lĩnh vực...">
                     <button type="button" class="btn btn-info" id="btn-add-manual">
                         <i class="fa fa-plus"></i> Thêm
                     </button>
                 </div>
+                <?php else: ?>
+                <div class="search-bar" style="opacity: 0.5;">
+                    <input type="text" id="search-company" placeholder="Tìm kiếm công ty theo tên, MST, lĩnh vực..." disabled>
+                    <button type="button" class="btn btn-info" id="btn-add-manual" disabled>
+                        <i class="fa fa-plus"></i> Thêm
+                    </button>
+                </div>
+                <?php endif; ?>
                 <div class="row">
                     <!-- Card 1: Danh sách công ty thực tập -->
                     <div class="col-xl-8 col-lg-7 mb-4">
@@ -811,9 +966,15 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
                         </form>
                       </div>
                       <div class="modal-footer">
+                        <?php if ($dotThucTapInfo && $dotThucTapInfo['TrangThai'] >= 3): ?>
                         <button type="button" class="btn btn-success" id="btn-approve-company">
                             <i class="fa fa-check"></i> Gửi (Đã duyệt)
                         </button>
+                        <?php else: ?>
+                        <button type="button" class="btn btn-success" id="btn-approve-company" disabled>
+                            <i class="fa fa-check"></i> Gửi (Đã duyệt)
+                        </button>
+                        <?php endif; ?>
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
                       </div>
                     </div>
@@ -831,10 +992,13 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
                         </button>
                       </div>
                       <div class="modal-body">
+                        <!-- Input hidden để PHP nhận biết request từ modal nhập thủ công -->
+                        <input type="hidden" name="from_panel" value="1">
+                        
                         <div class="form-group">
                             <label for="manual-ma-so-thue">Mã số thuế</label>
                             <div class="input-group">
-                                <input type="text" class="form-control" id="manual-ma-so-thue" name="ma_so_thue" placeholder="Mã số thuế">
+                                <input type="text" class="form-control" id="manual-ma-so-thue" name="ma_so_thue" placeholder="Mã số thuế" required>
                                 <div class="input-group-append">
                                     <button class="btn btn-primary" type="button" id="btn-fill-api">
                                         <i class="fa fa-sync"></i> Lấy thông tin
@@ -844,27 +1008,31 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
                         </div>
                         <div class="form-group">
                             <label for="manual-ten-cong-ty">Tên công ty</label>
-                            <input type="text" class="form-control" id="manual-ten-cong-ty" name="ten_cong_ty" placeholder="Tên công ty">
+                            <input type="text" class="form-control" id="manual-ten-cong-ty" name="ten_cong_ty" placeholder="Tên công ty" required>
                         </div>
                         <div class="form-group">
                             <label for="manual-dia-chi">Địa chỉ</label>
-                            <input type="text" class="form-control" id="manual-dia-chi" name="dia_chi" placeholder="Địa chỉ">
+                            <input type="text" class="form-control" id="manual-dia-chi" name="dia_chi" placeholder="Địa chỉ" required>
                         </div>
                         <div class="form-group">
                             <label for="manual-linh-vuc">Lĩnh vực</label>
-                            <input type="text" class="form-control" id="manual-linh-vuc" name="linh_vuc" placeholder="Lĩnh vực">
+                            <input type="text" class="form-control" id="manual-linh-vuc" name="linh_vuc" placeholder="Lĩnh vực" required>
                         </div>
                         <div class="form-group">
                             <label for="manual-sdt">SĐT</label>
-                            <input type="text" class="form-control" id="manual-sdt" name="sdt" placeholder="Số điện thoại">
+                            <input type="text" class="form-control" id="manual-sdt" name="sdt" placeholder="Số điện thoại" required>
                         </div>
                         <div class="form-group">
                             <label for="manual-email">Email</label>
-                            <input type="email" class="form-control" id="manual-email" name="email" placeholder="Email">
+                            <input type="email" class="form-control" id="manual-email" name="email" placeholder="Email" required>
                         </div>
                       </div>
                       <div class="modal-footer">
+                        <?php if ($dotThucTapInfo && $dotThucTapInfo['TrangThai'] >= 3): ?>
                         <button type="submit" class="btn btn-success"><i class="fa fa-paper-plane"></i> Gửi yêu cầu</button>
+                        <?php else: ?>
+                        <button type="button" class="btn btn-success" disabled><i class="fa fa-paper-plane"></i> Gửi yêu cầu</button>
+                        <?php endif; ?>
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
                       </div>
                     </form>
@@ -879,6 +1047,10 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
     let filteredCompanies = [...companyList];
     let currentPage = 1;
     const perPage = 8;
+    
+    // Kiểm tra trạng thái đợt
+    const dotTrangThai = <?= json_encode($dotThucTapInfo['TrangThai'] ?? 0) ?>;
+    const canRegister = dotTrangThai >= 3;
 
     function renderCompanyPanels() {
         const list = document.getElementById('company-panel-list');
@@ -901,8 +1073,10 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
         pageCompanies.forEach((cty, idx) => {
             const col = document.createElement('div');
             col.className = 'col-md-3 col-sm-6 mb-3';
+            const disabledClass = canRegister ? '' : ' disabled';
+            const disabledStyle = canRegister ? '' : 'pointer-events: none; opacity: 0.5;';
             col.innerHTML = `
-                <div class="company-panel" data-index="${start + idx}">
+                <div class="company-panel${disabledClass}" data-index="${start + idx}" style="${disabledStyle}">
                     <div class="font-weight-bold">${cty.TenCty}</div>
                     <div class="company-info"><strong>MST:</strong> ${cty.MaSoThue}</div>
                     <div class="company-info"><strong>Lĩnh vực:</strong> ${cty.Linhvuc}</div>
@@ -977,6 +1151,22 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
     const giayList = <?= json_encode($giayList) ?>;
     let giayCurrentPage = 1;
     const giayPerPage = 3; // mỗi trang chỉ 3 panel
+
+    // Hàm reload dữ liệu giấy giới thiệu sau khi thêm mới
+    function reloadGiayData() {
+        // Reload trang để cập nhật dữ liệu mới từ database
+        if (window.location.search.includes('success=1')) {
+            // Nếu có thông báo success, load lại data không có parameter
+            const url = new URL(window.location);
+            url.searchParams.delete('success');
+            url.searchParams.delete('msg');
+            window.history.replaceState({}, document.title, url.pathname);
+            
+            // Reload dữ liệu giấy bằng AJAX (tùy chọn)
+            // Hoặc có thể reload toàn bộ trang
+            location.reload();
+        }
+    }
 
     function renderGiayPanels() {
         const list = document.getElementById('giay-panel-list');
@@ -1072,6 +1262,9 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
     }
 
     document.addEventListener('DOMContentLoaded', function() {
+        // Kiểm tra và reload dữ liệu nếu có thông báo success
+        reloadGiayData();
+        
         renderCompanyPanels();
         renderPagination();
         renderGiayPanels();
@@ -1085,6 +1278,13 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
         document.getElementById('company-panel-list').addEventListener('click', function(e) {
             let panel = e.target.closest('.company-panel');
             if (!panel) return;
+            
+            // Kiểm tra trạng thái đợt
+            if (!canRegister) {
+                alert('Đợt thực tập của bạn đã kết thúc hoặc chưa bắt đầu. Không thể đăng ký giấy giới thiệu!');
+                return;
+            }
+            
             const idx = +panel.getAttribute('data-index');
             const cty = filteredCompanies[idx];
             if (!cty) return;
@@ -1121,6 +1321,12 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
             btnApprove.parentNode.replaceChild(newBtnApprove, btnApprove);
 
             newBtnApprove.onclick = function() {
+                // Kiểm tra trạng thái đợt
+                if (!canRegister) {
+                    alert('Đợt thực tập của bạn đã kết thúc hoặc chưa bắt đầu. Không thể đăng ký giấy giới thiệu!');
+                    return;
+                }
+                
                 // Lấy lại input hidden vừa tạo trong modal-body
                 document.getElementById('approve-ten-cong-ty').value = cty.TenCty;
                 document.getElementById('approve-ma-so-thue').value = cty.MaSoThue;
@@ -1135,6 +1341,12 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 
         // Nút mở modal nhập thủ công
         document.getElementById('btn-add-manual').onclick = function() {
+            // Kiểm tra trạng thái đợt
+            if (!canRegister) {
+                alert('Đợt thực tập của bạn đã kết thúc hoặc chưa bắt đầu. Không thể đăng ký giấy giới thiệu!');
+                return;
+            }
+            
             // Reset form
             document.getElementById('manual-company-form').reset();
             $('#manualModal').modal('show');
@@ -1176,8 +1388,15 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
             }
         };
 
-        // Gửi form nhập thủ công (submit về PHP, không gọi API, chỉ validate dữ liệu)
+        // Gửi form nhập thủ công với validation
         document.getElementById('manual-company-form').onsubmit = function(e) {
+            // Kiểm tra trạng thái đợt
+            if (!canRegister) {
+                alert('Đợt thực tập của bạn đã kết thúc hoặc chưa bắt đầu. Không thể đăng ký giấy giới thiệu!');
+                e.preventDefault();
+                return false;
+            }
+            
             const taxCode = document.getElementById('manual-ma-so-thue').value.trim();
             const name = document.getElementById('manual-ten-cong-ty').value.trim();
             const address = document.getElementById('manual-dia-chi').value.trim();
@@ -1191,6 +1410,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
                 e.preventDefault();
                 return false;
             }
+            
             // Kiểm tra email hợp lệ
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(email)) {
@@ -1198,6 +1418,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
                 e.preventDefault();
                 return false;
             }
+            
             // Kiểm tra số điện thoại (chỉ số, tối thiểu 8 ký tự)
             const phoneRegex = /^[0-9\-\+\s]{8,}$/;
             if (!phoneRegex.test(phone)) {
@@ -1205,16 +1426,11 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
                 e.preventDefault();
                 return false;
             }
-            // Không gọi API ở đây nữa!
+            
+            // Đóng modal và submit form
+            $('#manualModal').modal('hide');
             return true;
         };
-        // Form nhập thủ công
-        const manualForm = document.getElementById('manual-company-form');
-        if (manualForm) {
-            manualForm.addEventListener('submit', function() {
-                $('#loadingModal').modal('show');
-            });
-        }
     });
     </script>
     <script src="/datn/api/getapi.js"></script>
