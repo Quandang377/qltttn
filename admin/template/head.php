@@ -4,7 +4,7 @@
 <link href="access/css/font-awesome.min.css" rel="stylesheet">
 <link href="access/css/dataTables/dataTables.bootstrap.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap.min.css">
-<script src="access/build/ckeditor.js?v=123"></script>
+<script src="access/ckeditor5/build/ckeditor.js?v=123"></script>
 
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
 <style>

@@ -402,7 +402,7 @@ if (isset($_SESSION['deleted'])) {
             table = $('#TableDotTT').DataTable({
                 responsive: true,
                 pageLength: 10,
-                ordering: true,
+                ordering: false,
                 language: {
                     url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json"
                 }

@@ -31,24 +31,38 @@ if ($idTaiKhoan) {
 }
 if ($idTaiKhoan) {
     $stmt = $conn->prepare("
-    SELECT COUNT(*) FROM KhaoSat ks
-    WHERE ks.TrangThai = 1
-    AND (
-        ks.NguoiNhan IN ('Tất cả', ?) 
-        OR (
-            ks.NguoiNhan = 'Sinh viên thuộc hướng dẫn'
-            AND EXISTS (
-                SELECT 1 FROM SinhVien sv
-                WHERE sv.ID_TaiKhoan = ? AND sv.ID_GVHD = ks.NguoiTao
+        SELECT COUNT(*) 
+        FROM KhaoSat ks
+        WHERE ks.TrangThai = 1
+        AND (
+            (
+                ks.NguoiNhan IN ('Tất cả', ?)
+                AND EXISTS (
+                    SELECT 1 FROM SinhVien sv
+                    WHERE sv.ID_TaiKhoan = ?
+                    AND sv.ID_Dot = ks.ID_Dot
+                )
+            )
+            OR (
+                ks.NguoiNhan = 'Sinh viên thuộc hướng dẫn'
+                AND EXISTS (
+                    SELECT 1 FROM SinhVien sv
+                    WHERE sv.ID_TaiKhoan = ?
+                    AND sv.ID_GVHD = ks.NguoiTao
+                    AND sv.ID_Dot = ks.ID_Dot
+                )
             )
         )
-    )
-    AND ks.ID NOT IN (
-        SELECT ID_KhaoSat FROM PhanHoiKhaoSat WHERE ID_TaiKhoan = ?
-    )
-");
-    $stmt->execute([$vaiTro, $idTaiKhoan, $idTaiKhoan]);
+        AND ks.ID NOT IN (
+            SELECT ID_KhaoSat 
+            FROM PhanHoiKhaoSat 
+            WHERE ID_TaiKhoan = ?
+        )
+    ");
+
+    $stmt->execute([$vaiTro, $idTaiKhoan, $idTaiKhoan, $idTaiKhoan]);
     $coKhaoSatMoi = $stmt->fetchColumn() > 0;
+
 }
 $stmt = $conn->query("SELECT * FROM cauhinh");
 $cauhinh = [];

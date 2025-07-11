@@ -21,6 +21,9 @@ if (empty($subPath) || $subPath[0] !== 'pages') {
 }
 
 $page = $subPath[1] ?? 'trangchu';
+
+$page = preg_replace('/\.php$/i', '', $page);
+
 $path = __DIR__ . '/pages/' . $page . '.php';
 
 if (file_exists($path)) {

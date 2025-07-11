@@ -1,4 +1,4 @@
-<?php 
+<?php
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
@@ -54,8 +54,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php";
   ?>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+    @media print {
+      body {
+        margin: 0 !important;
+      }
+    }
+
+    :root {
+      --ck-content-font-family: 'Lato';
+    }
+
+    .main-container {
+      font-family: var(--ck-content-font-family);
+      width: fit-content;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .editor-container_classic-editor .editor-container__editor {
+      width: 100%;
+      /* max-width: 800px; */
+      margin: 0 auto;
+      box-sizing: border-box;
+    }
+
+   
+
+    .editor_container__word-count .ck-word-count {
+      color: var(--ck-color-text);
+      display: flex;
+      height: 20px;
+      gap: var(--ck-spacing-small);
+      justify-content: flex-end;
+      font-size: var(--ck-font-size-base);
+      line-height: var(--ck-line-height-base);
+      font-family: var(--ck-font-face);
+      padding: var(--ck-spacing-small) var(--ck-spacing-standard);
+    }
+
+    .editor-container_include-word-count.editor-container_classic-editor .editor_container__word-count {
+      border: 1px solid var(--ck-color-base-border);
+      border-radius: var(--ck-border-radius);
+      border-top-left-radius: 0;
+      border-top-right-radius: 0;
+      border-top: none;
+    }
+
+    .editor-container_include-word-count.editor-container_classic-editor .editor-container__editor .ck-editor .ck-editor__editable {
+      border-radius: 0;
+    }
+
     .ck-editor__editable_inline {
-        min-height: 200px;
+      min-height: 250px;
     }
   </style>
 </head>
@@ -92,14 +144,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                   </div>
                   <div class="form-group">
                     <label>Nội dung thông báo</label>
-                    <textarea class="form-control" id="editor" name="noidung"></textarea>
-                    <script>
-                      ClassicEditor
-                        .create(document.querySelector('#editor'))
-                        .catch(error => {
-                          console.error('Lỗi khởi tạo CKEditor:', error);
-                        });
-                    </script>
+                      <div
+                        class=" editor-container editor-container_classic-editor editor-container_include-block-toolbar editor-container_include-word-count editor-container_include-fullscreen"
+                        id="editor-container">
+                        <div>
+                        <div class="editor-container__editor">
+                          <div id="editor" ></div>
+                        </div>
+                        <div class="editor_container__word-count" id="editor-word-count"></div>
+                        </div>
+                      </div>
+                    <script type="importmap">
+                        {
+                          "imports": {
+                            "ckeditor5": "/datn/access/ckeditor5/ckeditor5.js",
+                            "ckeditor5/": "/datn/access/ckeditor5/"
+                          }
+                        }
+                        </script>
+
                   </div>
                   <div class="form-group text-center">
                     <button type="submit" class="btn btn-primary btn-lg mt-3">Đăng tải</button>
@@ -118,3 +181,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </body>
 
 </html>
+<script>
+  const form = document.querySelector('#FormThongBao');
+
+  form.addEventListener('submit', (e) => {
+    const textarea = document.createElement('textarea');
+    textarea.name = 'noidung';
+    textarea.style.display = 'none';
+    textarea.value = editor.getData();
+    form.appendChild(textarea);
+  });
+</script>

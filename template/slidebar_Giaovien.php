@@ -36,25 +36,35 @@ $vaiTro = isset($_SESSION['VaiTro']); // Gán cứng cho giáo viên, nếu dùn
     }
 
     // Kiểm tra khảo sát mới
-    $stmt = $conn->prepare("
-        SELECT COUNT(*) FROM khaosat ks
-        WHERE ks.TrangThai = 1
-        AND (
-            ks.NguoiNhan IN ('Tất cả', ?) 
-            OR (
-                ks.NguoiNhan = 'Giáo viên'
-                AND EXISTS (
-                    SELECT 1 FROM giaovien gv
-                    WHERE gv.ID_TaiKhoan = ?
-                )
+   $stmt = $conn->prepare("
+    SELECT COUNT(*) 
+    FROM khaosat ks
+    WHERE ks.TrangThai = 1
+    AND (
+        (
+            ks.NguoiNhan = 'Tất cả'
+            AND EXISTS (
+                SELECT 1 FROM dot_giaovien dg
+                WHERE dg.ID_GVHD = ?
+                AND dg.ID_Dot = ks.ID_Dot
             )
         )
-        AND ks.ID NOT IN (
-            SELECT ID_KhaoSat FROM phanhoikhaosat WHERE ID_TaiKhoan = ?
+        OR (
+            ks.NguoiNhan = 'Giáo viên'
+            AND EXISTS (
+                SELECT 1 FROM dot_giaovien dg
+                WHERE dg.ID_GVHD = ?
+                AND dg.ID_Dot = ks.ID_Dot
+            )
         )
-    ");
-    $stmt->execute([$vaiTro, $idTaiKhoan, $idTaiKhoan]);
-    $coKhaoSatMoi = $stmt->fetchColumn() > 0;
+    )
+    AND ks.ID NOT IN (
+        SELECT ID_KhaoSat FROM phanhoikhaosat WHERE ID_TaiKhoan = ?
+    )
+");
+$stmt->execute([$idTaiKhoan, $idTaiKhoan, $idTaiKhoan]);
+$coKhaoSatMoi = $stmt->fetchColumn() > 0;
+
 
 // Lấy cấu hình hệ thống
 $stmt = $conn->query("SELECT * FROM cauhinh");

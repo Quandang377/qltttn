@@ -3,6 +3,8 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="/datn/access/js/dataTables/jquery.dataTables.min.js"></script>
 <script src="/datn/access/js/dataTables/dataTables.bootstrap.min.js"></script>
+<script type="module" src="/datn/access/main.js?v=2"></script>
+
 <?php
 $stmt = $conn->query("SELECT * FROM cauhinh");
 $cauhinh = [];
@@ -38,8 +40,8 @@ foreach ($stmt as $row) {
         </div>
         <hr style="border-color: rgba(255,255,255,0.3);">
         <div class="text-center" style="font-size: 14px;">
-            <a href="<?= $cauhinh['website_khoa'] ?? 'https://cntt.caothang.edu.vn/' ?>"style='color:#ffffff'>
-            <?= $cauhinh['footer_text'] ?? '© 2025 Trường Cao Thắng'?>  <i class="fa fa-external-link"></i>
+            <a href="<?= $cauhinh['website_khoa'] ?? 'https://cntt.caothang.edu.vn/' ?>" style='color:#ffffff'>
+                <?= $cauhinh['footer_text'] ?? '© 2025 Trường Cao Thắng' ?> <i class="fa fa-external-link"></i>
             </a>
         </div>
     </div>
@@ -47,8 +49,8 @@ foreach ($stmt as $row) {
 
 <style>
     footer {
-    clear: both;
-    z-index: 1;
-    position: relative;
-}
+        clear: both;
+        z-index: 1;
+        position: relative;
+    }
 </style>

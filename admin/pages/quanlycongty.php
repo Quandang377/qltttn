@@ -1,3 +1,7 @@
+<?php
+require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
+
+?>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -291,7 +295,7 @@
 </head>
 <body>
 <div id="wrapper">
-    <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_CanBo.php"; ?>
+    <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/admin/template/slidebar.php"; ?>
     
     <!-- Notification Container -->
     <div class="notification-container" id="notification-container"></div>

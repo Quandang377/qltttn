@@ -197,7 +197,7 @@ $vaiTro = $stmt->fetchColumn();
 
 $stmt = $conn->prepare("
     SELECT ks.*, 
-    COALESCE(gv.Ten, sv.Ten,cb.Ten, ad.Ten, tk.TaiKhoan) AS TenNguoiTao
+        COALESCE(gv.Ten, sv.Ten, cb.Ten, ad.Ten, tk.TaiKhoan) AS TenNguoiTao
     FROM KhaoSat ks
     JOIN TaiKhoan tk ON ks.NguoiTao = tk.ID_TaiKhoan
     LEFT JOIN GiaoVien gv ON gv.ID_TaiKhoan = tk.ID_TaiKhoan
@@ -206,14 +206,20 @@ $stmt = $conn->prepare("
     LEFT JOIN Admin ad ON ad.ID_TaiKhoan = tk.ID_TaiKhoan
     WHERE ks.TrangThai = 1
     AND (
-        ks.NguoiNhan IN ('Tất cả', ?) -- Vai trò
-        OR (
-            ks.NguoiNhan = 'Sinh viên thuộc hướng dẫn'
+        (
+            ks.NguoiNhan = 'Tất cả'
             AND EXISTS (
-                SELECT 1
-                FROM SinhVien sv2
-                WHERE sv2.ID_TaiKhoan = ?
-                AND sv2.ID_GVHD = ks.NguoiTao
+                SELECT 1 FROM dot_giaovien dg
+                WHERE dg.ID_GVHD = ?
+                AND dg.ID_Dot = ks.ID_Dot
+            )
+        )
+        OR (
+            ks.NguoiNhan = 'Giáo viên'
+            AND EXISTS (
+                SELECT 1 FROM dot_giaovien dg
+                WHERE dg.ID_GVHD = ?
+                AND dg.ID_Dot = ks.ID_Dot
             )
         )
     )
@@ -225,8 +231,9 @@ $stmt = $conn->prepare("
     ORDER BY ks.ThoiGianTao DESC
 ");
 
-$stmt->execute([$vaiTro, $ID_TaiKhoan, $ID_TaiKhoan]);
+$stmt->execute([$ID_TaiKhoan, $ID_TaiKhoan, $ID_TaiKhoan]);
 $dsKhaoSat = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
 
 $dsID = array_column($dsKhaoSat, 'ID');
 $dsCauHoiTheoKhaoSat = [];

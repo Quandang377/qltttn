@@ -1,3 +1,7 @@
+<?php
+require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
+?>
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
