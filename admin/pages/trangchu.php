@@ -20,7 +20,7 @@ $today = date('Y-m-d');
 // Cập nhật trạng thái kết thúc
 $updateStmt = $conn->prepare("UPDATE DOTTHUCTAP 
     SET TRANGTHAI = 0 
-    WHERE THOIGIANKETTHUC <= :today AND TRANGTHAI = 2");
+    WHERE THOIGIANKETTHUC <= :today AND TRANGTHAI != -1");
 $updateStmt->execute(['today' => $today]);
 
 // Cập nhật trạng thái đã bắt đầu

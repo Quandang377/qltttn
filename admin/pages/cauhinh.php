@@ -61,7 +61,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Cấu hình trang web</title>
     <?php
     require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php";
+    
     ?>
+    
 </head>
 
 <body>

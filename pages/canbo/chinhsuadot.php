@@ -1,6 +1,4 @@
 <?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
-
-require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
 $id = $_GET['id'] ?? null;
@@ -9,7 +7,7 @@ if (!$id) {
     die("Không tìm thấy ID đợt thực tập.");
 }
 
-$stmt = $conn->prepare("SELECT ID,TenDot,BacDaoTao,Nam,                                                  NguoiMoDot,NguoiQuanLy,ThoiGianBatDau,ThoiGianKetThuc,TrangThai FROM DOTTHUCTAP WHERE ID = :id");
+$stmt = $conn->prepare("SELECT ID,TenDot,BacDaoTao,Nam,NguoiMoDot,NguoiQuanLy,ThoiGianBatDau,ThoiGianKetThuc,TrangThai FROM DOTTHUCTAP WHERE ID = :id");
 $stmt->execute(['id' => $id]);
 $dot = $stmt->fetch();
 $successMessage = "";
@@ -20,7 +18,12 @@ $stmt = $conn->prepare("SELECT ID, TenDot, BacDaoTao, Nam, NguoiMoDot, NguoiQuan
 $stmt->execute(['id' => $id]);
 $dot = $stmt->fetch();
 
-$canbokhoa = $conn->query("SELECT ID_TaiKhoan, Ten FROM CanBoKhoa WHERE TrangThai = 1")->fetchAll(PDO::FETCH_ASSOC);
+$stmt = $conn->query("
+    SELECT ID_TaiKhoan, Ten FROM canbokhoa WHERE TrangThai = 1
+    UNION
+    SELECT ID_TaiKhoan, Ten FROM admin WHERE TrangThai = 1
+");
+$nguoiQuanLyList = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 if (!$dot) {
     die("Không tìm thấy đợt thực tập.");
@@ -41,6 +44,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($count > 0) {
         $errors[] = "Tên đợt đã tồn tại!";
     }
+    if($dot['TrangThai']==1)
+    {
     $today = date('Y-m-d');
     $ngayMai = date('Y-m-d', strtotime('+1 day'));
     if ($thoiGianBatDau < $ngayMai) {
@@ -56,7 +61,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (!empty($errors)) {
         $notification = implode("<br>", $errors);
-    } else {
+    }
+else {
         $updateStmt = $conn->prepare("
             UPDATE DOTTHUCTAP SET
                 TenDot = :tenDot,
@@ -74,6 +80,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'BacDaoTao' => $BacDaoTao,
             'thoiGianBatDau' => $thoiGianBatDau,
             'thoiGianKetThuc' => $thoiGianKetThuc,
+            'nguoiQuanLy' => $nguoiQuanLy,
+            'id' => $id
+        ]);
+
+        $successMessage = "Cập nhật thành công!";
+
+        $stmt = $conn->prepare("SELECT ID,TenDot,BacDaoTao,Nam,NguoiMoDot,NguoiQuanLy,ThoiGianBatDau,ThoiGianKetThuc,TrangThai FROM DOTTHUCTAP WHERE ID = :id");
+        $stmt->execute(['id' => $id]);
+        $dot = $stmt->fetch();
+    }
+} else {
+        $updateStmt = $conn->prepare("
+            UPDATE DOTTHUCTAP SET
+                NguoiQuanLy = :nguoiQuanLy
+            WHERE ID = :id
+        ");
+
+        $updateStmt->execute([
             'nguoiQuanLy' => $nguoiQuanLy,
             'id' => $id
         ]);
@@ -120,23 +144,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="form-group">
                         <label class="col-sm-2 control-label">Tên đợt</label>
                         <div class="col-sm-10">
-                            <input <?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?> type="text" name="TenDot" class="form-control"
-                                value="<?= htmlspecialchars($dot['TenDot']) ?>" required>
+                            <input <?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?> type="text" name="TenDot"
+                                class="form-control" value="<?= htmlspecialchars($dot['TenDot']) ?>" required>
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label class="col-sm-2 control-label">Năm</label>
-                        <div class="col-sm-10" >
-                            <input <?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?> type="number" name="Nam" min="1000" max="9999" class="form-control"
-                                value="<?= htmlspecialchars($dot['Nam']) ?>" required>
+                        <div class="col-sm-10">
+                            <input <?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?> type="number" name="Nam" min="1000"
+                                max="9999" class="form-control" value="<?= htmlspecialchars($dot['Nam']) ?>" required>
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label class="col-sm-2 control-label">Bậc đào tạo</label>
                         <div class="col-sm-10">
-                            <select <?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?> id="BacDaoTao" name="BacDaoTao" class="form-control" required>
+                            <select <?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?> id="BacDaoTao" name="BacDaoTao"
+                                class="form-control" required>
                                 <option value="Cao đẳng" <?= $dot['BacDaoTao'] == 'Cao đẳng' ? 'selected' : '' ?>>Cao đẳng
                                 </option>
                                 <option value="Cao đẳng ngành" <?= $dot['BacDaoTao'] == 'Cao đẳng ngành' ? 'selected' : '' ?>>
@@ -144,15 +169,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </select>
                         </div>
                     </div>
-                        <div class="form-group">
-                            <label  class="col-sm-2 control-label">Thời gian bắt đầu</label>
-                            <div class="col-sm-10">
-                                <input <?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?> class="form-control"
-                                    value="<?= isset($dot['ThoiGianBatDau']) ? htmlspecialchars($dot['ThoiGianBatDau']) : '' ?>"
-                                    id="ThoiGianBatDau" name="ThoiGianBatDau" type="date"
-                                    required>
-                            </div>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">Thời gian bắt đầu</label>
+                        <div class="col-sm-10">
+                            <input <?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?> class="form-control"
+                                value="<?= isset($dot['ThoiGianBatDau']) ? htmlspecialchars($dot['ThoiGianBatDau']) : '' ?>"
+                                id="ThoiGianBatDau" name="ThoiGianBatDau" type="date" required>
                         </div>
+                    </div>
 
                     <div class="form-group">
                         <label class="col-sm-2 control-label">Thời gian kết thúc</label>
@@ -169,11 +193,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="form-group">
                         <label class="col-sm-2 control-label">Người quản lý</label>
                         <div class="col-sm-10">
-                            <select <?= $dot['TrangThai'] == 0 ? 'disabled' : '' ?> id="NguoiQuanLy" name="NguoiQuanLy" class="form-control" required>
-                                <?php foreach ($canbokhoa as $cb): ?>
+                            <select <?= $dot['TrangThai'] == 0 ? 'disabled' : '' ?> id="NguoiQuanLy" name="NguoiQuanLy"
+                                class="form-control" required>
+                                <?php foreach ($nguoiQuanLyList as $cb): ?>
                                     <option value="<?= $cb['ID_TaiKhoan'] ?>" <?= $dot['NguoiQuanLy'] == $cb['ID_TaiKhoan'] ? 'selected' : '' ?>>
-    <?= htmlspecialchars($cb['TenNguoiQuanLy'] ?? $cb['Ten']) ?>
-</option>
+                                        <?= htmlspecialchars($cb['TenNguoiQuanLy'] ?? $cb['Ten']) ?>
+                                    </option>
 
                                 <?php endforeach; ?>
                             </select>
@@ -189,7 +214,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
     </div>
-    <?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
+    <?php
 
     require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
         ?>
@@ -204,6 +229,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             const kt = new Date(ketThuc);
 
             let errors = [];
+            if($dot['TrangThai']==1)
+        {
             if (bd < ngayMai) {
                 errors.push("Thời gian bắt đầu phải từ ngày mai trở đi!");
             }
@@ -218,8 +245,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 alert(errors.join('\n'));
                 e.preventDefault();
             }
+            }
         });
-        
+
         window.addEventListener('DOMContentLoaded', () => {
             const alertBox = document.getElementById('notificationAlert');
             if (alertBox) {

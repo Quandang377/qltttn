@@ -16,7 +16,8 @@ $dsDotThucTap = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <head>
     <meta charset="UTF-8">
     <title>Quản lý thành viên</title>
-    <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php"; ?>
+    <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php"; ?>\
+    
 </head>
 
 <body>
@@ -54,6 +55,8 @@ $dsDotThucTap = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             case 'edited':
                                 echo '<div id="noti" class="alert alert-success text-center">Đã chỉnh sửa tài khoản thành công.</div>';
                                 break;
+                            case 'blocked':
+                                echo '<div class="alert alert-warning">Không thể xóa: ' . htmlspecialchars($_GET['ten']) . ' vì tài khoản đang hướng dẫn hoặc quản lý đợt'.'</div>';
                         }
                     }
                     ?>

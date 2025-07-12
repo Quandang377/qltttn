@@ -7,7 +7,8 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 $ID_TaiKhoan = $_SESSION['user_id'];
-
+$selectedDot = $_POST['id_dot'] ?? ''; // hoặc có thể gán mặc định 1 đợt
+$selectedTo = $_POST['to'] ?? 'Sinh viên thuộc hướng dẫn'; // mặc định là giá trị hiện tại trong <option>
 
 // Lấy danh sách phản hồi của sinh viên
 $stmt = $conn->prepare("
@@ -259,6 +260,7 @@ $stmt2->execute([$ID_TaiKhoan]);
 $dsDot = $stmt2->fetchAll(PDO::FETCH_ASSOC);
 
 $dotIDs = array_column($dsDot, 'ID');
+$selectedDot = !empty($dsDot) ? $dsDot[0]['ID'] : '';
 
 // AJAX: Tạo khảo sát
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'tao') {
@@ -403,6 +405,390 @@ if (isset($_GET['ajax'])) {
     <?php
     require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php";
     ?>
+    <style>
+        /* ======= Bảng khảo sát ======= */
+        #bangkhaosat {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 8px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        #bangkhaosat th {
+            background-color: rgb(255, 235, 190);
+
+            color: black;
+            font-weight: bold;
+            padding: 12px;
+            text-align: center;
+        }
+
+        #bangkhaosat td {
+            padding: 12px;
+            text-align: center;
+            vertical-align: middle;
+            border-bottom: 1px solid #ddd;
+            transition: background-color 0.2s;
+            cursor: default;
+        }
+
+        #bangkhaosat tr:hover td {
+            background-color: #f1f1f1;
+        }
+
+        #bangkhaosat .btn-danger {
+            transition: background-color 0.3s;
+        }
+
+        #bangkhaosat .btn-danger:hover {
+            background-color: #c0392b;
+        }
+
+        /* ======= Form tạo khảo sát ======= */
+        .form-container {
+            background: #fff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+            margin-bottom: 40px;
+        }
+
+        .page-header h1 {
+            font-weight: 700;
+            font-size: 28px;
+            color: #2c3e50;
+        }
+
+        label {
+            font-weight: 600;
+            color: #34495e;
+        }
+
+
+
+        .btn {
+            border-radius: 6px;
+            font-weight: bold;
+        }
+
+        .btn-success {
+            background-color: rgb(53, 190, 110);
+            border-color: #27ae60;
+        }
+
+        .btn-success:hover {
+            background-color: #219150;
+        }
+
+        .btn-primary {
+            background-color: #2980b9;
+            border-color: #2980b9;
+        }
+
+        .btn-primary:hover {
+            background-color: #1f6390;
+        }
+
+        .btn-remove {
+            background-color: #e74c3c;
+            border-color: #e74c3c;
+        }
+
+        .btn-remove:hover {
+            background-color: #c0392b;
+        }
+
+        /* ======= Responsive & Style Dropdown ======= */
+
+
+
+        #dot_filter {
+            margin-left: 10px;
+            padding: 5px 10px;
+            border-radius: 6px;
+        }
+
+        /* Căn giữa nội dung chưa có khảo sát */
+        #bangkhaosat .text-muted {
+            font-style: italic;
+            color: #7f8c8d !important;
+        }
+
+        #quanlykhaosat .text-muted {
+            font-style: italic;
+            color: #7f8c8d !important;
+        }
+
+        #quanlykhaosat {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 8px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        #quanlykhaosat th {
+            background-color: rgb(154, 255, 157);
+            color: black;
+            font-weight: bold;
+            padding: 12px;
+            text-align: center;
+        }
+
+        #quanlykhaosat td {
+            padding: 12px;
+            text-align: center;
+            vertical-align: middle;
+            border-bottom: 1px solid #ddd;
+            transition: background-color 0.2s;
+            cursor: default;
+        }
+
+        #quanlykhaosat tr:hover td {
+            background-color: #f1f1f1;
+        }
+
+        #quanlykhaosat .btn-danger {
+            transition: background-color 0.3s;
+        }
+
+        #quanlykhaosat .btn-danger:hover {
+            background-color: #c0392b;
+        }
+
+        .search-bar {
+            background: white;
+            border-radius: 12px;
+            min-width: 220px;
+            padding: 17px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .search-bar input {
+            flex: 1;
+            min-width: 250px;
+            padding: 10px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            background: #f9fafb;
+            transition: all 0.2s ease;
+        }
+
+        .search-bar input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-control {
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+
+        }
+
+        .form-control:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+            transform: translateY(-1px);
+        }
+
+        .btn {
+            border-radius: 8px;
+            padding: 12px 25px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #007bff, #0056b3);
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #dc3545, #c82333);
+        }
+
+        .btn-warning {
+            background: linear-gradient(45deg, #ffc107, #e0a800);
+            color: #212529;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #6c757d, #5a6268);
+            color: white;
+        }
+
+        .table-section {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+
+        .table-section .panel-heading {
+            background: linear-gradient(45deg, #007bff, #0056b3);
+            color: white;
+            padding: 20px 25px;
+            margin: 0;
+            font-weight: 600;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .table-section .panel-body {
+            padding: 25px;
+        }
+
+        .table {
+            margin-bottom: 0;
+        }
+
+        .table thead th {
+            background: #f8f9fa;
+            border: none;
+            padding: 15px;
+            font-weight: 600;
+            color: #2c3e50;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .table tbody td {
+            padding: 15px;
+            border-color: #e9ecef;
+            vertical-align: middle;
+        }
+
+        .table tbody tr {
+            transition: all 0.3s ease;
+        }
+
+        .table tbody tr:hover {
+            background-color: #f8f9fa;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        tr.selected {
+            background: linear-gradient(45deg, #007bff, #0056b3) !important;
+            color: white !important;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 123, 255, 0.3);
+        }
+
+        .alert {
+            border-radius: 10px;
+            border: none;
+            padding: 15px 20px;
+            font-weight: 500;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .alert-danger {
+            background: linear-gradient(45deg, #f8d7da, #f5c6cb);
+            color: #721c24;
+        }
+
+        .alert-success {
+            background: linear-gradient(45deg, #d4edda, #c3e6cb);
+            color: #155724;
+        }
+
+        label {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .action-buttons {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        @media (max-width: 768px) {
+            #page-wrapper {
+                padding: 15px;
+            }
+
+            .main-card {
+                padding: 20px;
+            }
+
+            .form-section {
+                padding: 15px;
+            }
+        }
+
+        /* Animation cho loading */
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        /* Custom scrollbar */
+        .table-responsive::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .table-responsive::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .table-responsive::-webkit-scrollbar-thumb {
+            background: #007bff;
+            border-radius: 10px;
+        }
+
+        .table-responsive::-webkit-scrollbar-thumb:hover {
+            background: #0056b3;
+        }
+
+        #page-wrapper {
+            padding: 30px;
+            min-height: 100vh;
+            box-sizing: border-box;
+            max-height: 100%;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+
+        .page-header {
+            color: #2c3e50;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+    </style>
 </head>
 
 <body>
@@ -413,9 +799,6 @@ if (isset($_GET['ajax'])) {
         <div id="page-wrapper">
             <div class="container-fluid">
                 <div class="page-header">
-                    <h1>
-                        Khảo Sát
-                    </h1>
                 </div>
                 <?php
 
@@ -442,57 +825,70 @@ if (isset($_GET['ajax'])) {
                     sát</button>
                 <div id="formKhaoSatWrapper" style="display: none; margin-top: 20px;">
                     <form id="formKhaoSat" method="post">
-                        <div class="form-group">
-                            <label><strong>Chọn đợt thực tập</strong></label>
-                            <select id="id_dot" name="id_dot" class="form-control" style="width: 250px;" required>
-                                <option value="">-- Chọn đợt --</option>
-                                <?php foreach ($dsDot2 as $dot1): ?>
-                                    <?php if (is_array($dot1)): ?>
-                                        <option value="<?= $dot1['ID'] ?>"><?= htmlspecialchars($dot1['TenDot']) ?></option>
-                                    <?php endif; ?>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label><strong>Gửi đến</strong></label>
-                            <select id="to" name="to" class="form-control" style="width: 200px;" required>
-                                <option value="Sinh viên thuộc hướng dẫn" selected>Sinh viên thuộc hướng dẫn
-                                </option>
-                            </select>
-                        </div>
                         <div class="row">
-                            <div class="col-lg-6">
+                            <div class="col-md-6">
                                 <div class="form-group">
-                                    <label>Tiêu đề</label>
-                                    <input class="form-control" id="tieude" name="tieude" type="text" required
-                                        placeholder="Nhập tiêu đề cho khảo sát">
+                                    <label><strong>Chọn đợt thực tập</strong></label>
+                                    <select id="id_dot" name="id_dot" class="search-bar" style="width: 100%;" required
+                                        data-selected="<?= $selectedDot ?>">
+                                        <?php foreach ($dsDot2 as $dot1): ?>
+                                            <?php if (is_array($dot1)): ?>
+                                                <option value="<?= $dot1['ID'] ?>">
+                                                    <?= htmlspecialchars($dot1['TenDot']) ?>
+                                                </option>
+                                            <?php endif; ?>
+                                        <?php endforeach; ?>
+                                    </select>
                                 </div>
                             </div>
-                            <div class="col-lg-6">
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label><strong>Gửi đến</strong></label>
+                                    <select id="to" name="to" class="search-bar" style="width: 100%;" required
+                                        data-selected="<?= $selectedTo ?>">
+                                        <option value="Sinh viên thuộc hướng dẫn">Sinh viên thuộc hướng dẫn</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Tiêu đề</label>
+                                    <input class="form-control search-bar" id="tieude" name="tieude" type="text"
+                                        required placeholder="Nhập tiêu đề cho khảo sát">
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
                                 <div class="form-group">
                                     <label>Mô tả</label>
-                                    <input class="form-control" id="mota" name="mota" type="text" required
+                                    <input class="form-control search-bar" id="mota" name="mota" type="text" required
                                         placeholder="Nhập mô tả">
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Danh sách câu hỏi -->
                         <div id="danhSachCauHoi">
                             <div class="form-group cau-hoi-item">
                                 <label>Câu hỏi</label>
                                 <div class="row" style="margin-bottom: 5px;">
                                     <div class="col-md-5">
-                                        <input type="text" name="cauhoi[]" class="form-control" required
+                                        <input type="text" name="cauhoi[]" class="form-control search-bar" required
                                             placeholder="Nhập nội dung câu hỏi">
                                     </div>
                                     <div class="col-md-2">
-                                        <select name="loaicauhoi[]" class="form-control">
+                                        <select name="loaicauhoi[]" class="search-bar">
                                             <option value="text">Tự luận</option>
                                             <option value="choice">Chọn một</option>
                                             <option value="multiple">Chọn nhiều</option>
                                         </select>
                                     </div>
                                     <div class="col-md-4">
-                                        <input type="text" name="dapan[]" class="form-control nhap-dapan"
+                                        <input type="text" name="dapan[]" class="form-control search-bar nhap-dapan"
                                             style="display:none;"
                                             placeholder="Nhập các câu trả lời, cách nhau bởi dấu ;">
                                     </div>
@@ -504,15 +900,19 @@ if (isset($_GET['ajax'])) {
                                 </div>
                             </div>
                         </div>
+
                         <div class="form-group text-right">
                             <button type="button" class="btn btn-primary" id="btnThemCauHoi">Thêm câu hỏi</button>
                         </div>
+
                         <div class="form-group text-center">
                             <button type="submit" class="btn btn-success btn-lg" name="action" value="guikhaosat">
-                                Xác nhận </button>
+                                Xác nhận
+                            </button>
                             <button type="button" class="btn btn-secondary btn-lg" id="btnHideFormKhaoSat">Đóng</button>
                         </div>
                     </form>
+
                 </div>
             </div>
             <div id="containerKhaoSat" class="mt-3">
@@ -520,7 +920,7 @@ if (isset($_GET['ajax'])) {
                 </div>
                 <div class="row">
                     <div class="col-lg-12">
-                        <div class="panel panel-default">
+                        <div class=" panel panel-default">
                             <div class="panel-heading">
                                 <h4>Danh sách khảo sát cần phản hồi</h4>
                             </div>
@@ -637,12 +1037,11 @@ if (isset($_GET['ajax'])) {
                         </form>
                         <div class="panel panel-default">
                             <div class="panel-heading">
-                                <h4>Các khảo sát đã tạo</h4>
+                                <h4>Danh sách các khảo sát đã tạo</h4>
                             </div>
                             <div class="panel-body">
                                 <div id="quanlykhaosat"></div>
                             </div>
-                            <!-- /.panel-body -->
                         </div>
                         <!-- /.panel -->
                     </div>
@@ -660,6 +1059,7 @@ if (isset($_GET['ajax'])) {
         });
         document.getElementById('btnShowFormKhaoSat').addEventListener('click', function () {
             document.getElementById('formKhaoSatWrapper').style.display = 'block';
+
             this.style.display = 'none';
         });
 

@@ -16,7 +16,7 @@ $stmt2 = $conn->prepare("
 $stmt2->execute([$idTaiKhoan]);
 $dsDot = $stmt2->fetchAll(PDO::FETCH_ASSOC);
 
-// ⚠️ Tách mảng ID từ $dsDot để sử dụng trong IN (...)
+// Tách mảng ID từ $dsDot để sử dụng trong IN (...)
 $dsDotIDs = array_column($dsDot, 'ID');  // [1, 2, 3, ...]
 
 // 2. Lấy thông báo thuộc các đợt này
@@ -41,7 +41,7 @@ if (!empty($dsDotIDs)) {
     $placeholders = implode(',', array_fill(0, count($dsDotIDs), '?'));
     $stmt = $conn->prepare("
         SELECT dt.ID, dt.TenDot, dt.ThoiGianBatDau, dt.ThoiGianKetThuc, dt.TrangThai, 
-               COUNT(sv.ID_TaiKhoan) as SoLuongSV
+        COUNT(sv.ID_TaiKhoan) as SoLuongSV
         FROM DotThucTap dt
         LEFT JOIN SinhVien sv ON dt.ID = sv.ID_Dot AND sv.ID_GVHD = ?
         WHERE dt.ID IN ($placeholders)
@@ -49,7 +49,7 @@ if (!empty($dsDotIDs)) {
         ORDER BY dt.ThoiGianBatDau DESC
     ");
 
-    // ⚠️ Ghép $idTaiKhoan + mảng ID
+    // Ghép $idTaiKhoan + mảng ID
     $params = array_merge([$idTaiKhoan], $dsDotIDs);
     $stmt->execute($params);
     $currentDots = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -107,7 +107,7 @@ if (!$activeDot && !empty($allDots)) {
 // Cập nhật trạng thái kết thúc
 $updateStmt = $conn->prepare("UPDATE DotThucTap 
     SET TrangThai = 0 
-    WHERE ThoiGianKetThuc <= :today AND TrangThai = 2");
+    WHERE ThoiGianKetThuc <= :today AND TRANGTHAI != -1");
 $updateStmt->execute(['today' => $today]);
 
 // Cập nhật trạng thái đã bắt đầu
@@ -806,7 +806,7 @@ if ($activeDot) {
   .dot-panel.panel-default .panel-heading {
     background: #f8f9fa;
     color: #6c757d;
-  }
+  
     margin-bottom: 10px;
     font-weight: 600;
   }

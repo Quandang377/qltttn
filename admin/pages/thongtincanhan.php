@@ -34,7 +34,239 @@ $dsDotDangThamGia = $stmtDot->fetchAll(PDO::FETCH_ASSOC);
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php"; ?>
     <style>
+        @media (max-width: 768px) {
+    .panel-row {
+      flex-direction: column;
+      flex-wrap: wrap;
+    }
+    
+    .panel-container {
+      margin: 10px 0;
+      max-width: 100%;
+      flex: none;
+    }
+    
+    .panel-container:not(:last-child)::after {
+      display: none;
+    }
 
+    .status-indicator {
+      font-size: 14px;
+      padding: 12px 20px;
+    }
+
+    .panel-heading {
+      font-size: 12px;
+    }
+
+    .panel-body p {
+      font-size: 12px;
+    }
+  }
+
+  @media (max-width: 992px) and (min-width: 769px) {
+    .panel-container {
+      max-width: 50%;
+    }
+    
+    .panel-row {
+      flex-wrap: wrap;
+    }
+  }
+  /* === PANEL STYLES === */
+  .panel-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: stretch;
+    position: relative;
+    margin-bottom: 30px;
+    flex-wrap: nowrap;
+  }
+
+  .panel-container {
+    position: relative;
+    flex: 1;
+    margin: 0 10px;
+    max-width: 25%;
+  }
+
+  .panel-container:first-child {
+    margin-left: 0;
+  }
+
+  .panel-container:last-child {
+    margin-right: 0;
+  }
+
+  .panel-container:not(:last-child)::after {
+    content: "→";
+    position: absolute;
+    top: 50%;
+    right: -20px;
+    transform: translateY(-50%);
+    font-size: 24px;
+    color: #007bff;
+    z-index: 1;
+    font-weight: bold;
+    transition: all 0.3s ease;
+  }
+
+  /* Hiệu ứng đặc biệt cho mũi tên khi 2 panel đầu cùng active */
+  .panel-container:first-child.has-active + .panel-container.has-active::before {
+    content: "↔";
+    position: absolute;
+    top: 50%;
+    left: -20px;
+    transform: translateY(-50%);
+    font-size: 24px;
+    color: #28a745;
+    z-index: 2;
+    font-weight: bold;
+    animation: pulse-arrow 2s infinite;
+  }
+
+  @keyframes pulse-arrow {
+    0%, 100% { 
+      transform: translateY(-50%) scale(1);
+      color: #28a745;
+    }
+    50% { 
+      transform: translateY(-50%) scale(1.2);
+      color: #20c997;
+    }
+  }
+
+  /* Màu mũi tên khi panel đang active */
+  .panel-container.has-active:not(:last-child)::after {
+    color: #28a745;
+    animation: pulse-arrow 2s infinite;
+  }
+
+  .panel {
+    border: 2px solid #e3eafc !important;
+    border-radius: 16px !important;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.1);
+    transition: all 0.3s ease;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .panel:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 123, 255, 0.2);
+  }
+
+  .panel.active-step {
+    border: 2.5px solid #28a745 !important;
+    box-shadow: 0 4px 24px rgba(40, 167, 69, 0.3);
+    background: linear-gradient(135deg, #e8f5e8 0%, #f0fff0 100%);
+    transform: scale(1.02);
+    position: relative;
+  }
+
+  /* Hiệu ứng đặc biệt khi 2 panel đầu cùng active */
+  .panel-container:first-child .panel.active-step + 
+  .panel-container:nth-child(2) .panel.active-step {
+    animation: sync-pulse 2s infinite;
+  }
+
+  .panel-container:first-child .panel.active-step {
+    animation: sync-pulse 2s infinite;
+  }
+
+  @keyframes sync-pulse {
+    0%, 100% { 
+      transform: scale(1.02);
+      box-shadow: 0 4px 24px rgba(40, 167, 69, 0.3);
+    }
+    50% { 
+      transform: scale(1.05);
+      box-shadow: 0 8px 35px rgba(40, 167, 69, 0.5);
+    }
+  }
+
+  .panel.active-step::before {
+    content: "ĐANG HOẠT ĐỘNG";
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+    padding: 5px 15px;
+    font-size: 10px;
+    font-weight: bold;
+    transform: rotate(45deg) translate(25%, -50%);
+    transform-origin: center;
+    width: 120px;
+    text-align: center;
+    animation: glow 2s infinite alternate;
+  }
+
+  @keyframes glow {
+    from {
+      box-shadow: 0 0 5px rgba(40, 167, 69, 0.5);
+    }
+    to {
+      box-shadow: 0 0 20px rgba(40, 167, 69, 0.8);
+    }
+  }
+
+  .panel.active-step:hover {
+    transform: scale(1.04);
+    box-shadow: 0 8px 30px rgba(0, 123, 255, 0.4);
+  }
+
+  .panel-heading {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+    border-bottom: 2px solid #dee2e6 !important;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 15px 20px;
+    color: #495057;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .panel.active-step .panel-heading {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
+    color: white !important;
+    border-bottom: 2px solid #20c997 !important;
+    animation: header-glow 3s infinite alternate;
+  }
+
+  @keyframes header-glow {
+    from {
+      box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.2);
+    }
+    to {
+      box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.4);
+    }
+  }
+
+  .panel-heading i {
+    margin-right: 8px;
+    font-size: 16px;
+  }
+
+  .panel-body {
+    padding: 20px !important;
+  }
+
+  .panel-body p {
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .panel-body p i {
+    margin-right: 8px;
+    width: 16px;
+    text-align: center;
+  }
     </style>
 </head>
 

@@ -362,15 +362,15 @@ if (isset($_GET['export_excel']) && $_GET['export_excel'] == 2) {
         $sheet->getStyle("F" . ($startRow) . ":I" . ($xlRow - 1))->applyFromArray([
             'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
         ]);
-        
+
     } else {
         $sheet->setCellValue("F$xlRow", "Không có sinh viên nào.");
         $sheet->mergeCells("F$xlRow:I$xlRow");
         $sheet->getStyle("F$xlRow")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
     }
     foreach (range('F', 'I') as $col) {
-            $sheet->getColumnDimension($col)->setAutoSize(true);
-        }
+        $sheet->getColumnDimension($col)->setAutoSize(true);
+    }
 
     $row = max($row, $xlRow) + 2;
 
@@ -454,6 +454,66 @@ $stmt = $conn->prepare("
 $stmt->execute(['id' => $id]);
 $soGVChuaCoSV = $stmt->fetchColumn();
 
+// Kiểm tra còn sinh viên chưa có GVHD
+$stmt = $conn->prepare("SELECT COUNT(*) FROM sinhvien WHERE ID_Dot = :id AND (ID_GVHD IS NULL OR ID_GVHD = '')");
+$stmt->execute(['id' => $id]);
+$soSVDaCoGVHD = $stmt->fetchColumn();
+
+$phanCongMode = ($soGVChuaCoSV < $tongGVHD && $soSVDaCoGVHD == 0) ? 'phancong_lai' : 'phancong_moi';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_POST['action'] === 'preview_phancong_lai') {
+    $id = $_POST['id_dot'] ?? null;
+    if (!$id) {
+        echo json_encode(['success' => false, 'error' => 'Thiếu ID đợt']);
+        exit;
+    }
+
+    // Lấy danh sách GV trong đợt
+    $stmt = $conn->prepare("SELECT GV.ID_TaiKhoan as id, GV.Ten 
+                            FROM dot_giaovien DG 
+                            JOIN GiaoVien GV ON DG.ID_GVHD = GV.ID_TaiKhoan 
+                            WHERE DG.ID_Dot = :id 
+                            ORDER BY GV.Ten");
+    $stmt->execute(['id' => $id]);
+    $giaoViens = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Lấy số SV chưa phân công
+    $stmt = $conn->prepare("SELECT COUNT(*) FROM SinhVien 
+                            WHERE ID_Dot = :id AND (ID_GVHD IS NULL OR ID_GVHD = '')");
+    $stmt->execute(['id' => $id]);
+    $svChuaCoGV = (int) $stmt->fetchColumn();
+
+    // Đếm số lượng SV của từng GV
+    $phanCong = [];
+    $soGVChuaCoSV = 0;
+    foreach ($giaoViens as $gv) {
+        $stmt = $conn->prepare("SELECT COUNT(*) FROM SinhVien 
+                                WHERE ID_Dot = :id AND ID_GVHD = :gv");
+        $stmt->execute(['id' => $id, 'gv' => $gv['id']]);
+        $soLuong = (int) $stmt->fetchColumn();
+
+        if ($soLuong == 0)
+            $soGVChuaCoSV++;
+
+        $phanCong[] = [
+            'id' => $gv['id'],
+            'ten' => $gv['Ten'],
+            'soLuong' => $soLuong
+        ];
+    }
+
+    echo json_encode([
+        'success' => true,
+        'phancong' => $phanCong,
+        'sv_con_lai' => $svChuaCoGV,
+        'so_gv_chua_cosv' => $soGVChuaCoSV
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+
+
+// Xác định mode
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'auto_phancong') {
     $id = $_POST['id_dot'] ?? null;
 
@@ -461,18 +521,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         echo "Không tìm thấy ID đợt!";
         exit;
     }
+
     // Lấy toàn bộ giáo viên trong đợt
     $stmt = $conn->prepare("SELECT ID_GVHD FROM dot_giaovien WHERE ID_Dot = :id ORDER BY ID_GVHD");
     $stmt->execute(['id' => $id]);
     $giaoViens = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
-    // Lấy sinh viên chưa có GVHD
-    $stmt = $conn->prepare("SELECT ID_TaiKhoan FROM SinhVien WHERE ID_Dot = :id AND (ID_GVHD IS NULL OR ID_GVHD = '')");
+    // Lấy toàn bộ sinh viên trong đợt
+    $stmt = $conn->prepare("SELECT ID_TaiKhoan FROM SinhVien WHERE ID_Dot = :id");
     $stmt->execute(['id' => $id]);
     $sinhViens = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
     if (count($giaoViens) == 0 || count($sinhViens) == 0) {
-        echo "Không có giáo viên hoặc sinh viên chưa được phân công!";
+        echo "Không có giáo viên hoặc sinh viên trong đợt!";
         exit;
     }
 
@@ -483,9 +544,167 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $update = $conn->prepare("UPDATE SinhVien SET ID_GVHD = :gvId WHERE ID_TaiKhoan = :svId");
         $update->execute(['gvId' => $gvId, 'svId' => $svId]);
     }
+
     echo "OK";
     exit;
 }
+if (isset($_POST['action']) && $_POST['action'] === 'phancong_lai') {
+    $id = $_POST['id_dot'] ?? null;
+
+    if (!$id) {
+        echo "Không tìm thấy ID đợt!";
+        exit;
+    }
+
+    // Xóa phân công cũ
+    $stmt = $conn->prepare("UPDATE SinhVien SET ID_GVHD = NULL WHERE ID_Dot = :id");
+    $stmt->execute(['id' => $id]);
+
+    // Lấy toàn bộ giáo viên trong đợt
+    $stmt = $conn->prepare("SELECT ID_GVHD FROM dot_giaovien WHERE ID_Dot = :id ORDER BY ID_GVHD");
+    $stmt->execute(['id' => $id]);
+    $giaoViens = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+    // Lấy toàn bộ sinh viên trong đợt
+    $stmt = $conn->prepare("SELECT ID_TaiKhoan FROM SinhVien WHERE ID_Dot = :id");
+    $stmt->execute(['id' => $id]);
+    $sinhViens = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+    if (count($giaoViens) == 0 || count($sinhViens) == 0) {
+        echo "Không có giáo viên hoặc sinh viên!";
+        exit;
+    }
+
+    // Phân công đều lại
+    $gvCount = count($giaoViens);
+    foreach ($sinhViens as $i => $svId) {
+        $gvId = $giaoViens[$i % $gvCount];
+        $update = $conn->prepare("UPDATE SinhVien SET ID_GVHD = :gvId WHERE ID_TaiKhoan = :svId");
+        $update->execute(['gvId' => $gvId, 'svId' => $svId]);
+    }
+
+    echo "OK";
+    exit;
+}
+
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'auto_phancong_custom') {
+    $idDot = $_POST['id_dot'] ?? null;
+    $phanCong = $_POST['phan_cong'] ?? [];
+    $isReset = isset($_POST['is_reset']) && $_POST['is_reset'] === 'true';
+
+    if (!$idDot || empty($phanCong)) {
+        echo json_encode(['error' => 'Dữ liệu không hợp lệ']);
+        exit;
+    }
+
+    // XÓA phân công cũ nếu là phân công lại
+    if ($isReset) {
+        $stmt = $conn->prepare("UPDATE SinhVien SET ID_GVHD = NULL WHERE ID_Dot = :id");
+        $stmt->execute(['id' => $idDot]);
+    }
+
+    // Lấy tất cả sinh viên trong đợt
+    $stmt = $conn->prepare("SELECT ID_TaiKhoan FROM SinhVien WHERE ID_Dot = :id");
+    $stmt->execute(['id' => $idDot]);
+    $sinhViens = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+    $tongPhanCong = array_sum($phanCong);
+    $svConLai = count($sinhViens);
+
+    if ($tongPhanCong > $svConLai) {
+        echo json_encode(['error' => 'Tổng số lượng vượt quá số sinh viên trong đợt!']);
+        exit;
+    }
+
+    // Phân công
+    $index = 0;
+    foreach ($phanCong as $idGV => $soLuong) {
+        for ($i = 0; $i < $soLuong; $i++) {
+            if (!isset($sinhViens[$index]))
+                break;
+            $svId = $sinhViens[$index++];
+            $stmtUpdate = $conn->prepare("UPDATE SinhVien SET ID_GVHD = :idgv WHERE ID_TaiKhoan = :idsv");
+            $stmtUpdate->execute(['idgv' => $idGV, 'idsv' => $svId]);
+        }
+    }
+
+    echo json_encode([
+        'success' => true,
+        'da_phancong' => $tongPhanCong,
+        'con_lai' => $svConLai - $tongPhanCong
+    ]);
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_POST['action'] === 'preview_phancong') {
+    $id = $_POST['id_dot'] ?? null;
+    if (!$id) {
+        echo json_encode(['success' => false]);
+        exit;
+    }
+
+    // Lấy giáo viên
+    $stmt = $conn->prepare("SELECT GV.ID_TaiKhoan as id, GV.Ten 
+                            FROM dot_giaovien DG 
+                            JOIN GiaoVien GV ON GV.ID_TaiKhoan = DG.ID_GVHD
+                            WHERE DG.ID_Dot = :id ORDER BY GV.Ten");
+    $stmt->execute(['id' => $id]);
+    $giaoViens = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Lấy sinh viên chưa phân công
+    $stmt = $conn->prepare("SELECT ID_TaiKhoan FROM SinhVien 
+                            WHERE ID_Dot = :id AND (ID_GVHD IS NULL OR ID_GVHD = '')");
+    $stmt->execute(['id' => $id]);
+    $sinhViens = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+    if (count($giaoViens) === 0 || count($sinhViens) === 0) {
+        echo json_encode(['success' => false]);
+        exit;
+    }
+
+    // Phân đều sinh viên
+    $phanCong = [];
+    $gvCount = count($giaoViens);
+
+    foreach ($giaoViens as $gv) {
+        $phanCong[$gv['id']] = [
+            'id' => $gv['id'],
+            'ten' => $gv['Ten'],
+            'soLuong' => 0
+        ];
+    }
+
+    foreach ($sinhViens as $i => $svId) {
+        $gvIndex = $i % $gvCount;
+        $gvId = $giaoViens[$gvIndex]['id'];
+        $phanCong[$gvId]['soLuong']++;
+    }
+
+    // Tính số GV chưa có SV từ mảng $phanCong
+    $soGVChuaCoSV = 0;
+    foreach ($phanCong as $gv) {
+        if ($gv['soLuong'] == 0)
+            $soGVChuaCoSV++;
+    }
+
+    $tongDaPhan = 0;
+    foreach ($phanCong as $gv) {
+        $tongDaPhan += $gv['soLuong'];
+    }
+
+    $svConLaiSauPhanCong = count($sinhViens) - $tongDaPhan;
+
+    echo json_encode([
+        'success' => true,
+        'phancong' => array_values($phanCong),
+        'sv_con_lai' => $svConLaiSauPhanCong,
+        'so_gv_chua_cosv' => count(array_filter($phanCong, fn($gv) => $gv['soLuong'] == 0))
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'hoan_tat') {
     $id = $_POST['id_dot'] ?? null;
 
@@ -905,6 +1124,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         .btn {
             margin: 1px;
         }
+        #page-wrapper {
+            padding: 30px;
+            min-height: 100vh;
+            box-sizing: border-box;
+            max-height: 100%;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+        
+        .page-header {
+            color: #2c3e50;
+            font-weight: 700;
+            margin-bottom: 30px;
+            margin-top: 28px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        @media (max-width: 900px) {
+            .dot-info-row {
+                flex-direction: column;
+                gap: 0;
+            }
+
+            .dot-header {
+                padding: 18px 8px 8px 8px;
+            }
+        }
+
+        td.success {
+            background: rgb(189, 255, 231) !important;
+            transition: background 0.5s;
+        }
+
+        #page-wrapper {
+            margin-top: 50px;
+        }
+
+        .btn {
+            margin: 1px;
+        }
     </style>
 </head>
 
@@ -942,14 +1199,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                     echo 'Đã bắt đầu';
                                 elseif ($dot['TrangThai'] == 3)
                                     echo 'Hoàn tất phân công';
-                                elseif($dot['TrangThai'] == 0)
+                                elseif ($dot['TrangThai'] == 0)
                                     echo 'Đã kết thúc';
-                                else echo 'Nộp kết quả'
-                                ?>
-                            </p>
-                        </div>
-                        <div class="col-sm-4 col-xs-12">
-                            <p><b>Tổng sinh viên:</b> <?= $tongSinhVien ?></p>
+                                else
+                                    echo 'Nộp kết quả'
+                                        ?>
+                                </p>
+                            </div>
+                            <div class="col-sm-4 col-xs-12">
+                                <p><b>Tổng sinh viên:</b> <?= $tongSinhVien ?></p>
                             <div id="infoBox">
                                 <p><b>Tổng GVHD:</b> <span id="infoTongGVHD"><?= $tongGVHD ?></span></p>
                                 <p><b>Sinh viên chưa có GVHD:</b> <span id="infoSVDaCoGVHD"><?= $soSVDaCoGVHD ?></span>
@@ -968,8 +1226,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                             Thêm giáo viên
                         </button>
                         <button type="button" id="btnAutoPhanCong" class="btn btn-success btn-md nut"
-                            title="Phân công đều các sinh viên còn lại" <?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?>>
-                            Phân công tự động
+                            data-mode="<?= $phanCongMode ?>"
+                            title="<?= $phanCongMode == 'phancong_lai' ? 'Phân công tự động lại tất cả sinh viên' : 'Phân công tự động' ?>"
+                            <?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?>>
+                            <?= $phanCongMode == 'phancong_lai' ? 'Phân công lại' : 'Phân công tự động' ?>
                         </button>
                         <button type="button" class="btn btn-success nut" id="btnHoanTat" <?= ($tongSinhVien < 1 || $tongGVHD < 1) || $dot['TrangThai'] != 1 ? 'disabled' : '' ?>
                             title="Hoàn tất phân công, cho phép đăng ký phiếu giới thiệu, gửi mail cho các giáo viên">
@@ -1008,6 +1268,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     </div>
     <?php require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php" ?>
     <script>
+        function capNhatNutPhanCong(idDot) {
+            $.post('/datn/admin/pages/ajax_get_phancong_mode.php', { id_dot: idDot }, function (res) {
+                if (!res.success) return;
+
+                const btn = $('#btnAutoPhanCong');
+                const mode = res.mode;
+
+                btn.attr('data-mode', mode);
+                btn.attr('title', mode === 'phancong_lai'
+                    ? 'Phân công lại tất cả sinh viên'
+                    : 'Phân công đều các sinh viên chưa được phân công');
+                btn.html(mode === 'phancong_lai' ? 'Phân công lại' : 'Phân công tự động');
+            }, 'json');
+        }
         var allGiaoVien = <?= json_encode($allGiaoVien) ?>;
         function xemSinhVienGV(idGV, tenGV) {
             $.get(window.location.pathname, {
@@ -1091,41 +1365,271 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     // Gọi cập nhật info ngay sau khi chuyển GVHD thành công
                     reloadInfoBox();
                     loadTabGV();
+                    capNhatNutPhanCong(<?= json_encode($id) ?>);
                 },
                 error: function (xhr) {
                     alert("Cập nhật thất bại: " + xhr.responseText);
                 }
             });
         });
-        $('#btnAutoPhanCong').on('click', function () {
-            Swal.fire({
-                title: 'Xác nhận phân công tự động?',
-                text: 'Xác nhận phân công đều các sinh viên còn lại cho các giáo viên?',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'Xác nhận',
-                cancelButtonText: 'Huỷ',
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.post(window.location.pathname, {
-                        action: 'auto_phancong',
-                        id_dot: <?= json_encode($id) ?>
-                    }, function (res) {
-                        console.log('Kết quả AJAX:', res); // Thêm dòng này để debug
-                        if (res.trim() === 'OK') {
-                            Swal.fire('Thành công!', 'Phân công tự động thành công!', 'success').then(() => {
-                                reloadInfoBox();
-                                location.reload();
+        $(document).ready(function () {
+            $('#btnAutoPhanCong').on('click', function () {
+                const mode = $(this).data('mode');
+
+                // --- PHÂN CÔNG LẠI ---
+                if (mode === 'phancong_lai') {
+                    Swal.fire({
+                        title: 'Phân công lại tất cả sinh viên?',
+                        text: 'Bạn có muốn phân công lại toàn bộ sinh viên cho giáo viên không?',
+                        icon: 'question',
+                        showDenyButton: true,
+                        showCancelButton: true,
+                        confirmButtonText: 'Phân công đều',
+                        denyButtonText: 'Tuỳ chỉnh',
+                        cancelButtonText: 'Huỷ'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            $.post(window.location.pathname, {
+                                action: 'phancong_lai',
+                                id_dot: <?= json_encode($id) ?>
+                            }, function (res) {
+                                if (res === 'OK') {
+                                    Swal.fire('Thành công', 'Phân công lại hoàn tất.', 'success').then(() => location.reload());
+                                } else {
+                                    Swal.fire('Lỗi', res, 'error');
+                                }
                             });
-                        } else {
-                            Swal.fire('Lỗi', res, 'error');
+                        } else if (result.isDenied) {
+                            $.post(window.location.pathname, {
+                                action: 'preview_phancong_lai',
+                                id_dot: <?= json_encode($id) ?>
+                            }, function (res) {
+                                if (!res.success || !res.phancong) {
+                                    Swal.fire('Không thể phân công', 'Không còn sinh viên hoặc giáo viên chưa phân công.', 'warning');
+                                    return;
+                                }
+
+                                let tongBanDau = res.phancong.reduce((sum, item) => sum + item.soLuong, 0);
+                                let tongSinhVien = tongBanDau + res.sv_con_lai;
+
+                                $('#svConLaiCount').text(res.sv_con_lai);
+                                $('#gvChuaCoSVCount').text(res.so_gv_chua_cosv);
+
+                                let html = res.phancong.map((item, i) => `
+                                <tr>
+                                    <td>${i + 1}</td>
+                                    <td>${item.ten}</td>
+                                    <td><input type="number" class="form-control soLuongGV" data-id="${item.id}" min="0" value="${item.soLuong}" data-old="${item.soLuong}"></td>
+                                </tr>
+                            `).join('');
+                                $('#phanCongBody').html(html);
+                                $('#phanCongModal').modal('show');
+
+                                $('.soLuongGV').on('input', function () {
+                                    let tong = 0;
+                                    let gvChuaCoSV = 0;
+                                    const input = $(this);
+                                    const valMoi = parseInt(input.val()) || 0;
+                                    const oldVal = parseInt(input.attr('data-old')) || 0;
+
+                                    // ✅ Chặn nhập số âm
+                                    if (valMoi < 0) {
+                                        input.val(oldVal);
+                                        Swal.fire({
+                                            icon: 'warning',
+                                            title: 'Giá trị không hợp lệ',
+                                            text: 'Số lượng không được nhỏ hơn 0.',
+                                            timer: 1500,
+                                            showConfirmButton: false
+                                        });
+                                        return;
+                                    }
+
+                                    // Tính tổng mới
+                                    $('.soLuongGV').each(function () {
+                                        let val = parseInt($(this).val()) || 0;
+                                        tong += val;
+                                        if (val === 0) gvChuaCoSV++;
+                                    });
+
+                                    let conLai = tongSinhVien - tong;
+
+                                    if (conLai >= 0) {
+                                        $('#svConLaiCount').text(conLai);
+                                        $('#gvChuaCoSVCount').text(gvChuaCoSV);
+                                        input.attr('data-old', valMoi); // cập nhật lại
+                                    } else {
+                                        input.val(oldVal);
+                                        const conLaiMoi = tongSinhVien - (tong - valMoi + oldVal);
+                                        $('#svConLaiCount').text(conLaiMoi);
+
+                                        Swal.fire({
+                                            icon: 'warning',
+                                            title: 'Vượt quá số lượng',
+                                            text: 'Không thể phân công quá số sinh viên tổng cộng.',
+                                            timer: 1500,
+                                            showConfirmButton: false
+                                        });
+                                    }
+                                });
+                            }, 'json');
                         }
+
+
+                    });
+
+                    // --- PHÂN CÔNG MỚI ---
+                } else {
+                    Swal.fire({
+                        title: 'Phân công sinh viên',
+                        text: 'Bạn muốn thực hiện phân công như thế nào?',
+                        icon: 'question',
+                        showCancelButton: true,
+                        showDenyButton: true,
+                        confirmButtonText: 'Phân công đều',
+                        denyButtonText: 'Tùy chỉnh',
+                        cancelButtonText: 'Huỷ',
+                        confirmButtonColor: '#28a745',
+                        denyButtonColor: '#007bff',
+                        cancelButtonColor: '#d33'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            $.post(window.location.pathname, {
+                                action: 'auto_phancong',
+                                id_dot: <?= json_encode($id) ?>
+                            }, function (res) {
+                                if (res.trim() === 'OK') {
+                                    Swal.fire('Thành công!', 'Phân công tự động thành công!', 'success')
+                                        .then(() => location.reload());
+                                        
+                                } else {
+                                    Swal.fire('Lỗi', res, 'error');
+                                }
+                            });
+
+                        } else if (result.isDenied) {
+                            $.post(window.location.pathname, {
+                                action: 'preview_phancong',
+                                id_dot: <?= json_encode($id) ?>
+                            }, function (res) {
+                                if (!res.success || !res.phancong) {
+                                    Swal.fire('Không thể phân công', 'Không còn sinh viên hoặc giáo viên.', 'warning');
+                                    return;
+                                }
+
+                                let tongPhanCongBanDau = res.phancong.reduce((sum, item) => sum + item.soLuong, 0);
+                                let tongSinhVien = tongPhanCongBanDau + res.sv_con_lai;
+                                let svConLai = res.sv_con_lai;
+
+                                $('#svConLaiCount').text(svConLai);
+                                $('#gvChuaCoSVCount').text(res.so_gv_chua_cosv);
+
+                                let html = res.phancong.map((item, i) => `
+                                        <tr>
+                                            <td>${i + 1}</td>
+                                            <td>${item.ten}</td>
+                                            <td><input type="number" class="form-control soLuongGV" data-id="${item.id}" min="0" value="${item.soLuong}" data-old="${item.soLuong}"></td>
+                                        </tr>
+                                    `).join('');
+                                $('#phanCongBody').html(html);
+                                $('#phanCongModal').modal('show');
+
+                                $('.soLuongGV').on('input', function () {
+                                    let tong = 0;
+                                    let gvChuaCoSV = 0;
+                                    const input = $(this);
+                                    const valMoi = parseInt(input.val()) || 0;
+                                    const oldVal = parseInt(input.attr('data-old')) || 0;
+
+                                    // Trường hợp nhập số âm
+                                    if (valMoi < 0) {
+                                        input.val(oldVal);
+                                        Swal.fire({
+                                            icon: 'warning',
+                                            title: 'Giá trị không hợp lệ',
+                                            text: 'Số lượng không được nhỏ hơn 0.',
+                                            timer: 1500,
+                                            showConfirmButton: false
+                                        });
+                                        return;
+                                    }
+
+                                    // Tính tổng hiện tại
+                                    $('.soLuongGV').each(function () {
+                                        let val = parseInt($(this).val()) || 0;
+                                        tong += val;
+                                        if (val === 0) gvChuaCoSV++;
+                                    });
+
+                                    let conLai = tongSinhVien - tong;
+
+                                    if (conLai >= 0) {
+                                        $('#svConLaiCount').text(conLai);
+                                        $('#gvChuaCoSVCount').text(gvChuaCoSV);
+                                        input.attr('data-old', valMoi); // cập nhật lại giá trị hợp lệ mới
+                                    } else {
+                                        // Nếu vượt quá → reset lại giá trị cũ
+                                        const tongTruHienTai = tong - valMoi + oldVal;
+                                        input.val(oldVal);
+                                        $('#svConLaiCount').text(tongSinhVien - tongTruHienTai);
+
+                                        Swal.fire({
+                                            icon: 'warning',
+                                            title: 'Vượt quá số lượng',
+                                            text: 'Không thể phân công quá số sinh viên có trong đợt.',
+                                            timer: 1500,
+                                            showConfirmButton: false
+                                        });
+                                    }
+                                });
+
+                            }, 'json');
+                        }
+
                     });
                 }
             });
+
+            // Submit tùy chỉnh
+            $('#formPhanCongCustom').on('submit', function (e) {
+                e.preventDefault();
+
+                const phanCong = {};
+                let tong = 0;
+                let conLai = parseInt($('#svConLaiCount').text());
+
+                $('.soLuongGV').each(function () {
+                    let id = $(this).data('id');
+                    let val = parseInt($(this).val()) || 0;
+                    if (val > 0) {
+                        phanCong[id] = val;
+                        tong += val;
+                    }
+                });
+
+                if (conLai < 0) {
+                    Swal.fire('Lỗi', 'Tổng vượt quá sinh viên chưa được phân công', 'error');
+                    return;
+                }
+
+                $.post(window.location.pathname, {
+                    action: 'auto_phancong_custom',
+                    id_dot: <?= json_encode($id) ?>,
+                    phan_cong: phanCong
+                }, function (res) {
+                    if (res.success) {
+                        Swal.fire('Thành công', `Đã phân công ${res.da_phancong} sinh viên. `, 'success')
+                            .then(() => location.reload());
+                    capNhatNutPhanCong(<?= json_encode($id) ?>);
+
+                    } else {
+                        Swal.fire('Lỗi', res.error, 'error');
+                    }
+                }, 'json');
+            });
         });
+
+
         $('#btnHoanTat').on('click', function () {
             Swal.fire({
                 title: 'Xác nhận hoàn tất?',
@@ -1439,6 +1943,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     </div>
                 </form>
             </div>
+        </div>
+    </div>
+    <!-- Modal Phân công tuỳ chỉnh -->
+    <div class="modal fade" id="phanCongModal" tabindex="-1" role="dialog" aria-labelledby="phanCongLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <form id="formPhanCongCustom" class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="phanCongLabel">Phân công sinh viên tuỳ chỉnh</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Đóng">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p id="phanCongInfo" class="text-info font-weight-bold">
+                        Còn lại: <span id="svConLaiCount">0</span> Sinh viên |
+                        <span id="gvChuaCoSVCount">0</span> Giáo viên
+                    </p>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Giáo viên</th>
+                                    <th>Số lượng sinh viên</th>
+                                </tr>
+                            </thead>
+                            <tbody id="phanCongBody">
+                                <!-- Dữ liệu được load bằng JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success">Phân công</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Huỷ</button>
+                </div>
+            </form>
         </div>
     </div>
 

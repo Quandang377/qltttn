@@ -74,14 +74,14 @@ if($idTaiKhoan){
         'icon' => 'fa-check-circle'
       ];
     }
-  } elseif ($trangThaiDot == -1) {
+  } elseif ($trangThaiDot <=0) {
     // Đợt đã kết thúc
     $statusInfo = [
       'message' => 'Đợt thực tập đã kết thúc',
       'class' => 'status-ended',
       'icon' => 'fa-flag-checkered'
     ];
-  } elseif ($trangThaiDot < 3 && $trangThaiDot >= 0) {
+  } elseif ($trangThaiDot < 3 && $trangThaiDot > 0) {
     // Đợt đang chuẩn bị bắt đầu
     $statusInfo = [
       'message' => 'Đợt đang chuẩn bị bắt đầu',
@@ -104,7 +104,7 @@ $today = date('Y-m-d');
 // Cập nhật trạng thái kết thúc
 $updateStmt = $conn->prepare("UPDATE DOTTHUCTAP 
     SET TRANGTHAI = 0 
-    WHERE THOIGIANKETTHUC <= :today AND TRANGTHAI = 2");
+    WHERE THOIGIANKETTHUC <= :today AND TRANGTHAI != -1");
 $updateStmt->execute(['today' => $today]);
 
 // Cập nhật trạng thái đã bắt đầu

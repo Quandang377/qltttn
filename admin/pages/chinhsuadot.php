@@ -18,7 +18,12 @@ $stmt = $conn->prepare("SELECT ID, TenDot, BacDaoTao, Nam, NguoiMoDot, NguoiQuan
 $stmt->execute(['id' => $id]);
 $dot = $stmt->fetch();
 
-$canbokhoa = $conn->query("SELECT ID_TaiKhoan, Ten FROM CanBoKhoa WHERE TrangThai = 1")->fetchAll(PDO::FETCH_ASSOC);
+$stmt = $conn->query("
+    SELECT ID_TaiKhoan, Ten FROM canbokhoa WHERE TrangThai = 1
+    UNION
+    SELECT ID_TaiKhoan, Ten FROM admin WHERE TrangThai = 1
+");
+$nguoiQuanLyList = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 if (!$dot) {
     die("Không tìm thấy đợt thực tập.");
@@ -113,6 +118,230 @@ else {
     <meta charset="UTF-8">
     <title>Chỉnh sửa đợt thực tập</title>
     <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php"; ?>
+    <style>
+        #page-wrapper {
+            padding: 30px;
+            min-height: 100vh;
+            box-sizing: border-box;
+            max-height: 100%;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+        
+        .page-header {
+            color: #2c3e50;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .main-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 30px;
+            margin-bottom: 25px;
+            border: none;
+        }
+        
+        .form-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border-left: 4px solid #007bff;
+        }
+        
+        .form-section h4 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        
+        
+        
+        .form-control:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+            transform: translateY(-1px);
+        }
+        
+        .btn {
+            border-radius: 8px;
+            padding: 12px 25px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+            border: none;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(45deg, #007bff, #0056b3);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(45deg, #dc3545, #c82333);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(45deg, #ffc107, #e0a800);
+            color: #212529;
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(45deg, #6c757d, #5a6268);
+            color: white;
+        }
+        
+        .table-section {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        
+        .table-section .panel-heading {
+            background: linear-gradient(45deg, #007bff, #0056b3);
+            color: white;
+            padding: 20px 25px;
+            margin: 0;
+            font-weight: 600;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .table-section .panel-body {
+            padding: 25px;
+        }
+        
+        .table {
+            margin-bottom: 0;
+        }
+        
+        .table thead th {
+            background: #f8f9fa;
+            border: none;
+            padding: 15px;
+            font-weight: 600;
+            color: #2c3e50;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 0.5px;
+        }
+        
+        .table tbody td {
+            padding: 15px;
+            border-color: #e9ecef;
+            vertical-align: middle;
+        }
+        
+        .table tbody tr {
+            transition: all 0.3s ease;
+        }
+        
+        .table tbody tr:hover {
+            background-color: #f8f9fa;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        tr.selected {
+            background: linear-gradient(45deg, #007bff, #0056b3) !important;
+            color: white !important;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,123,255,0.3);
+        }
+        
+        .alert {
+            border-radius: 10px;
+            border: none;
+            padding: 15px 20px;
+            font-weight: 500;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+        
+        .alert-danger {
+            background: linear-gradient(45deg, #f8d7da, #f5c6cb);
+            color: #721c24;
+        }
+        
+        .alert-success {
+            background: linear-gradient(45deg, #d4edda, #c3e6cb);
+            color: #155724;
+        }
+        
+        label {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .action-buttons {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+        }
+        
+        @media (max-width: 768px) {
+            #page-wrapper {
+                padding: 15px;
+            }
+            
+            .main-card {
+                padding: 20px;
+            }
+            
+            .form-section {
+                padding: 15px;
+            }
+        }
+        
+        /* Animation cho loading */
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+        
+        
+        
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+        
+        .notification.fade-out {
+            animation: slideOutRight 0.3s ease-in;
+        }
+    </style>
 </head>
 
 <body>
@@ -190,7 +419,7 @@ else {
                         <div class="col-sm-10">
                             <select <?= $dot['TrangThai'] == 0 ? 'disabled' : '' ?> id="NguoiQuanLy" name="NguoiQuanLy"
                                 class="form-control" required>
-                                <?php foreach ($canbokhoa as $cb): ?>
+                                <?php foreach ($nguoiQuanLyList as $cb): ?>
                                     <option value="<?= $cb['ID_TaiKhoan'] ?>" <?= $dot['NguoiQuanLy'] == $cb['ID_TaiKhoan'] ? 'selected' : '' ?>>
                                         <?= htmlspecialchars($cb['TenNguoiQuanLy'] ?? $cb['Ten']) ?>
                                     </option>

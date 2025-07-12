@@ -1,5 +1,4 @@
 <?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
-
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 $idTaiKhoan = $_SESSION['user_id'] ?? null;
 
@@ -27,7 +26,7 @@ $today = date('Y-m-d');
 // Cập nhật trạng thái kết thúc
 $updateStmt = $conn->prepare("UPDATE DOTTHUCTAP 
     SET TRANGTHAI = 0 
-    WHERE THOIGIANKETTHUC <= :today AND TRANGTHAI = 2");
+    WHERE THOIGIANKETTHUC <= :today AND TRANGTHAI != -1");
 $updateStmt->execute(['today' => $today]);
 
 // Cập nhật trạng thái đã bắt đầu
@@ -45,6 +44,7 @@ $updateStmt2->execute(['today' => $today]);
   <?php
   require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php";
   ?>
+  
 </head>
 
 <body>
