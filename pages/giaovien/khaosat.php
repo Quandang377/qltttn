@@ -7,7 +7,6 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 $ID_TaiKhoan = $_SESSION['user_id'];
-$selectedDot = $_POST['id_dot'] ?? ''; // hoặc có thể gán mặc định 1 đợt
 $selectedTo = $_POST['to'] ?? 'Sinh viên thuộc hướng dẫn'; // mặc định là giá trị hiện tại trong <option>
 
 // Lấy danh sách phản hồi của sinh viên
@@ -153,6 +152,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $cauHoiList = $_POST['cauhoi'] ?? [];
     $loaiList = $_POST['loaicauhoi'] ?? [];
     $dapanList = $_POST['dapan'] ?? [];
+    $thoiHan = $_POST['thoihan'] ?? [];
     $nguoiTao = $ID_TaiKhoan;
     $idDot = $_POST['id_dot'] ?? null;
 
@@ -160,9 +160,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $conn->beginTransaction();
 
         // 1. Tạo khảo sát trước
-        $stmt = $conn->prepare("INSERT INTO KhaoSat (TieuDe, MoTa, NguoiNhan, NguoiTao, ThoiGianTao, TrangThai, ID_Dot) 
-            VALUES (?, ?, ?, ?, NOW(), 1, ?)");
-        $stmt->execute([$tieude, $mota, $nguoiNhan, $nguoiTao, $idDot]);
+        $stmt = $conn->prepare("INSERT INTO KhaoSat (TieuDe, MoTa, NguoiNhan, NguoiTao, ThoiGianTao, ThoiHan , TrangThai, ID_Dot) 
+            VALUES (?, ?, ?, ?, NOW(),?, 1, ?)");
+        $stmt->execute([$tieude, $mota, $nguoiNhan, $nguoiTao, $thoiHan, $idDot]);
         $idKhaoSat = $conn->lastInsertId();
 
         // 2. Thêm câu hỏi (có loại và đáp án)
@@ -205,7 +205,7 @@ $stmt = $conn->prepare("
     LEFT JOIN CanBoKhoa cb ON cb.ID_TaiKhoan = tk.ID_TaiKhoan
     LEFT JOIN SinhVien sv ON sv.ID_TaiKhoan = tk.ID_TaiKhoan
     LEFT JOIN Admin ad ON ad.ID_TaiKhoan = tk.ID_TaiKhoan
-    WHERE ks.TrangThai = 1
+    WHERE ks.TrangThai >= 1
     AND (
         (
             ks.NguoiNhan = 'Tất cả'
@@ -254,7 +254,7 @@ $stmt2 = $conn->prepare("
     FROM dot_giaovien dg
     JOIN dotthuctap dt ON dg.ID_Dot = dt.ID
     WHERE dg.ID_GVHD = ?
-    ORDER BY dt.ID DESC
+    ORDER BY dt.ThoiGianBatDau
 ");
 $stmt2->execute([$ID_TaiKhoan]);
 $dsDot = $stmt2->fetchAll(PDO::FETCH_ASSOC);
@@ -327,11 +327,11 @@ if (isset($_GET['ajax'])) {
         $whereDot = " AND ks.ID_Dot = ? ";
         $params[] = $_GET['dot_filter'];
     }
-    $stmt = $conn->prepare("SELECT ks.ID, ks.TieuDe, ks.ThoiGianTao,
+    $stmt = $conn->prepare("SELECT ks.ID, ks.TieuDe, ks.ThoiGianTao,ks.ThoiHan,
         (SELECT COUNT(*) FROM PhanHoiKhaoSat WHERE ID_KhaoSat = ks.ID) AS SoLuongPhanHoi,
         ks.ID_Dot
         FROM KhaoSat ks
-        WHERE ks.NguoiTao = ? and ks.TrangThai=1 $whereDot
+        WHERE ks.NguoiTao = ? and ks.TrangThai >= 1 $whereDot
         ORDER BY ks.ThoiGianTao DESC");
     $stmt->execute($params);
     $dsKhaoSatTao = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -343,6 +343,7 @@ if (isset($_GET['ajax'])) {
                 <th>Tiêu đề</th>
                 <th>Ngày tạo</th>
                 <th>Đợt thực tập</th>
+                <th>Hết hạn</th>
                 <th>Phản hồi</th>
                 <th>Xem phản hồi</th>
                 <th>Xóa</th>
@@ -351,13 +352,13 @@ if (isset($_GET['ajax'])) {
         <tbody>
             <?php foreach ($dsKhaoSatTao as $index => $ks): ?>
                 <tr>
-                    <td onclick="window.location='pages/giaovien/chitietkhaosat?id=<?= $ks['ID'] ?>';" style="cursor: pointer;">
+                    <td>
                         <?= $index + 1 ?>
                     </td>
-                    <td onclick="window.location='pages/giaovien/chitietkhaosat?id=<?= $ks['ID'] ?>';" style="cursor: pointer;">
+                    <td>
                         <?= htmlspecialchars($ks['TieuDe']) ?>
                     </td>
-                    <td onclick="window.location='pages/giaovien/chitietkhaosat?id=<?= $ks['ID'] ?>';" style="cursor: pointer;">
+                    <td>
                         <?= date('d/m/Y', strtotime($ks['ThoiGianTao'])) ?>
                     </td>
                     <td>
@@ -372,7 +373,10 @@ if (isset($_GET['ajax'])) {
                         echo htmlspecialchars($tenDot);
                         ?>
                     </td>
-                    <td onclick="window.location='pages/giaovien/chitietkhaosat?id=<?= $ks['ID'] ?>';" style="cursor: pointer;">
+                    <td>
+                        <?= date("d/m/Y H:i", strtotime($ks['ThoiHan'])) ?>
+                    </td>
+                    <td>
                         <?= $ks['SoLuongPhanHoi'] ?>
                     </td>
                     <td><a href="pages/giaovien/khaosat?export_excel=<?= $ks['ID'] ?>" class="btn btn-success btn-sm"
@@ -565,7 +569,6 @@ if (isset($_GET['ajax'])) {
 
         .search-bar {
             background: white;
-            border-radius: 12px;
             min-width: 220px;
             padding: 17px;
             margin-bottom: 25px;
@@ -573,6 +576,7 @@ if (isset($_GET['ajax'])) {
             display: flex;
             align-items: center;
             gap: 15px;
+            border-radius: 8px;
             flex-wrap: wrap;
         }
 
@@ -580,8 +584,6 @@ if (isset($_GET['ajax'])) {
             flex: 1;
             min-width: 250px;
             padding: 10px 16px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
             font-size: 14px;
             background: #f9fafb;
             transition: all 0.2s ease;
@@ -595,9 +597,10 @@ if (isset($_GET['ajax'])) {
         }
 
         .form-control {
-            padding: 25px;
+            padding: 27px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
         }
 
         .form-control:focus {
@@ -826,7 +829,16 @@ if (isset($_GET['ajax'])) {
                 <div id="formKhaoSatWrapper" style="display: none; margin-top: 20px;">
                     <form id="formKhaoSat" method="post">
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label><strong>Gửi đến</strong></label>
+                                    <select id="to" name="to" class="search-bar" style="width: 100%;" required
+                                        data-selected="<?= $selectedTo ?>">
+                                        <option value="Sinh viên thuộc hướng dẫn">Sinh viên thuộc hướng dẫn</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
                                 <div class="form-group">
                                     <label><strong>Chọn đợt thực tập</strong></label>
                                     <select id="id_dot" name="id_dot" class="search-bar" style="width: 100%;" required
@@ -841,14 +853,11 @@ if (isset($_GET['ajax'])) {
                                     </select>
                                 </div>
                             </div>
-
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label><strong>Gửi đến</strong></label>
-                                    <select id="to" name="to" class="search-bar" style="width: 100%;" required
-                                        data-selected="<?= $selectedTo ?>">
-                                        <option value="Sinh viên thuộc hướng dẫn">Sinh viên thuộc hướng dẫn</option>
-                                    </select>
+                                    <label><strong>Thời hạn phản hồi</strong></label>
+                                    <input type="datetime-local" id="thoihan" name="thoihan" class="form-control"
+                                        required>
                                 </div>
                             </div>
                         </div>
@@ -874,32 +883,45 @@ if (isset($_GET['ajax'])) {
                         <!-- Danh sách câu hỏi -->
                         <div id="danhSachCauHoi">
                             <div class="form-group cau-hoi-item">
-                                <label>Câu hỏi</label>
-                                <div class="row" style="margin-bottom: 5px;">
-                                    <div class="col-md-5">
+
+                                <div class="row align-items-end mb-2">
+                                    <!-- Nội dung câu hỏi -->
+                                    <div class="col-md-4">
+                                        <label>Câu hỏi</label>
                                         <input type="text" name="cauhoi[]" class="form-control search-bar" required
                                             placeholder="Nhập nội dung câu hỏi">
                                     </div>
+
+                                    <!-- Loại câu hỏi -->
                                     <div class="col-md-2">
-                                        <select name="loaicauhoi[]" class="search-bar">
-                                            <option value="text">Tự luận</option>
+                                        <label>Loại</label>
+                                        <select name="loaicauhoi[]" class="search-bar" style="min-width: 100%">
                                             <option value="choice">Chọn một</option>
+                                            <option value="text">Tự luận</option>
                                             <option value="multiple">Chọn nhiều</option>
                                         </select>
                                     </div>
-                                    <div class="col-md-4">
+
+                                    <!-- Đáp án -->
+                                    <div class="col-md-5">
+                                        <label></label>
                                         <input type="text" name="dapan[]" class="form-control search-bar nhap-dapan"
-                                            style="display:none;"
-                                            placeholder="Nhập các câu trả lời, cách nhau bởi dấu ;">
+                                            style="margin-top:9px;"
+                                            placeholder="Nhập các câu trả lời, cách nhau bởi dấu ;" required>
                                     </div>
-                                    <div class="col-md-1">
-                                        <button class="btn btn-danger btn-remove" type="button" style="width:100%;">
+
+                                    <!-- Nút xóa -->
+                                    <div class="col-md-1 text-center">
+                                        <label>&nbsp;</label>
+                                        <button class="btn btn-danger btn-remove w-100" type="button">
                                             <i class="glyphicon glyphicon-remove"></i>
                                         </button>
                                     </div>
                                 </div>
                             </div>
                         </div>
+
+
 
                         <div class="form-group text-right">
                             <button type="button" class="btn btn-primary" id="btnThemCauHoi">Thêm câu hỏi</button>
@@ -922,7 +944,7 @@ if (isset($_GET['ajax'])) {
                     <div class="col-lg-12">
                         <div class=" panel panel-default">
                             <div class="panel-heading">
-                                <h4>Danh sách khảo sát cần phản hồi</h4>
+                                <h4><strong>Danh sách khảo sát cần phản hồi</strong></h4>
                             </div>
                             <table class="table" id="bangkhaosat">
                                 <thead>
@@ -930,32 +952,38 @@ if (isset($_GET['ajax'])) {
                                         <th>ID</th>
                                         <th>Tiêu đề</th>
                                         <th>Người gửi</th>
-                                        <th>Ngày tạo</th>
+                                        <th>Ngày gửi</th>
+                                        <th>Hết hạn</th>
                                         <th>Phản hồi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php if (!empty($dsKhaoSat)):
-                                        foreach ($dsKhaoSat as $ks): ?>
+                                        foreach ($dsKhaoSat as $index1 => $ks): ?>
                                             <tr>
-                                                <td><?= $ks['ID'] ?></td>
+                                                <td><?= $index1 + 1 ?></td>
                                                 <td><?= htmlspecialchars($ks['TieuDe']) ?></td>
                                                 <td><?= htmlspecialchars($ks['TenNguoiTao']) ?></td>
-                                                <td><?= $ks['ThoiGianTao'] ?></td>
+                                                <td><?= date("d/m/Y H:i", strtotime($ks['ThoiGianTao'])) ?></td>
+                                                <td><?= date("d/m/Y H:i", strtotime($ks['ThoiHan'])) ?></td>
                                                 <td>
-                                                    <button class="btn btn-primary" data-toggle="modal"
-                                                        data-target="#modalPhanHoi<?= $ks['ID'] ?>">Phản hồi</button>
+                                                    <?php if ($ks['TrangThai'] == 1): ?>
+                                                        <button class="btn btn-primary" data-toggle="modal"
+                                                            data-target="#modalPhanHoi<?= $ks['ID'] ?>">Phản hồi</button>
+                                                    <?php else: ?>
+                                                        <span class="badge badge-secondary">Đã hết hạn</span>
+                                                    <?php endif; ?>
                                                 </td>
                                             </tr>
                                         <?php endforeach;
                                     else: ?>
                                         <tr>
-                                            <td colspan="4" class="text-center text-muted">Chưa có khảo sát nào
-                                                cần phản hồi.</td>
+                                            <td colspan="6" class="text-center text-muted">Chưa có khảo sát nào cần phản
+                                                hồi.</td>
                                         </tr>
-
                                     <?php endif; ?>
                                 </tbody>
+
                             </table>
 
                         </div>
@@ -1037,7 +1065,7 @@ if (isset($_GET['ajax'])) {
                         </form>
                         <div class="panel panel-default">
                             <div class="panel-heading">
-                                <h4>Danh sách các khảo sát đã tạo</h4>
+                                <h4><strong>Danh sách các khảo sát đã tạo</strong></h4>
                             </div>
                             <div class="panel-body">
                                 <div id="quanlykhaosat"></div>
@@ -1128,7 +1156,23 @@ if (isset($_GET['ajax'])) {
                 }
             });
         });
+        window.addEventListener('DOMContentLoaded', function () {
+            const input = document.getElementById('thoihan');
+            const now = new Date();
 
+            // Cộng thêm 1 giờ
+            now.setHours(now.getHours() + 1);
+
+            // Format về dạng yyyy-MM-ddTHH:mm (để gán vào input)
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+
+            const minDatetime = `${year}-${month}-${day}T${hours}:${minutes}`;
+            input.min = minDatetime;
+        });
         // Xử lý tạo khảo sát qua Ajax
         $('#formKhaoSat').on('submit', function (e) {
             e.preventDefault();

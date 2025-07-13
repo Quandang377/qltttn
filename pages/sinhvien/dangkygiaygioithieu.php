@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['from_panel'])) {
     } elseif (!$idDot) {
         $message = 'Bạn chưa được phân công vào đợt thực tập nào!';
         $messageType = 'danger';
-    } elseif ($dotThucTapInfo && $dotThucTapInfo['TrangThai'] < 3) {
+    } elseif ($dotThucTapInfo && $dotThucTapInfo['TrangThai'] < 2) {
         $message = 'Đợt thực tập của bạn đã kết thúc hoặc chưa bắt đầu. Không thể đăng ký giấy giới thiệu!';
         $messageType = 'danger';
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -745,7 +745,7 @@ $giayList = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 } elseif (!$idDot) {
                     $message = 'Bạn chưa được phân công vào đợt thực tập nào!';
                     $messageType = 'danger';
-                } elseif ($dotThucTapInfo && $dotThucTapInfo['TrangThai'] < 3) {
+                } elseif ($dotThucTapInfo && $dotThucTapInfo['TrangThai'] < 2) {
                     $message = 'Đợt thực tập của bạn đã kết thúc hoặc chưa bắt đầu. Không thể đăng ký giấy giới thiệu!';
                     $messageType = 'danger';
                 } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -808,7 +808,7 @@ $giayList = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 
                 <!-- Thông tin đợt thực tập -->
                 <?php if ($dotThucTapInfo): ?>
-                    <?php if ($dotThucTapInfo['TrangThai'] < 3): ?>
+                    <?php if ($dotThucTapInfo['TrangThai'] < 2): ?>
                         <div class="alert alert-warning" style="border-radius: 12px; background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%); border: 1px solid #ffeaa7;">
                             <i class="fa fa-exclamation-triangle"></i>
                             <strong>Đợt của bạn đã kết thúc hoặc chưa bắt đầu:</strong> 
@@ -894,7 +894,7 @@ $giayList = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <?php endif; ?>
 
                 <!-- Thanh tìm kiếm và nút tự điền -->
-                <?php if ($dotThucTapInfo && $dotThucTapInfo['TrangThai'] >= 3): ?>
+                <?php if ($dotThucTapInfo && $dotThucTapInfo['TrangThai'] >= 2): ?>
                 <div class="search-bar">
                     <input type="text" id="search-company" placeholder="Tìm kiếm công ty theo tên, MST, lĩnh vực...">
                     <button type="button" class="btn btn-info" id="btn-add-manual">
@@ -966,7 +966,7 @@ $giayList = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         </form>
                       </div>
                       <div class="modal-footer">
-                        <?php if ($dotThucTapInfo && $dotThucTapInfo['TrangThai'] >= 3): ?>
+                        <?php if ($dotThucTapInfo && $dotThucTapInfo['TrangThai'] >= 2): ?>
                         <button type="button" class="btn btn-success" id="btn-approve-company">
                             <i class="fa fa-check"></i> Gửi (Đã duyệt)
                         </button>
@@ -1028,7 +1028,7 @@ $giayList = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         </div>
                       </div>
                       <div class="modal-footer">
-                        <?php if ($dotThucTapInfo && $dotThucTapInfo['TrangThai'] >= 3): ?>
+                        <?php if ($dotThucTapInfo && $dotThucTapInfo['TrangThai'] >= 2): ?>
                         <button type="submit" class="btn btn-success"><i class="fa fa-paper-plane"></i> Gửi yêu cầu</button>
                         <?php else: ?>
                         <button type="button" class="btn btn-success" disabled><i class="fa fa-paper-plane"></i> Gửi yêu cầu</button>
@@ -1050,7 +1050,7 @@ $giayList = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     // Kiểm tra trạng thái đợt
     const dotTrangThai = <?= json_encode($dotThucTapInfo['TrangThai'] ?? 0) ?>;
-    const canRegister = dotTrangThai >= 3;
+    const canRegister = dotTrangThai >= 2;
 
     function renderCompanyPanels() {
         const list = document.getElementById('company-panel-list');

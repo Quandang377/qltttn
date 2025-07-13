@@ -2,6 +2,27 @@
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
 $idTaiKhoan = $_SESSION['user']['ID_TaiKhoan'] ?? null;
+$today = date('Y-m-d');
+
+// Cập nhật trạng thái kết thúc
+$updateStmt = $conn->prepare("UPDATE DOTTHUCTAP 
+    SET TRANGTHAI = 0 
+    WHERE THOIGIANKETTHUC <= :today AND TRANGTHAI != -1");
+$updateStmt->execute(['today' => $today]);
+
+// Cập nhật trạng thái đã bắt đầu
+$updateStmt2 = $conn->prepare("UPDATE DOTTHUCTAP 
+    SET TRANGTHAI = 2 
+    WHERE THOIGIANBATDAU <= :today AND TRANGTHAI > 0");
+$updateStmt2->execute(['today' => $today]);
+
+$now = date('Y-m-d H:i:s');
+
+// Cập nhật trạng thái khảo sát: 2 = Đã hết hạn
+$updateKhaoSatStmt = $conn->prepare("UPDATE KhaoSat 
+    SET TrangThai = 2 
+    WHERE ThoiHan <= :now AND TrangThai != 2 AND TrangThai != 0");
+$updateKhaoSatStmt->execute(['now' => $now]);
 
 $stmt = $conn->prepare("SELECT sv.ID_Dot, dt.TrangThai 
     FROM SinhVien sv 
@@ -51,8 +72,8 @@ $statusInfo = [
 ];
 
 if($idTaiKhoan){
-  if ($trangThaiDot >= 3) {
-    if ($trangThaiDot == 3) {
+  if ($trangThaiDot >= 2) {
+    if ($trangThaiDot < 4) {
       $panelActive = [0, 1]; // Nổi bật cả tìm công ty và xin giấy giới thiệu
       $statusInfo = [
         'message' => 'Giai đoạn: Tìm công ty và xin giấy giới thiệu thực tập (cùng thực hiện)',
@@ -81,7 +102,7 @@ if($idTaiKhoan){
       'class' => 'status-ended',
       'icon' => 'fa-flag-checkered'
     ];
-  } elseif ($trangThaiDot < 3 && $trangThaiDot > 0) {
+  } elseif ($trangThaiDot < 2 && $trangThaiDot > 0) {
     // Đợt đang chuẩn bị bắt đầu
     $statusInfo = [
       'message' => 'Đợt đang chuẩn bị bắt đầu',
@@ -99,19 +120,7 @@ if($idTaiKhoan){
   }
 }
 
-$today = date('Y-m-d');
 
-// Cập nhật trạng thái kết thúc
-$updateStmt = $conn->prepare("UPDATE DOTTHUCTAP 
-    SET TRANGTHAI = 0 
-    WHERE THOIGIANKETTHUC <= :today AND TRANGTHAI != -1");
-$updateStmt->execute(['today' => $today]);
-
-// Cập nhật trạng thái đã bắt đầu
-$updateStmt2 = $conn->prepare("UPDATE DOTTHUCTAP 
-    SET TRANGTHAI = 2 
-    WHERE THOIGIANBATDAU <= :today AND TRANGTHAI != -1 AND TRANGTHAI != 0");
-$updateStmt2->execute(['today' => $today]);
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -163,7 +172,7 @@ $updateStmt2->execute(['today' => $today]);
             </a>
           </div>
           <div class="col-md-3 panel-container">
-            <a <?= ($trangThaiDot >= 3) ? 'href="pages/sinhvien/dangkygiaygioithieu"' : '' ?>
+            <a <?= ($trangThaiDot >= 2) ? 'href="pages/sinhvien/dangkygiaygioithieu"' : '' ?>
               style="text-decoration: none; color: inherit;">
               <div class="panel panel-default <?= in_array(1, $panelActive) ? 'active-step' : '' ?>" style="min-height: 180px;">
                 <div class="panel-heading">
@@ -172,7 +181,7 @@ $updateStmt2->execute(['today' => $today]);
                 <div class="panel-body">
                   <p><i class="fa fa-info-circle text-info"></i> Gửi thông tin đăng ký xin giấy giới thiệu thực tập</p>
                   <p><i class="fa fa-clock-o text-warning"></i> Chờ phê duyệt từ khoa</p>
-                  <?php if ($trangThaiDot < 3): ?>
+                  <?php if ($trangThaiDot < 2): ?>
                   <p><i class="fa fa-lock text-muted"></i> <small>Chưa mở</small></p>
                   <?php endif; ?>
                 </div>
@@ -302,27 +311,27 @@ $updateStmt2->execute(['today' => $today]);
         } else {
           list.forEach(tb => {
             const html = `
-      <div class="notification-card">
-        <div class="row">
-          <div class="col-sm-2 text-center">
-            <a href="pages/sinhvien/chitietthongbao?id=${tb.ID}">
-              <img src="/datn/uploads/Images/ThongBao.jpg" alt="${tb.TIEUDE}" class="notification-image">
-            </a>
-          </div>
-          <div class="col-sm-10">
-            <a href="#" class="thongbao-link notification-title" data-id="${tb.ID}">
-              ${tb.TIEUDE}
-            </a>
-            <ul class="list-inline notification-meta">
-              <li><i class="fa fa-bullhorn"></i> Thông báo</li>
-              <li>|</li>
-              <li><i class="fa fa-calendar"></i> ${new Date(tb.NGAYDANG).toLocaleDateString('vi-VN')}</li>
-              ${tb.TenDot ? `<li>|</li><li><i class="fa fa-tag"></i> ${tb.TenDot}</li>` : ''}
-            </ul>
-          </div>
-        </div>
-      </div>
-    `;
+                  <div class="notification-card">
+                    <div class="row">
+                      <div class="col-sm-2 text-center">
+                        <a href="pages/sinhvien/chitietthongbao?id=${tb.ID}">
+                          <img src="/datn/uploads/Images/ThongBao.jpg" alt="${tb.TIEUDE}" class="notification-image">
+                        </a>
+                      </div>
+                      <div class="col-sm-10">
+                        <a href="#" class="thongbao-link notification-title" data-id="${tb.ID}">
+                          ${tb.TIEUDE}
+                        </a>
+                        <ul class="list-inline notification-meta">
+                          <li><i class="fa fa-bullhorn"></i> Thông báo</li>
+                          <li>|</li>
+                          <li><i class="fa fa-calendar"></i> ${new Date(tb.NGAYDANG).toLocaleDateString('vi-VN')}</li>
+                          ${tb.TenDot ? `<li>|</li><li><i class="fa fa-tag"></i> ${tb.TenDot}</li>` : ''}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                `;
             container.insertAdjacentHTML('beforeend', html);
           });
         }

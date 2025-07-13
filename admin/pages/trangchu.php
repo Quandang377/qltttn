@@ -3,6 +3,27 @@ date_default_timezone_set('Asia/Ho_Chi_Minh');
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
+$today = date('Y-m-d');
+
+// Cập nhật trạng thái kết thúc
+$updateStmt = $conn->prepare("UPDATE DOTTHUCTAP 
+    SET TRANGTHAI = 0 
+    WHERE THOIGIANKETTHUC <= :today AND TRANGTHAI != -1");
+$updateStmt->execute(['today' => $today]);
+
+// Cập nhật trạng thái đã bắt đầu
+$updateStmt2 = $conn->prepare("UPDATE DOTTHUCTAP 
+    SET TRANGTHAI = 2 
+    WHERE THOIGIANBATDAU <= :today AND TRANGTHAI > 0");
+$updateStmt2->execute(['today' => $today]);
+
+$now = date('Y-m-d H:i:s');
+
+// Cập nhật trạng thái khảo sát: 2 = Đã hết hạn
+$updateKhaoSatStmt = $conn->prepare("UPDATE KhaoSat 
+    SET TrangThai = 2 
+    WHERE ThoiHan <= :now AND TrangThai != 2 AND TrangThai != 0");
+$updateKhaoSatStmt->execute(['now' => $now]);
 
 // Lấy tất cả thông báo và tên đợt
 $stmt = $conn->prepare("
@@ -15,19 +36,7 @@ $stmt = $conn->prepare("
 ");
 $stmt->execute();
 $thongbaos = $stmt->fetchAll(PDO::FETCH_ASSOC);
-$today = date('Y-m-d');
 
-// Cập nhật trạng thái kết thúc
-$updateStmt = $conn->prepare("UPDATE DOTTHUCTAP 
-    SET TRANGTHAI = 0 
-    WHERE THOIGIANKETTHUC <= :today AND TRANGTHAI != -1");
-$updateStmt->execute(['today' => $today]);
-
-// Cập nhật trạng thái đã bắt đầu
-$updateStmt2 = $conn->prepare("UPDATE DOTTHUCTAP 
-    SET TRANGTHAI = 2 
-    WHERE THOIGIANBATDAU <= :today AND TRANGTHAI != -1 AND TRANGTHAI != 0");
-$updateStmt2->execute(['today' => $today]);
 ?>
 <!DOCTYPE html>
 <html lang="vi">

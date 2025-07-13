@@ -156,16 +156,15 @@ function renderNotifications() {
 
         list.forEach(tb => {
             const html = `
-                    <div class="notification-card">
-                    <div class="row">
-                    <div class="col-sm-2 col-xs-3 notification-image-container">
+                <div class="notification-card row"> 
+                    <div class="notification-image-container col-sm-2 col-xs-3">
                         <a href="#" class="thongbao-link" data-id="${tb.ID}">
                         <img src="/datn/uploads/Images/ThongBao.jpg" alt="${tb.TIEUDE}" class="notification-image">
                         </a>
                     </div>
-                    <div class="col-sm-10 col-xs-9">
-                        <div class="notification-content">
-                        <a href="#" class="thongbao-link" data-id="${tb.ID}" class="notification-title">
+                    <div class="notification-content col-sm-10 col-xs-9">
+                        <div>
+                        <a href="#" class="thongbao-link notification-title" data-id="${tb.ID}">
                             ${tb.TIEUDE}
                         </a>
                         <div class="notification-meta">
@@ -179,14 +178,13 @@ function renderNotifications() {
                             ${tb.TenDot ? `
                             <span class="meta-separator">|</span>
                             <span class="meta-item">
-                                <i class="fa fa-tag"></i> ${tb.TenDot}
+                            <i class="fa fa-tag"></i> ${tb.TenDot}
                             </span>
                             ` : ''}
                         </div>
                         </div>
                     </div>
                     </div>
-                </div>
                     `;
             container.insertAdjacentHTML('beforeend', html);
         });
@@ -244,6 +242,162 @@ function renderNotifications() {
     #notification-list.fade-in {
         opacity: 1;
     }
+    /* Notification Container */
+  .notification-container {
+    min-height: 300px;
+  }
+
+  .notification-card {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .notification-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .notification-image-container {
+    text-align: center;
+  }
+
+  .notification-image {
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 2px solid #ddd;
+    transition: all 0.3s ease;
+  }
+
+  .notification-image:hover {
+    border-color: #337ab7;
+  }
+
+  .notification-content {
+    padding-left: 15px;
+  }
+
+  .notification-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+    text-decoration: none;
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  .notification-title:hover {
+    color: #337ab7;
+    text-decoration: none;
+  }
+
+  .notification-meta {
+    color: #666;
+    font-size: 14px;
+  }
+
+  .meta-item {
+    margin-right: 8px;
+  }
+
+  .meta-separator {
+    margin: 0 8px;
+    color: #ccc;
+  }
+
+  /* Empty State */
+  .empty-notification {
+    background: #f9f9f9;
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    padding: 60px 20px;
+    text-align: center;
+    margin: 20px 0;
+  }
+
+  .empty-notification h3 {
+    margin-bottom: 15px;
+  }
+
+  .empty-notification p {
+    margin-bottom: 10px;
+    line-height: 1.6;
+  }
+
+  /* Pagination */
+  .pagination-container {
+    padding: 20px 0;
+    border-top: 1px solid #eee;
+  }
+
+  .btn-nav {
+    margin: 0 10px;
+    padding: 8px 16px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+  }
+
+  .btn-nav:hover:not(:disabled) {
+    background-color: #337ab7;
+    color: white;
+    border-color: #337ab7;
+  }
+
+  .btn-nav:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .page-info {
+    margin: 0 15px;
+    font-weight: 600;
+    color: #666;
+  }
+
+  /* Fade Effects */
+  #notification-list {
+    transition: opacity 0.3s ease;
+    opacity: 1;
+  }
+
+  #notification-list.fade-out {
+    opacity: 0;
+  }
+
+  #notification-list.fade-in {
+    opacity: 1;
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .process-panel {
+      min-height: 160px;
+      margin-bottom: 15px;
+    }
+
+    .process-panel .panel-icon {
+      font-size: 36px;
+    }
+
+    .notification-image {
+      width: 60px;
+      height: 60px;
+    }
+
+    .notification-content {
+      padding-left: 10px;
+    }
+
+    .notification-title {
+      font-size: 16px;
+    }
+}
 
     .container,
     .container-fluid,

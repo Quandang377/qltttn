@@ -316,6 +316,9 @@ const editorConfig = {
 			}
 		}
 	},
+	mediaEmbed: {
+    previewsInData: true
+},
 	list: {
 		properties: {
 			styles: true,

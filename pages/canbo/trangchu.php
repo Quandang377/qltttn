@@ -1,8 +1,29 @@
 <?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 $idTaiKhoan = $_SESSION['user_id'] ?? null;
+$today = date('Y-m-d');
 
-// Lấy danh sách ID đợt do chính cán bộ này quản lý (theo ID_TaiKhoan chứ không phải Ten)
+// Cập nhật trạng thái kết thúc
+$updateStmt = $conn->prepare("UPDATE DOTTHUCTAP 
+    SET TRANGTHAI = 0 
+    WHERE THOIGIANKETTHUC <= :today AND TRANGTHAI != -1");
+$updateStmt->execute(['today' => $today]);
+
+// Cập nhật trạng thái đã bắt đầu
+$updateStmt2 = $conn->prepare("UPDATE DOTTHUCTAP 
+    SET TRANGTHAI = 2 
+    WHERE THOIGIANBATDAU <= :today AND TRANGTHAI > 0");
+$updateStmt2->execute(['today' => $today]);
+
+$now = date('Y-m-d H:i:s');
+
+// Cập nhật trạng thái khảo sát: 2 = Đã hết hạn
+$updateKhaoSatStmt = $conn->prepare("UPDATE KhaoSat 
+    SET TrangThai = 2 
+    WHERE ThoiHan <= :now AND TrangThai != 2 AND TrangThai != 0");
+$updateKhaoSatStmt->execute(['now' => $now]);
+
+// Lấy danh sách ID đợt do chính cán bộ này quản lý
 $stmt = $conn->prepare("SELECT ID FROM DotThucTap WHERE NguoiQuanLy = ?");
 $stmt->execute([$idTaiKhoan]);
 $dsDot = $stmt->fetchAll(PDO::FETCH_COLUMN);
@@ -21,19 +42,7 @@ if (!empty($dsDot)) {
   $stmt->execute($dsDot);
   $thongbaos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
-$today = date('Y-m-d');
 
-// Cập nhật trạng thái kết thúc
-$updateStmt = $conn->prepare("UPDATE DOTTHUCTAP 
-    SET TRANGTHAI = 0 
-    WHERE THOIGIANKETTHUC <= :today AND TRANGTHAI != -1");
-$updateStmt->execute(['today' => $today]);
-
-// Cập nhật trạng thái đã bắt đầu
-$updateStmt2 = $conn->prepare("UPDATE DOTTHUCTAP 
-    SET TRANGTHAI = 2 
-    WHERE THOIGIANBATDAU <= :today AND TRANGTHAI != -1 AND TRANGTHAI != 0");
-$updateStmt2->execute(['today' => $today]);
 ?>
 <!DOCTYPE html>
 <html lang="vi">

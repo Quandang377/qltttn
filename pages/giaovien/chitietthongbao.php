@@ -19,6 +19,30 @@ $thongbao = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$thongbao) {
   die("Không tìm thấy thông báo.");
 }
+
+function renderMediaEmbed($content)
+{
+  return preg_replace_callback('/<oembed url="([^"]+)"><\/oembed>/', function ($matches) {
+    $url = $matches[1];
+
+    // Chuyển youtu.be hoặc youtube.com thành dạng embed
+    if (strpos($url, 'youtu') !== false) {
+      $videoId = null;
+      if (preg_match('/youtu\.be\/([^\?&]+)/', $url, $m)) {
+        $videoId = $m[1];
+      } elseif (preg_match('/v=([^\?&]+)/', $url, $m)) {
+        $videoId = $m[1];
+      }
+
+      if ($videoId) {
+        return '<iframe width="560" height="315" src="https://www.youtube.com/embed/' . $videoId . '" frameborder="0" allowfullscreen></iframe>';
+      }
+    }
+
+    // Nếu không phải YouTube, trả nguyên hoặc ẩn
+    return '';
+  }, $content);
+}
 // Lấy danh sách ID đợt mà giáo viên này tham gia từ bảng dot_giaovien
 $stmt = $conn->prepare("
     SELECT DISTINCT ID_Dot
@@ -77,8 +101,26 @@ if (!empty($dsDot)) {
           </div>
         </div>
         <div class="news-content mb-4">
-          <?= $thongbao['NOIDUNG'] ?>
+          <?= renderMediaEmbed($thongbao['NOIDUNG']) ?>
+
         </div>
+        <script>
+          document.querySelectorAll('oembed[url]').forEach(el => {
+            const url = el.getAttribute('url');
+            if (url.includes('youtu')) {
+              const match = url.match(/(?:youtu\.be\/|v=)([^&]+)/);
+              if (match) {
+                const iframe = document.createElement('iframe');
+                iframe.setAttribute('width', '560');
+                iframe.setAttribute('height', '315');
+                iframe.setAttribute('src', 'https://www.youtube.com/embed/' + match[1]);
+                iframe.setAttribute('frameborder', '0');
+                iframe.setAttribute('allowfullscreen', '');
+                el.replaceWith(iframe);
+              }
+            }
+          });
+        </script>
         <div class="row mt-5">
           <div class="col-lg-12">
             <h2 class="page-header">Thông báo khác</h2>
@@ -214,6 +256,162 @@ if (!empty($dsDot)) {
 
   #notification-list.fade-in {
     opacity: 1;
+  }
+  /* Notification Container */
+  .notification-container {
+    min-height: 300px;
+  }
+
+  .notification-card {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .notification-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .notification-image-container {
+    text-align: center;
+  }
+
+  .notification-image {
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 2px solid #ddd;
+    transition: all 0.3s ease;
+  }
+
+  .notification-image:hover {
+    border-color: #337ab7;
+  }
+
+  .notification-content {
+    padding-left: 15px;
+  }
+
+  .notification-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+    text-decoration: none;
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  .notification-title:hover {
+    color: #337ab7;
+    text-decoration: none;
+  }
+
+  .notification-meta {
+    color: #666;
+    font-size: 14px;
+  }
+
+  .meta-item {
+    margin-right: 8px;
+  }
+
+  .meta-separator {
+    margin: 0 8px;
+    color: #ccc;
+  }
+
+  /* Empty State */
+  .empty-notification {
+    background: #f9f9f9;
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    padding: 60px 20px;
+    text-align: center;
+    margin: 20px 0;
+  }
+
+  .empty-notification h3 {
+    margin-bottom: 15px;
+  }
+
+  .empty-notification p {
+    margin-bottom: 10px;
+    line-height: 1.6;
+  }
+
+  /* Pagination */
+  .pagination-container {
+    padding: 20px 0;
+    border-top: 1px solid #eee;
+  }
+
+  .btn-nav {
+    margin: 0 10px;
+    padding: 8px 16px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+  }
+
+  .btn-nav:hover:not(:disabled) {
+    background-color: #337ab7;
+    color: white;
+    border-color: #337ab7;
+  }
+
+  .btn-nav:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .page-info {
+    margin: 0 15px;
+    font-weight: 600;
+    color: #666;
+  }
+
+  /* Fade Effects */
+  #notification-list {
+    transition: opacity 0.3s ease;
+    opacity: 1;
+  }
+
+  #notification-list.fade-out {
+    opacity: 0;
+  }
+
+  #notification-list.fade-in {
+    opacity: 1;
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .process-panel {
+      min-height: 160px;
+      margin-bottom: 15px;
+    }
+
+    .process-panel .panel-icon {
+      font-size: 36px;
+    }
+
+    .notification-image {
+      width: 60px;
+      height: 60px;
+    }
+
+    .notification-content {
+      padding-left: 10px;
+    }
+
+    .notification-title {
+      font-size: 16px;
+    }
   }
 
   .container,

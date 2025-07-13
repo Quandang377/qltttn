@@ -268,18 +268,12 @@ foreach ($stmt as $row) {
     <a href="pages/giaovien/trangchu" class="<?= strpos($currentPath, 'trangchu') !== false ? 'active' : '' ?>">Trang
         chủ</a>
 
-    <a href="<?= $isLoggedIn ? 'pages/giaovien/xemdanhsachsinhvien' : '#' ?>"
-        class="<?= strpos($currentPath, 'xemdanhsachsinhvien') !== false ? 'active' : '' ?> <?= !$isLoggedIn ? 'guest-link' : '' ?>">
-        Danh sách SV
-    </a>
-
     <a href="<?= $isLoggedIn ? 'pages/giaovien/quanlybaocaotuan' : '#' ?>"
         class="<?= strpos($currentPath, 'quanlybaocaotuan') !== false ? 'active' : '' ?> <?= !$isLoggedIn ? 'guest-link' : '' ?>">
         Báo cáo tuần
     </a>
 
     <a href="pages/giaovien/xembaocaotongket" class="<?= strpos($currentPath, 'xembaocaotongket') !== false ? 'active' : '' ?>">Tổng kết</a>
-
 
     <a href="<?= $isLoggedIn ? 'pages/giaovien/khaosat' : '#' ?>"
         class="<?= strpos($currentPath, 'khaosat') !== false ? 'active' : '' ?> <?= !$isLoggedIn ? 'guest-link' : '' ?>">

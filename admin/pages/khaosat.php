@@ -6,8 +6,6 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
-use PhpOffice\PhpSpreadsheet\Style\Border as StyleBorder;
-use PhpOffice\PhpSpreadsheet\Style\Fill;
 $ID_TaiKhoan = $_SESSION['user_id'];
 
 
@@ -43,9 +41,9 @@ if (isset($_GET['export_excel'])) {
     // Ghi header sinh viên
     $sheet->fromArray($headerStudent, null, 'A1');
     $sheet->getStyle('A1:' . $sheet->getHighestColumn() . '1')->applyFromArray([
-    'font' => ['bold' => true],
-    'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
-]);
+        'font' => ['bold' => true],
+        'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+    ]);
     // ==== PHẢN HỒI SINH VIÊN ====
     $stmt = $conn->prepare("
     SELECT tk.ID_TaiKhoan, sv.MSSV, sv.Ten, sv.Lop, ph.ID AS ID_PhanHoi, ph.ThoiGianTraLoi
@@ -59,14 +57,14 @@ if (isset($_GET['export_excel'])) {
     $dsPhanHoiSV = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     $rowNum = 2;
-    foreach ($dsPhanHoiSV as $sv) { 
-        $rowData = [$sv['MSSV'], $sv['Ten'], $sv['Lop'],date('d/m/Y H:i', strtotime($sv['ThoiGianTraLoi']))];
+    foreach ($dsPhanHoiSV as $sv) {
+        $rowData = [$sv['MSSV'], $sv['Ten'], $sv['Lop'], date('d/m/Y H:i', strtotime($sv['ThoiGianTraLoi']))];
         foreach ($cauHoi as $ch) {
             $stmt = $conn->prepare("SELECT TraLoi FROM cautraloi WHERE ID_PhanHoi = ? AND ID_CauHoi = ?");
             $stmt->execute([$sv['ID_PhanHoi'], $ch['ID']]);
             $traloi = $stmt->fetchColumn();
             $rowData[] = $traloi ?? '';
-            
+
         }
         $sheet->fromArray($rowData, null, 'A' . $rowNum++);
     }
@@ -91,9 +89,9 @@ if (isset($_GET['export_excel'])) {
     $sheet->fromArray($headerTeacher, null, 'A' . $rowNum++);
     $teacherHeaderRow = $rowNum - 1;
     $sheet->getStyle('A' . $teacherHeaderRow . ':' . $sheet->getHighestColumn() . $teacherHeaderRow)->applyFromArray([
-    'font' => ['bold' => true],
-    'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
-]);
+        'font' => ['bold' => true],
+        'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+    ]);
     $stmt = $conn->prepare("
     SELECT tk.ID_TaiKhoan, tk.TaiKhoan AS Email, gv.Ten, ph.ID AS ID_PhanHoi, ph.ThoiGianTraLoi
     FROM phanhoikhaosat ph
@@ -105,35 +103,35 @@ if (isset($_GET['export_excel'])) {
     $stmt->execute([$id_KhaoSat]);
     $dsPhanHoiGV = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-   $startRowGV = $rowNum -1; // Ghi lại dòng bắt đầu của giáo viên
+    $startRowGV = $rowNum - 1; // Ghi lại dòng bắt đầu của giáo viên
 
-foreach ($dsPhanHoiGV as $gv) {
-    $rowData = [
-        $gv['Email'],
-        $gv['Ten'],
-        date('d/m/Y H:i', strtotime($gv['ThoiGianTraLoi']))
-    ];
-    foreach ($cauHoi as $ch) {
-        $stmt = $conn->prepare("SELECT TraLoi FROM cautraloi WHERE ID_PhanHoi = ? AND ID_CauHoi = ?");
-        $stmt->execute([$gv['ID_PhanHoi'], $ch['ID']]);
-        $traloi = $stmt->fetchColumn();
-        $rowData[] = $traloi ?? '';
+    foreach ($dsPhanHoiGV as $gv) {
+        $rowData = [
+            $gv['Email'],
+            $gv['Ten'],
+            date('d/m/Y H:i', strtotime($gv['ThoiGianTraLoi']))
+        ];
+        foreach ($cauHoi as $ch) {
+            $stmt = $conn->prepare("SELECT TraLoi FROM cautraloi WHERE ID_PhanHoi = ? AND ID_CauHoi = ?");
+            $stmt->execute([$gv['ID_PhanHoi'], $ch['ID']]);
+            $traloi = $stmt->fetchColumn();
+            $rowData[] = $traloi ?? '';
+        }
+        $sheet->fromArray($rowData, null, 'A' . $rowNum++);
     }
-    $sheet->fromArray($rowData, null, 'A' . $rowNum++);
-}
-$endRowGV = $rowNum - 1; // Dòng kết thúc giáo viên
+    $endRowGV = $rowNum - 1; // Dòng kết thúc giáo viên
 
-// Áp dụng căn giữa và border cho phần giáo viên
-$sheet->getStyle("A{$startRowGV}:{$sheet->getHighestColumn()}{$endRowGV}")
-    ->applyFromArray([
-        'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
-        'borders' => [
-            'allBorders' => [
-                'borderStyle' => Border::BORDER_THIN,
-                'color' => ['argb' => '000000'],
+    // Áp dụng căn giữa và border cho phần giáo viên
+    $sheet->getStyle("A{$startRowGV}:{$sheet->getHighestColumn()}{$endRowGV}")
+        ->applyFromArray([
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+            'borders' => [
+                'allBorders' => [
+                    'borderStyle' => Border::BORDER_THIN,
+                    'color' => ['argb' => '000000'],
+                ],
             ],
-        ],
-    ]);
+        ]);
     // Tự căn chiều rộng
     foreach (range('A', $sheet->getHighestColumn()) as $col) {
         $sheet->getColumnDimension($col)->setAutoSize(true);
@@ -162,6 +160,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $cauHoiList = $_POST['cauhoi'] ?? [];
     $loaiList = $_POST['loaicauhoi'] ?? [];
     $dapanList = $_POST['dapan'] ?? [];
+    $thoihan = $_POST['thoihan']??[];
+
     $nguoiTao = $ID_TaiKhoan;
     $idDot = $_POST['id_dot'] ?? null;
 
@@ -169,9 +169,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $conn->beginTransaction();
 
         // 1. Tạo khảo sát trước
-        $stmt = $conn->prepare("INSERT INTO KhaoSat (TieuDe, MoTa, NguoiNhan, NguoiTao, ThoiGianTao, TrangThai, ID_Dot) 
-            VALUES (?, ?, ?, ?, NOW(), 1, ?)");
-        $stmt->execute([$tieude, $mota, $nguoiNhan, $nguoiTao, $idDot]);
+        $stmt = $conn->prepare("INSERT INTO KhaoSat (TieuDe, MoTa, NguoiNhan, NguoiTao, ThoiGianTao, ThoiHan, TrangThai, ID_Dot) 
+    VALUES (?, ?, ?, ?, Now(), ?, 1, ?)");
+        $stmt->execute([$tieude, $mota, $nguoiNhan, $nguoiTao, $thoihan, $idDot]);
+
         $idKhaoSat = $conn->lastInsertId();
 
         // 2. Thêm câu hỏi (có loại và đáp án)
@@ -219,11 +220,11 @@ if (isset($_GET['ajax'])) {
         $whereDot = " AND ks.ID_Dot = ? ";
         $params[] = $_GET['dot_filter'];
     }
-    $stmt = $conn->prepare("SELECT ks.ID, ks.TieuDe, ks.ThoiGianTao,ks.NguoiNhan,
+    $stmt = $conn->prepare("SELECT ks.ID, ks.TieuDe, ks.ThoiGianTao,ks.NguoiNhan,ks.ThoiHan,
         (SELECT COUNT(*) FROM PhanHoiKhaoSat WHERE ID_KhaoSat = ks.ID) AS SoLuongPhanHoi,
         ks.ID_Dot
         FROM KhaoSat ks
-        WHERE ks.NguoiTao = ? and ks.TrangThai=1 $whereDot
+        WHERE ks.NguoiTao = ? and ks.TrangThai >=1 $whereDot
         ORDER BY ks.ThoiGianTao DESC");
     $stmt->execute($params);
     $dsKhaoSatTao = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -237,6 +238,7 @@ if (isset($_GET['ajax'])) {
                 <th>Ngày tạo</th>
                 <th>Đợt thực tập</th>
                 <th>Người nhận</th>
+                <th>Hết hạn</th>
                 <th>Phản hồi</th>
                 <th>Xem phản hồi</th>
                 <th>Xóa</th>
@@ -248,13 +250,13 @@ if (isset($_GET['ajax'])) {
                     <td>
                         <?= $index + 1 ?>
                     </td>
-                    <td >
+                    <td>
                         <?= htmlspecialchars($ks['TieuDe']) ?>
                     </td>
-                    <td >
+                    <td>
                         <?= date('d/m/Y', strtotime($ks['ThoiGianTao'])) ?>
                     </td>
-                    <td >
+                    <td>
                         <?php
                         $tenDot = '';
                         foreach ($dsDot as $dot) {
@@ -266,10 +268,13 @@ if (isset($_GET['ajax'])) {
                         echo htmlspecialchars($tenDot);
                         ?>
                     </td>
-                    <td >
+                    <td>
                         <?= $ks['NguoiNhan'] ?>
                     </td>
-                    <td >
+                    <td>
+                        <?= $ks['ThoiHan'] ?>
+                    </td>
+                    <td>
                         <?= $ks['SoLuongPhanHoi'] ?>
                     </td>
                     <td><a href="admin/pages/khaosat?export_excel=<?= $ks['ID'] ?>" class="btn btn-success btn-sm"
@@ -651,9 +656,20 @@ if (isset($_GET['ajax'])) {
                     <h1>Tạo khảo sát</h1>
                 </div>
                 <div class="form-container">
-                    <form id="formTaoKhaoSat" method="post" autocomplete="off">
+                    <form id="formKhaoSat" method="post">
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label><strong>Gửi đến</strong></label>
+                                    <select id="to" name="to" class="search-bar" style="width: 100%;" required
+                                        data-selected="<?= $selectedTo ?? 'Sinh viên' ?>">
+                                        <option value="Sinh viên" selected>Sinh Viên</option>
+                                        <option value="Giáo viên">Giáo Viên</option>
+                                        <option value="Tất cả">Tất cả</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
                                 <div class="form-group">
                                     <label><strong>Chọn đợt thực tập</strong></label>
                                     <select id="id_dot" name="id_dot" class="search-bar" style="width: 100%;" required
@@ -667,71 +683,83 @@ if (isset($_GET['ajax'])) {
                                     </select>
                                 </div>
                             </div>
-
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label><strong>Gửi đến</strong></label>
-                                    <select id="to" name="to" class="search-bar" style="width: 100%;" required
-                                        data-selected="<?= $selectedTo ?? 'Sinh viên' ?>">
-                                        <option value="Sinh viên" selected>Sinh Viên</option>
-                                        <option value="Giáo viên">Giáo Viên</option>
-                                        <option value="Tất cả">Tất cả</option>
-                                    </select>
+                                    <label><strong>Thời hạn phản hồi</strong></label>
+                                    <input type="datetime-local" id="thoihan" name="thoihan" class="form-control"
+                                        required>
                                 </div>
                             </div>
                         </div>
+
                         <div class="row">
-                            <div class="col-lg-6">
+                            <div class="col-md-6">
                                 <div class="form-group">
                                     <label>Tiêu đề</label>
-                                    <input class="form-control" id="tieude" name="tieude" type="text" required
-                                        placeholder="Nhập tiêu đề cho khảo sát">
+                                    <input class="form-control search-bar" id="tieude" name="tieude" type="text"
+                                        required placeholder="Nhập tiêu đề cho khảo sát">
                                 </div>
                             </div>
-                            <div class="col-lg-6">
+
+                            <div class="col-md-6">
                                 <div class="form-group">
                                     <label>Mô tả</label>
-                                    <input class="form-control" id="mota" name="mota" type="text" required
+                                    <input class="form-control search-bar" id="mota" name="mota" type="text" required
                                         placeholder="Nhập mô tả">
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Danh sách câu hỏi -->
                         <div id="danhSachCauHoi">
                             <div class="form-group cau-hoi-item">
-                                <label>Câu hỏi</label>
-                                <div class="row" style="margin-bottom: 5px;">
-                                    <div class="col-md-5">
-                                        <input type="text" name="cauhoi[]" class="form-control" required
+
+                                <div class="row align-items-end mb-2">
+                                    <!-- Nội dung câu hỏi -->
+                                    <div class="col-md-4">
+                                        <label>Câu hỏi</label>
+                                        <input type="text" name="cauhoi[]" class="form-control search-bar" required
                                             placeholder="Nhập nội dung câu hỏi">
                                     </div>
+
+                                    <!-- Loại câu hỏi -->
                                     <div class="col-md-2">
-                                        <select name="loaicauhoi[]" class="search-bar">
-                                            <option value="text">Tự luận</option>
+                                        <label>Loại</label>
+                                        <select name="loaicauhoi[]" class="search-bar" style="min-width: 100%">
                                             <option value="choice">Chọn một</option>
+                                            <option value="text">Tự luận</option>
                                             <option value="multiple">Chọn nhiều</option>
                                         </select>
                                     </div>
-                                    <div class="col-md-4">
-                                        <input type="text" name="dapan[]" class="form-control nhap-dapan"
-                                            style="display:none;"
-                                            placeholder="Nhập các câu trả lời, cách nhau bởi dấu ;">
+
+                                    <!-- Đáp án -->
+                                    <div class="col-md-5">
+                                        <label></label>
+                                        <input type="text" name="dapan[]" class="form-control search-bar nhap-dapan"
+                                            placeholder="Nhập các câu trả lời, cách nhau bởi dấu ;"
+                                            style="margin-top:9px;" required>
                                     </div>
-                                    <div class="col-md-1">
-                                        <button class="btn btn-danger btn-remove" type="button" style="width:100%;">
+
+                                    <!-- Nút xóa -->
+                                    <div class="col-md-1 text-center">
+                                        <label>&nbsp;</label>
+                                        <button class="btn btn-danger btn-remove w-100" type="button">
                                             <i class="glyphicon glyphicon-remove"></i>
                                         </button>
                                     </div>
                                 </div>
                             </div>
                         </div>
-
                         <div class="form-group text-right">
                             <button type="button" class="btn btn-primary" id="btnThemCauHoi">Thêm câu hỏi</button>
                         </div>
+
                         <div class="form-group text-center">
-                            <button type="submit" class="btn btn-success btn-lg">Gửi</button>
+                            <button type="submit" class="btn btn-success btn-lg" name="action" value="taokhaosat">Xác
+                                nhận</button>
                         </div>
                     </form>
+
                 </div>
                 <div class="row">
                     <div class="col-lg-12">
@@ -758,14 +786,31 @@ if (isset($_GET['ajax'])) {
         </div>
         <?php require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php" ?>
         <script>
+            window.addEventListener('DOMContentLoaded', function () {
+                const input = document.getElementById('thoihan');
+                const now = new Date();
+
+                // Cộng thêm 1 giờ
+                now.setHours(now.getHours() + 1);
+
+                // Format về dạng yyyy-MM-ddTHH:mm (để gán vào input)
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+
+                const minDatetime = `${year}-${month}-${day}T${hours}:${minutes}`;
+                input.min = minDatetime;
+            });
             // Tạo khảo sát
-            $('#formTaoKhaoSat').on('submit', function (e) {
+            $('#formKhaoSat').on('submit', function (e) {
                 e.preventDefault();
                 $.post('/datn/admin/pages/khaosat', $(this).serialize() + '&action=tao', function (res) {
                     if (res.status === 'OK') {
                         Swal.fire('Tạo thành công!', '', 'success');
                         loadBangKhaoSat();
-                        $('#formTaoKhaoSat')[0].reset();
+                        $('#formKhaoSat')[0].reset();
                     } else {
                         Swal.fire('Lỗi', res.message || 'Không thể tạo khảo sát', 'error');
                     }

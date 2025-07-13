@@ -4,106 +4,6 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
 $idTaiKhoan = $_SESSION['user_id'] ?? null;
 $today = date('Y-m-d');
-// Lấy danh sách ID đợt mà giáo viên này hướng dẫn sinh viên
-// 1. Lấy danh sách đợt theo giáo viên hướng dẫn
-$stmt2 = $conn->prepare("
-    SELECT DISTINCT dt.ID, dt.TenDot
-    FROM dot_giaovien dg
-    JOIN dotthuctap dt ON dg.ID_Dot = dt.ID
-    WHERE dg.ID_GVHD = ?
-    ORDER BY dt.ID DESC
-");
-$stmt2->execute([$idTaiKhoan]);
-$dsDot = $stmt2->fetchAll(PDO::FETCH_ASSOC);
-
-// Tách mảng ID từ $dsDot để sử dụng trong IN (...)
-$dsDotIDs = array_column($dsDot, 'ID');  // [1, 2, 3, ...]
-
-// 2. Lấy thông báo thuộc các đợt này
-$thongbaos = [];
-if (!empty($dsDotIDs)) {
-    $placeholders = implode(',', array_fill(0, count($dsDotIDs), '?'));
-    $stmt = $conn->prepare("
-        SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.NGAYDANG, tb.ID_Dot, dt.TenDot
-        FROM THONGBAO tb
-        LEFT JOIN DotThucTap dt ON tb.ID_Dot = dt.ID
-        WHERE tb.ID_Dot IN ($placeholders) AND tb.TRANGTHAI = 1
-        ORDER BY tb.NGAYDANG DESC
-        LIMIT 50
-    ");
-    $stmt->execute($dsDotIDs);
-    $thongbaos = $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
-
-// 3. Lấy thông tin chi tiết các đợt mà giáo viên hướng dẫn
-$currentDots = [];
-if (!empty($dsDotIDs)) {
-    $placeholders = implode(',', array_fill(0, count($dsDotIDs), '?'));
-    $stmt = $conn->prepare("
-        SELECT dt.ID, dt.TenDot, dt.ThoiGianBatDau, dt.ThoiGianKetThuc, dt.TrangThai, 
-        COUNT(sv.ID_TaiKhoan) as SoLuongSV
-        FROM DotThucTap dt
-        LEFT JOIN SinhVien sv ON dt.ID = sv.ID_Dot AND sv.ID_GVHD = ?
-        WHERE dt.ID IN ($placeholders)
-        GROUP BY dt.ID, dt.TenDot, dt.ThoiGianBatDau, dt.ThoiGianKetThuc, dt.TrangThai
-        ORDER BY dt.ThoiGianBatDau DESC
-    ");
-
-    // Ghép $idTaiKhoan + mảng ID
-    $params = array_merge([$idTaiKhoan], $dsDotIDs);
-    $stmt->execute($params);
-    $currentDots = $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
-
-
-// Tìm đợt đang hoạt động (ưu tiên trạng thái 3, 4, 5)
-$activeDot = null;
-$allDots = [];
-
-foreach ($currentDots as $dot) {
-    $trangthai = $dot['TrangThai'] ?? 0;
-    $batdau = $dot['ThoiGianBatDau'] ?? '';
-    $ketthuc = $dot['ThoiGianKetThuc'] ?? '';
-    
-    // Xác định trạng thái hiển thị
-    if ($trangthai == -1) {
-        $statusInfo = ['text' => 'Đã hủy', 'class' => 'danger', 'icon' => 'fa-ban'];
-    } elseif ($trangthai == 0) {
-        $statusInfo = ['text' => 'Đã kết thúc', 'class' => 'default', 'icon' => 'fa-check-circle'];
-    } elseif ($trangthai == 3) {
-        $statusInfo = ['text' => 'Tìm công ty & Xin giấy', 'class' => 'warning', 'icon' => 'fa-search'];
-    } elseif ($trangthai == 4) {
-        $statusInfo = ['text' => 'Đang thực tập', 'class' => 'success', 'icon' => 'fa-briefcase'];
-    } elseif ($trangthai == 5) {
-        $statusInfo = ['text' => 'Kết thúc - Chấm điểm', 'class' => 'info', 'icon' => 'fa-check-circle'];
-    } elseif ($batdau && $today < $batdau) {
-        $statusInfo = ['text' => 'Chuẩn bị', 'class' => 'warning', 'icon' => 'fa-clock-o'];
-    } elseif ($batdau && $ketthuc && $today >= $batdau && $today <= $ketthuc) {
-        $statusInfo = ['text' => 'Đang diễn ra', 'class' => 'success', 'icon' => 'fa-play-circle'];
-    } else {
-        $statusInfo = ['text' => 'Đã kết thúc', 'class' => 'default', 'icon' => 'fa-check-circle'];
-    }
-    
-    // Chuẩn hóa dữ liệu
-    $dot['TENDOT'] = $dot['TenDot'];
-    $dot['THOIGIANBATDAU'] = $batdau;
-    $dot['THOIGIANKETTHUC'] = $ketthuc;
-    $dot['TRANGTHAI'] = $trangthai;
-    $dot['STATUS_INFO'] = $statusInfo;
-    
-    $allDots[] = $dot;
-    
-    // Ưu tiên đợt đang hoạt động (trạng thái 3, 4, 5)
-    if (in_array($trangthai, [3, 4, 5]) && !$activeDot) {
-        $activeDot = $dot;
-    }
-}
-
-// Nếu không có đợt hoạt động, lấy đợt gần nhất
-if (!$activeDot && !empty($allDots)) {
-    $activeDot = $allDots[0];
-}
-
 // Cập nhật trạng thái kết thúc
 $updateStmt = $conn->prepare("UPDATE DotThucTap 
     SET TrangThai = 0 
@@ -113,14 +13,125 @@ $updateStmt->execute(['today' => $today]);
 // Cập nhật trạng thái đã bắt đầu
 $updateStmt2 = $conn->prepare("UPDATE DotThucTap 
     SET TrangThai = 2 
-    WHERE ThoiGianBatDau <= :today AND TrangThai != -1 AND TrangThai != 0");
+    WHERE ThoiGianBatDau <= :today AND TrangThai > 0");
 $updateStmt2->execute(['today' => $today]);
+
+$now = date('Y-m-d H:i:s');
+
+// Cập nhật trạng thái khảo sát: 2 = Đã hết hạn
+$updateKhaoSatStmt = $conn->prepare("UPDATE KhaoSat 
+    SET TrangThai = 2 
+    WHERE ThoiHan <= :now AND TrangThai != 2 AND TrangThai != 0");
+$updateKhaoSatStmt->execute(['now' => $now]);
+
+// Lấy danh sách ID đợt mà giáo viên này hướng dẫn sinh viên
+// 1. Lấy danh sách đợt theo giáo viên hướng dẫn
+$stmt2 = $conn->prepare("
+    SELECT DISTINCT dt.ID, dt.TenDot
+    FROM dot_giaovien dg
+    JOIN dotthuctap dt ON dg.ID_Dot = dt.ID
+    WHERE dg.ID_GVHD = ?
+    ORDER BY dt.ID DESC
+");
+
+$stmt2->execute([$idTaiKhoan]);
+$dsDot = $stmt2->fetchAll(PDO::FETCH_ASSOC);
+
+// Tách mảng ID từ $dsDot để sử dụng trong IN (...)
+$dsDotIDs = array_column($dsDot, 'ID');  // [1, 2, 3, ...]
+
+// 2. Lấy thông báo thuộc các đợt này
+$thongbaos = [];
+if (!empty($dsDotIDs)) {
+  $placeholders = implode(',', array_fill(0, count($dsDotIDs), '?'));
+  $stmt = $conn->prepare("
+        SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.NGAYDANG, tb.ID_Dot, dt.TenDot
+        FROM THONGBAO tb
+        LEFT JOIN DotThucTap dt ON tb.ID_Dot = dt.ID
+        WHERE tb.ID_Dot IN ($placeholders) AND tb.TRANGTHAI = 1
+        ORDER BY tb.NGAYDANG DESC
+        LIMIT 50
+    ");
+  $stmt->execute($dsDotIDs);
+  $thongbaos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// 3. Lấy thông tin chi tiết các đợt mà giáo viên hướng dẫn
+$currentDots = [];
+if (!empty($dsDotIDs)) {
+  $placeholders = implode(',', array_fill(0, count($dsDotIDs), '?'));
+  $stmt = $conn->prepare("
+        SELECT dt.ID, dt.TenDot, dt.ThoiGianBatDau, dt.ThoiGianKetThuc, dt.TrangThai, 
+        COUNT(sv.ID_TaiKhoan) as SoLuongSV
+        FROM DotThucTap dt
+        LEFT JOIN SinhVien sv ON dt.ID = sv.ID_Dot AND sv.ID_GVHD = ?
+        WHERE dt.ID IN ($placeholders)
+        GROUP BY dt.ID, dt.TenDot, dt.ThoiGianBatDau, dt.ThoiGianKetThuc, dt.TrangThai
+        ORDER BY dt.ThoiGianBatDau DESC
+    ");
+
+  // Ghép $idTaiKhoan + mảng ID
+  $params = array_merge([$idTaiKhoan], $dsDotIDs);
+  $stmt->execute($params);
+  $currentDots = $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+
+// Tìm đợt đang hoạt động (ưu tiên trạng thái 3, 4, 5)
+$activeDot = null;
+$allDots = [];
+
+foreach ($currentDots as $dot) {
+  $trangthai = $dot['TrangThai'] ?? 0;
+  $batdau = $dot['ThoiGianBatDau'] ?? '';
+  $ketthuc = $dot['ThoiGianKetThuc'] ?? '';
+
+  // Xác định trạng thái hiển thị
+  if ($trangthai == -1) {
+    $statusInfo = ['text' => 'Đã hủy', 'class' => 'danger', 'icon' => 'fa-ban'];
+  } elseif ($trangthai == 0) {
+    $statusInfo = ['text' => 'Đã kết thúc', 'class' => 'default', 'icon' => 'fa-check-circle'];
+  } elseif ($trangthai == 3) {
+    $statusInfo = ['text' => 'Tìm công ty & Xin giấy', 'class' => 'warning', 'icon' => 'fa-search'];
+  } elseif ($trangthai == 4) {
+    $statusInfo = ['text' => 'Đang thực tập', 'class' => 'success', 'icon' => 'fa-briefcase'];
+  } elseif ($trangthai == 5) {
+    $statusInfo = ['text' => 'Kết thúc - Chấm điểm', 'class' => 'info', 'icon' => 'fa-check-circle'];
+  } elseif ($batdau && $today < $batdau) {
+    $statusInfo = ['text' => 'Chuẩn bị', 'class' => 'warning', 'icon' => 'fa-clock-o'];
+  } elseif ($batdau && $ketthuc && $today >= $batdau && $today <= $ketthuc) {
+    $statusInfo = ['text' => 'Đang diễn ra', 'class' => 'success', 'icon' => 'fa-play-circle'];
+  } else {
+    $statusInfo = ['text' => 'Đã kết thúc', 'class' => 'default', 'icon' => 'fa-check-circle'];
+  }
+
+  // Chuẩn hóa dữ liệu
+  $dot['TENDOT'] = $dot['TenDot'];
+  $dot['THOIGIANBATDAU'] = $batdau;
+  $dot['THOIGIANKETTHUC'] = $ketthuc;
+  $dot['TRANGTHAI'] = $trangthai;
+  $dot['STATUS_INFO'] = $statusInfo;
+
+  $allDots[] = $dot;
+
+  // Ưu tiên đợt đang hoạt động (trạng thái 3, 4, 5)
+  if (in_array($trangthai, [3, 4, 5]) && !$activeDot) {
+    $activeDot = $dot;
+  }
+}
+
+// Nếu không có đợt hoạt động, lấy đợt gần nhất
+if (!$activeDot && !empty($allDots)) {
+  $activeDot = $allDots[0];
+}
+
+
 
 // Xác định trạng thái và màu sắc hiển thị cho đợt chính
 $statusInfo = ['text' => 'Chưa có đợt thực tập', 'class' => 'default', 'icon' => 'fa-info-circle'];
 $currentDot = $activeDot; // Sử dụng activeDot làm currentDot để tương thích
 if ($activeDot) {
-    $statusInfo = $activeDot['STATUS_INFO'];
+  $statusInfo = $activeDot['STATUS_INFO'];
 }
 ?>
 <!DOCTYPE html>
@@ -150,156 +161,159 @@ if ($activeDot) {
             </h1>
           </div>
         </div>
-        
-        <?php if (!empty($allDots)): ?>
-        <!-- Tab Navigation -->
-        <div class="row">
-          <div class="col-lg-12">
-            <ul class="nav nav-tabs internship-tabs" role="tablist">
-              <?php foreach ($allDots as $index => $dot): ?>
-              <li role="presentation" class="<?= $index === 0 ? 'active' : '' ?>">
-                <a href="#dot-<?= $dot['ID'] ?>" aria-controls="dot-<?= $dot['ID'] ?>" role="tab" data-toggle="tab">
-                  <i class="fa <?= $dot['STATUS_INFO']['icon'] ?>"></i>
-                  <?= htmlspecialchars($dot['TENDOT']) ?>
-                  <span class="tab-badge badge-<?= $dot['STATUS_INFO']['class'] ?>"><?= $dot['STATUS_INFO']['text'] ?></span>
-                </a>
-              </li>
-              <?php endforeach; ?>
-            </ul>
-          </div>
-        </div>
 
-        <!-- Tab Content -->
-        <div class="tab-content internship-tab-content">
-          <?php foreach ($allDots as $index => $dot): ?>
-          <div role="tabpanel" class="tab-pane <?= $index === 0 ? 'active' : '' ?>" id="dot-<?= $dot['ID'] ?>">
-            <!-- Thông tin tóm tắt đợt -->
-            <div class="row">
-              <div class="col-lg-12">
-                <div class="alert alert-<?= $dot['STATUS_INFO']['class'] ?> dot-summary">
-                  <div class="row">
-                    <div class="col-sm-8">
-                      <h4><i class="fa <?= $dot['STATUS_INFO']['icon'] ?>"></i> <?= htmlspecialchars($dot['TENDOT']) ?></h4>
-                      <p class="period-info">
-                        <i class="fa fa-calendar"></i> 
-                        <?= date('d/m/Y', strtotime($dot['THOIGIANBATDAU'])) ?> - 
-                        <?= date('d/m/Y', strtotime($dot['THOIGIANKETTHUC'])) ?>
-                      </p>
-                    </div>
-                    <div class="col-sm-4 text-right">
-                      <div class="status-stats">
-                        <i class="fa fa-users"></i> <?= $dot['SoLuongSV'] ?> sinh viên
-                      </div>
-                      <div class="tab-actions">
-                        <a href="pages/giaovien/quanlygiaygioithieu?dot=<?= $dot['ID'] ?>" class="btn btn-sm btn-primary">
-                          <i class="fa fa-file-text"></i> Giấy GT
-                        </a>
-                        <a href="pages/giaovien/xembaocaosinhvien?dot=<?= $dot['ID'] ?>" class="btn btn-sm btn-success">
-                          <i class="fa fa-briefcase"></i> Báo cáo
-                        </a>
-                        <a href="pages/giaovien/chamdiem?dot=<?= $dot['ID'] ?>" class="btn btn-sm btn-warning">
-                          <i class="fa fa-check-circle"></i> Chấm điểm
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <!-- Quy trình 4 panel cho đợt này -->
-            <div class="row process-panels">
-              <div class="col-md-3 col-sm-6">
-                <div class="process-panel panel-step-1 <?= ($dot['TRANGTHAI'] == 3) ? 'active' : '' ?>">
-                  <div class="panel-icon">
-                    <i class="fa fa-search"></i>
-                  </div>
-                  <div class="panel-content">
-                    <h4>Tìm công ty thực tập</h4>
-                    <p>Hướng dẫn sinh viên tìm kiếm và liên hệ công ty</p>
-                    <div class="panel-badge">
-                      <?php if ($dot['TRANGTHAI'] == 3): ?>
-                        <span class="badge badge-success">ĐANG HOẠT ĐỘNG</span>
-                      <?php else: ?>
-                        <span class="badge badge-info">Hỗ trợ</span>
-                      <?php endif; ?>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <div class="col-md-3 col-sm-6">
-                <div class="process-panel panel-step-2 <?= ($dot['TRANGTHAI'] == 3) ? 'active' : '' ?>">
-                  <div class="panel-icon">
-                    <i class="fa fa-file-text"></i>
-                  </div>
-                  <div class="panel-content">
-                    <h4>Xin giấy giới thiệu</h4>
-                    <p>Phê duyệt và quản lý giấy giới thiệu thực tập</p>
-                    <div class="panel-badge">
-                      <?php if ($dot['TRANGTHAI'] == 3): ?>
-                        <span class="badge badge-success">ĐANG HOẠT ĐỘNG</span>
-                      <?php else: ?>
-                        <span class="badge badge-default">Chờ kích hoạt</span>
-                      <?php endif; ?>
-                    </div>
-                  </div>
-                  <a href="pages/giaovien/quanlygiaygioithieu?dot=<?= $dot['ID'] ?>" class="panel-link"></a>
-                </div>
-              </div>
-              
-              <div class="col-md-3 col-sm-6">
-                <div class="process-panel panel-step-3 <?= ($dot['TRANGTHAI'] == 4) ? 'active' : '' ?>">
-                  <div class="panel-icon">
-                    <i class="fa fa-briefcase"></i>
-                  </div>
-                  <div class="panel-content">
-                    <h4>Thực tập báo cáo tuần</h4>
-                    <p>Theo dõi báo cáo tuần và tiến độ thực tập</p>
-                    <div class="panel-badge">
-                      <?php if ($dot['TRANGTHAI'] == 4): ?>
-                        <span class="badge badge-success">ĐANG HOẠT ĐỘNG</span>
-                      <?php else: ?>
-                        <span class="badge badge-default">Chờ kích hoạt</span>
-                      <?php endif; ?>
-                    </div>
-                  </div>
-                  <a href="pages/giaovien/xembaocaosinhvien?dot=<?= $dot['ID'] ?>" class="panel-link"></a>
-                </div>
-              </div>
-              
-              <div class="col-md-3 col-sm-6">
-                <div class="process-panel panel-step-4 <?= ($dot['TRANGTHAI'] == 5) ? 'active' : '' ?>">
-                  <div class="panel-icon">
-                    <i class="fa fa-check-circle"></i>
-                  </div>
-                  <div class="panel-content">
-                    <h4>Kết thúc và nộp báo cáo</h4>
-                    <p>Chấm điểm và đánh giá báo cáo kết thúc</p>
-                    <div class="panel-badge">
-                      <?php if ($dot['TRANGTHAI'] == 5): ?>
-                        <span class="badge badge-success">ĐANG HOẠT ĐỘNG</span>
-                      <?php else: ?>
-                        <span class="badge badge-warning">Cuối kỳ</span>
-                      <?php endif; ?>
-                    </div>
-                  </div>
-                  <a href="pages/giaovien/chamdiem?dot=<?= $dot['ID'] ?>" class="panel-link"></a>
-                </div>
-              </div>
+        <?php if (!empty($allDots)): ?>
+          <!-- Tab Navigation -->
+          <div class="row">
+            <div class="col-lg-12">
+              <ul class="nav nav-tabs internship-tabs" role="tablist">
+                <?php foreach ($allDots as $index => $dot): ?>
+                  <li role="presentation" class="<?= $index === 0 ? 'active' : '' ?>">
+                    <a href="#dot-<?= $dot['ID'] ?>" aria-controls="dot-<?= $dot['ID'] ?>" role="tab" data-toggle="tab">
+                      <i class="fa <?= $dot['STATUS_INFO']['icon'] ?>"></i>
+                      <?= htmlspecialchars($dot['TENDOT']) ?>
+                      <span
+                        class="tab-badge badge-<?= $dot['STATUS_INFO']['class'] ?>"><?= $dot['STATUS_INFO']['text'] ?></span>
+                    </a>
+                  </li>
+                <?php endforeach; ?>
+              </ul>
             </div>
           </div>
-          <?php endforeach; ?>
-        </div>
+
+          <!-- Tab Content -->
+          <div class="tab-content internship-tab-content">
+            <?php foreach ($allDots as $index => $dot): ?>
+              <div role="tabpanel" class="tab-pane <?= $index === 0 ? 'active' : '' ?>" id="dot-<?= $dot['ID'] ?>">
+                <!-- Thông tin tóm tắt đợt -->
+                <div class="row">
+                  <div class="col-lg-12">
+                    <div class="alert alert-<?= $dot['STATUS_INFO']['class'] ?> dot-summary">
+                      <div class="row">
+                        <div class="col-sm-8">
+                          <h4><i class="fa <?= $dot['STATUS_INFO']['icon'] ?>"></i> <?= htmlspecialchars($dot['TENDOT']) ?>
+                          </h4>
+                          <p class="period-info">
+                            <i class="fa fa-calendar"></i>
+                            <?= date('d/m/Y', strtotime($dot['THOIGIANBATDAU'])) ?> -
+                            <?= date('d/m/Y', strtotime($dot['THOIGIANKETTHUC'])) ?>
+                          </p>
+                        </div>
+                        <div class="col-sm-4 text-right">
+                          <div class="status-stats">
+                            <i class="fa fa-users"></i> <?= $dot['SoLuongSV'] ?> sinh viên
+                          </div>
+                          <div class="tab-actions">
+                            <a href="pages/giaovien/quanlygiaygioithieu?dot=<?= $dot['ID'] ?>"
+                              class="btn btn-sm btn-primary">
+                              <i class="fa fa-file-text"></i> Giấy GT
+                            </a>
+                            <a href="pages/giaovien/xembaocaosinhvien?dot=<?= $dot['ID'] ?>" class="btn btn-sm btn-success">
+                              <i class="fa fa-briefcase"></i> Báo cáo
+                            </a>
+                            <a href="pages/giaovien/chamdiem?dot=<?= $dot['ID'] ?>" class="btn btn-sm btn-warning">
+                              <i class="fa fa-check-circle"></i> Chấm điểm
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Quy trình 4 panel cho đợt này -->
+                <div class="row process-panels">
+                  <div class="col-md-3 col-sm-6">
+                    <div class="process-panel panel-step-1 <?= ($dot['TRANGTHAI'] == 3) ? 'active' : '' ?>">
+                      <div class="panel-icon">
+                        <i class="fa fa-search"></i>
+                      </div>
+                      <div class="panel-content">
+                        <h4>Tìm công ty thực tập</h4>
+                        <p>Hướng dẫn sinh viên tìm kiếm và liên hệ công ty</p>
+                        <div class="panel-badge">
+                          <?php if ($dot['TRANGTHAI'] == 3): ?>
+                            <span class="badge badge-success">ĐANG HOẠT ĐỘNG</span>
+                          <?php else: ?>
+                            <span class="badge badge-info">Hỗ trợ</span>
+                          <?php endif; ?>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="col-md-3 col-sm-6">
+                    <div class="process-panel panel-step-2 <?= ($dot['TRANGTHAI'] == 3) ? 'active' : '' ?>">
+                      <div class="panel-icon">
+                        <i class="fa fa-file-text"></i>
+                      </div>
+                      <div class="panel-content">
+                        <h4>Xin giấy giới thiệu</h4>
+                        <p>Phê duyệt và quản lý giấy giới thiệu thực tập</p>
+                        <div class="panel-badge">
+                          <?php if ($dot['TRANGTHAI'] == 3): ?>
+                            <span class="badge badge-success">ĐANG HOẠT ĐỘNG</span>
+                          <?php else: ?>
+                            <span class="badge badge-default">Chờ kích hoạt</span>
+                          <?php endif; ?>
+                        </div>
+                      </div>
+                      <a href="pages/giaovien/quanlygiaygioithieu?dot=<?= $dot['ID'] ?>" class="panel-link"></a>
+                    </div>
+                  </div>
+
+                  <div class="col-md-3 col-sm-6">
+                    <div class="process-panel panel-step-3 <?= ($dot['TRANGTHAI'] == 4) ? 'active' : '' ?>">
+                      <div class="panel-icon">
+                        <i class="fa fa-briefcase"></i>
+                      </div>
+                      <div class="panel-content">
+                        <h4>Thực tập báo cáo tuần</h4>
+                        <p>Theo dõi báo cáo tuần và tiến độ thực tập</p>
+                        <div class="panel-badge">
+                          <?php if ($dot['TRANGTHAI'] == 4): ?>
+                            <span class="badge badge-success">ĐANG HOẠT ĐỘNG</span>
+                          <?php else: ?>
+                            <span class="badge badge-default">Chờ kích hoạt</span>
+                          <?php endif; ?>
+                        </div>
+                      </div>
+                      <a href="pages/giaovien/xembaocaosinhvien?dot=<?= $dot['ID'] ?>" class="panel-link"></a>
+                    </div>
+                  </div>
+
+                  <div class="col-md-3 col-sm-6">
+                    <div class="process-panel panel-step-4 <?= ($dot['TRANGTHAI'] == 5) ? 'active' : '' ?>">
+                      <div class="panel-icon">
+                        <i class="fa fa-check-circle"></i>
+                      </div>
+                      <div class="panel-content">
+                        <h4>Kết thúc và nộp báo cáo</h4>
+                        <p>Chấm điểm và đánh giá báo cáo kết thúc</p>
+                        <div class="panel-badge">
+                          <?php if ($dot['TRANGTHAI'] == 5): ?>
+                            <span class="badge badge-success">ĐANG HOẠT ĐỘNG</span>
+                          <?php else: ?>
+                            <span class="badge badge-warning">Cuối kỳ</span>
+                          <?php endif; ?>
+                        </div>
+                      </div>
+                      <a href="pages/giaovien/chamdiem?dot=<?= $dot['ID'] ?>" class="panel-link"></a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            <?php endforeach; ?>
+          </div>
         <?php else: ?>
-        <div class="row">
-          <div class="col-lg-12">
-            <div class="alert alert-info">
-              <h4><i class="fa fa-info-circle"></i> Thông báo</h4>
-              <p>Hiện tại bạn chưa có đợt thực tập nào để hướng dẫn.</p>
+          <div class="row">
+            <div class="col-lg-12">
+              <div class="alert alert-info">
+                <h4><i class="fa fa-info-circle"></i> Thông báo</h4>
+                <p>Hiện tại bạn chưa có đợt thực tập nào để hướng dẫn.</p>
+              </div>
             </div>
           </div>
-        </div>
         <?php endif; ?>
 
         <div class="row">
@@ -309,12 +323,12 @@ if ($activeDot) {
             </h2>
           </div>
         </div>
-        
+
         <div class="container-fluid">
           <div id="notification-list" class="notification-container">
             <!-- Thông báo sẽ được load bằng JavaScript -->
           </div>
-          
+
           <div class="text-center pagination-container" style="margin-top: 20px;">
             <button id="prevBtn" class="btn btn-default btn-nav">
               <i class="fa fa-chevron-left"></i> Trước
@@ -379,16 +393,15 @@ if ($activeDot) {
         } else {
           list.forEach(tb => {
             const html = `
-              <div class="notification-card">
-                <div class="row">
-                  <div class="col-sm-2 col-xs-3 notification-image-container">
-                    <a href="pages/giaovien/chitietthongbao.php?id=${tb.ID}">
+                <div class="notification-card row"> 
+                  <div class="notification-image-container col-sm-2 col-xs-3">
+                    <a href="#" class="thongbao-link" data-id="${tb.ID}">
                       <img src="/datn/uploads/Images/ThongBao.jpg" alt="${tb.TIEUDE}" class="notification-image">
                     </a>
                   </div>
-                  <div class="col-sm-10 col-xs-9">
-                    <div class="notification-content">
-                      <a href="pages/giaovien/chitietthongbao.php?id=${tb.ID}" class="notification-title">
+                  <div class="notification-content col-sm-10 col-xs-9">
+                    <div>
+                      <a href="#" class="thongbao-link notification-title" data-id="${tb.ID}">
                         ${tb.TIEUDE}
                       </a>
                       <div class="notification-meta">
@@ -400,20 +413,20 @@ if ($activeDot) {
                           <i class="fa fa-calendar"></i> ${new Date(tb.NGAYDANG).toLocaleDateString('vi-VN')}
                         </span>
                         ${tb.TenDot ? `
-                          <span class="meta-separator">|</span>
-                          <span class="meta-item">
-                            <i class="fa fa-tag"></i> ${tb.TenDot}
-                          </span>
+                        <span class="meta-separator">|</span>
+                        <span class="meta-item">
+                          <i class="fa fa-tag"></i> ${tb.TenDot}
+                        </span>
                         ` : ''}
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
+
             `;
             container.insertAdjacentHTML('beforeend', html);
           });
-          
+
           // Cập nhật thông tin phân trang
           const totalPages = Math.ceil(thongbaos.length / pageSize);
           pageInfo.textContent = `Trang ${currentPage + 1} / ${totalPages}`;
@@ -453,7 +466,22 @@ if ($activeDot) {
     });
 
     renderNotifications();
-    
+    document.addEventListener('click', function (e) {
+      // Tìm phần tử cha có class .thongbao-link nếu click vào ảnh bên trong
+      let link = e.target.closest('.thongbao-link');
+      if (link) {
+        e.preventDefault();
+        const id = link.getAttribute('data-id');
+        fetch('pages/giaovien/ajax_danhdau_thongbao.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'idThongBao=' + encodeURIComponent(id)
+        }).then(() => {
+          window.location.href = 'pages/giaovien/chitietthongbao.php?id=' + id;
+        });
+      }
+    });
+
     // Initialize Bootstrap tabs
     $('.internship-tabs a').click(function (e) {
       e.preventDefault();
@@ -461,6 +489,7 @@ if ($activeDot) {
     });
   </script>
 </body>
+
 </html>
 <style>
   /* Status Alert */
@@ -468,31 +497,31 @@ if ($activeDot) {
     border-left: 4px solid #337ab7;
     border-radius: 8px;
     margin-bottom: 25px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
-  
+
   .status-alert.alert-success {
     border-left-color: #5cb85c;
   }
-  
+
   .status-alert.alert-warning {
     border-left-color: #f0ad4e;
   }
-  
+
   .status-alert.alert-danger {
     border-left-color: #d9534f;
   }
-  
+
   .status-text {
     margin-bottom: 0;
     font-size: 14px;
   }
-  
+
   .period-info {
     margin-left: 10px;
     color: #666;
   }
-  
+
   .status-stats {
     font-size: 16px;
     font-weight: bold;
@@ -506,11 +535,11 @@ if ($activeDot) {
     margin-bottom: 0;
   }
 
-  .internship-tabs > li {
+  .internship-tabs>li {
     margin-bottom: -2px;
   }
 
-  .internship-tabs > li > a {
+  .internship-tabs>li>a {
     border: 1px solid transparent;
     border-radius: 4px 4px 0 0;
     color: #666;
@@ -520,15 +549,15 @@ if ($activeDot) {
     transition: all 0.3s ease;
   }
 
-  .internship-tabs > li > a:hover {
+  .internship-tabs>li>a:hover {
     border-color: #e9ecef #e9ecef #337ab7;
     background-color: #f8f9fa;
     color: #337ab7;
   }
 
-  .internship-tabs > li.active > a,
-  .internship-tabs > li.active > a:hover,
-  .internship-tabs > li.active > a:focus {
+  .internship-tabs>li.active>a,
+  .internship-tabs>li.active>a:hover,
+  .internship-tabs>li.active>a:focus {
     color: #337ab7;
     background-color: #fff;
     border: 1px solid #337ab7;
@@ -577,7 +606,7 @@ if ($activeDot) {
     border-radius: 0 0 4px 4px;
     padding: 20px;
     margin-bottom: 30px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
 
   .internship-tab-content .tab-pane {
@@ -663,12 +692,12 @@ if ($activeDot) {
     position: relative;
     transition: all 0.3s ease;
     min-height: 200px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
 
   .process-panel:hover {
     transform: translateY(-5px);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
   }
 
   .process-panel.active {
@@ -701,7 +730,7 @@ if ($activeDot) {
   /* Dot Panel - New styles for individual internship periods */
   .dot-panel {
     margin-bottom: 20px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     border-radius: 8px;
     overflow: hidden;
   }
@@ -806,7 +835,7 @@ if ($activeDot) {
   .dot-panel.panel-default .panel-heading {
     background: #f8f9fa;
     color: #6c757d;
-  
+
     margin-bottom: 10px;
     font-weight: 600;
   }
@@ -866,12 +895,12 @@ if ($activeDot) {
     padding: 20px;
     margin-bottom: 15px;
     transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
 
   .notification-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
 
   .notification-image-container {
@@ -992,24 +1021,24 @@ if ($activeDot) {
       min-height: 160px;
       margin-bottom: 15px;
     }
-    
+
     .process-panel .panel-icon {
       font-size: 36px;
     }
-    
+
     .notification-image {
       width: 60px;
       height: 60px;
     }
-    
+
     .notification-content {
       padding-left: 10px;
     }
-    
+
     .notification-title {
       font-size: 16px;
     }
-    
+
     .status-stats {
       text-align: center;
       margin-top: 15px;
@@ -1020,16 +1049,16 @@ if ($activeDot) {
     .process-panel {
       min-height: 140px;
     }
-    
+
     .notification-card {
       padding: 15px;
     }
-    
+
     .meta-item {
       display: block;
       margin-bottom: 5px;
     }
-    
+
     .meta-separator {
       display: none;
     }
@@ -1054,75 +1083,75 @@ if ($activeDot) {
     .container-fluid {
       margin-top: 80px !important;
     }
-    
-    .internship-tabs > li {
+
+    .internship-tabs>li {
       width: 100%;
       margin-bottom: 2px;
     }
-    
-    .internship-tabs > li > a {
+
+    .internship-tabs>li>a {
       display: block;
       text-align: center;
       padding: 8px 10px;
       font-size: 14px;
     }
-    
+
     .internship-tab-content {
       padding: 15px;
     }
-    
+
     .dot-summary {
       margin-bottom: 20px;
     }
-    
+
     .dot-summary h4 {
       font-size: 16px;
     }
-    
+
     .dot-summary .status-stats {
       font-size: 14px;
       text-align: center;
       margin-top: 10px;
     }
-    
+
     .tab-actions {
       text-align: center;
     }
-    
+
     .tab-actions .btn {
       display: block;
       margin: 5px 0;
       width: 100%;
       font-size: 12px;
     }
-    
+
     .dot-panel {
       margin-bottom: 15px;
     }
-    
+
     .dot-panel .panel-heading {
       padding: 10px;
     }
-    
+
     .dot-panel .panel-body {
       padding: 10px;
     }
-    
+
     .mini-process-row {
       flex-wrap: wrap;
     }
-    
+
     .mini-process-step {
       min-width: 50%;
       margin-bottom: 10px;
     }
-    
+
     .panel-actions .btn {
       display: block;
       margin: 5px 0;
       width: 100%;
     }
-    
+
     .notification-content {
       padding-left: 10px;
     }
@@ -1132,37 +1161,37 @@ if ($activeDot) {
     .container-fluid {
       margin-top: 100px !important;
     }
-    
-    .internship-tabs > li > a {
+
+    .internship-tabs>li>a {
       font-size: 12px;
       padding: 6px 8px;
     }
-    
+
     .tab-badge {
       display: block;
       margin: 5px 0 0 0;
     }
-    
+
     .internship-tab-content {
       padding: 10px;
     }
-    
+
     .dot-summary h4 {
       font-size: 14px;
     }
-    
+
     .dot-summary .status-stats {
       font-size: 12px;
     }
-    
+
     .mini-process-step {
       min-width: 100%;
     }
-    
+
     .dot-panel .panel-heading h4 {
       font-size: 14px;
     }
-    
+
     .status-stats {
       font-size: 12px;
     }

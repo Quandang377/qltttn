@@ -1,8 +1,8 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
+$idTaiKhoan = $_SESSION['user']['ID_TaiKhoan'] ?? null;
 
-$idTaiKhoan = $_SESSION['user_id'];
 $role = $_SESSION['user_role'];
 ($role == "Cán bộ Khoa/Bộ môn") ?
     $stmt = $conn->prepare("SELECT Ten FROM CanBoKhoa WHERE ID_TaiKhoan = ?") :
@@ -12,19 +12,20 @@ $stmt->execute([$idTaiKhoan]);
 $hoTen = $stmt->fetchColumn();
 function getAllInternships($conn)
 {
+$idTaiKhoan = $_SESSION['user']['ID_TaiKhoan'] ?? null;
     $stmt = $conn->prepare("
-        SELECT 
-            d.ID, d.TenDot, d.Nam, d.BacDaoTao, d.NguoiQuanLy,
-            COALESCE(cb.Ten, ad.Ten) AS TenNguoiQuanLy,
-            d.ThoiGianBatDau, d.ThoiGianKetThuc, d.NguoiMoDot, d.TrangThai
-        FROM DOTTHUCTAP d
-        LEFT JOIN CanBoKhoa cb ON d.NguoiQuanLy = cb.ID_TaiKhoan
-        LEFT JOIN Admin ad ON d.NguoiQuanLy = ad.ID_TaiKhoan
-        WHERE d.TrangThai != -1
-        ORDER BY d.ThoiGianBatDau DESC
-    ");
-    $stmt->execute();
-    return $stmt->fetchAll();
+    SELECT 
+        d.ID, d.TenDot, d.Nam, d.BacDaoTao, d.NguoiQuanLy,
+        COALESCE(cb.Ten, ad.Ten) AS TenNguoiQuanLy,
+        d.ThoiGianBatDau, d.ThoiGianKetThuc, d.NguoiMoDot, d.TrangThai
+    FROM DOTTHUCTAP d
+    LEFT JOIN CanBoKhoa cb ON d.NguoiQuanLy = cb.ID_TaiKhoan
+    LEFT JOIN Admin ad ON d.NguoiQuanLy = ad.ID_TaiKhoan
+    WHERE d.TrangThai != -1 AND d.NguoiQuanLy = ?
+    ORDER BY d.ThoiGianBatDau DESC
+");
+$stmt->execute([$idTaiKhoan]);
+return $stmt->fetchAll();
 }
 function countSimilar($conn, $tendot)
 {

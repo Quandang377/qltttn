@@ -36,7 +36,29 @@ $thongbao = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$thongbao) {
   die("Không tìm thấy thông báo.");
 }
+function renderMediaEmbed($content)
+{
+  return preg_replace_callback('/<oembed url="([^"]+)"><\/oembed>/', function ($matches) {
+    $url = $matches[1];
 
+    // Chuyển youtu.be hoặc youtube.com thành dạng embed
+    if (strpos($url, 'youtu') !== false) {
+      $videoId = null;
+      if (preg_match('/youtu\.be\/([^\?&]+)/', $url, $m)) {
+        $videoId = $m[1];
+      } elseif (preg_match('/v=([^\?&]+)/', $url, $m)) {
+        $videoId = $m[1];
+      }
+
+      if ($videoId) {
+        return '<iframe width="560" height="315" src="https://www.youtube.com/embed/' . $videoId . '" frameborder="0" allowfullscreen></iframe>';
+      }
+    }
+
+    // Nếu không phải YouTube, trả nguyên hoặc ẩn
+    return '';
+  }, $content);
+}
 // Lấy các thông báo khác cùng đợt
 $stmt_khac = $conn->prepare("SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.ID_TAIKHOAN, tb.NGAYDANG, tb.TRANGTHAI, tb.ID_Dot, dt.TenDot
     FROM THONGBAO tb
@@ -93,8 +115,26 @@ $thongbao_khac = $stmt_khac->fetchAll(PDO::FETCH_ASSOC);
           </div>
         </div>
         <div class="news-content mb-4">
-          <?= $thongbao['NOIDUNG'] ?>
+          <?= renderMediaEmbed($thongbao['NOIDUNG']) ?>
+
         </div>
+        <script>
+          document.querySelectorAll('oembed[url]').forEach(el => {
+            const url = el.getAttribute('url');
+            if (url.includes('youtu')) {
+              const match = url.match(/(?:youtu\.be\/|v=)([^&]+)/);
+              if (match) {
+                const iframe = document.createElement('iframe');
+                iframe.setAttribute('width', '560');
+                iframe.setAttribute('height', '315');
+                iframe.setAttribute('src', 'https://www.youtube.com/embed/' + match[1]);
+                iframe.setAttribute('frameborder', '0');
+                iframe.setAttribute('allowfullscreen', '');
+                el.replaceWith(iframe);
+              }
+            }
+          });
+        </script>
         <div class="row mt-5">
           <div class="col-lg-12">
             <h2 class="page-header">Thông báo khác</h2>

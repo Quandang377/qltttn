@@ -15,7 +15,7 @@ $stmt = $conn->prepare("
     LEFT JOIN CanBoKhoa cb ON cb.ID_TaiKhoan = tk.ID_TaiKhoan
     LEFT JOIN Admin ad ON ad.ID_TaiKhoan = tk.ID_TaiKhoan
     LEFT JOIN SinhVien sv ON sv.ID_TaiKhoan = tk.ID_TaiKhoan
-    WHERE ks.TrangThai = 1
+    WHERE ks.TrangThai >= 1
     AND (
         (
             ks.NguoiNhan IN ('Tất cả', ?)
@@ -206,14 +206,26 @@ if (
                                     <div class="survey-meta"><?= date("d/m/Y H:i", strtotime($ks['ThoiGianTao'])) ?></div>
                                 </div>
                                 <p><?= nl2br(htmlspecialchars($ks['MoTa'])) ?></p>
-                                <div class="survey-meta">Người gửi:
-                                    <strong><?= htmlspecialchars($ks['TenNguoiTao']) ?></strong></div>
-                                <button class="btn btn-sm btn-primary btn-respond" data-toggle="modal"
-                                    data-target="#modalPhanHoi<?= $ks['ID'] ?>">Phản hồi</button>
+                                <div class="survey-meta">
+                                    Người gửi: <strong><?= htmlspecialchars($ks['TenNguoiTao']) ?></strong>
+                                </div>
+                                <div class="survey-meta">
+                                    Thời hạn phản hồi: <strong><?= date("d/m/Y H:i", strtotime($ks['ThoiHan'])) ?></strong>
+                                </div>
+
+                                <?php if ($ks['TrangThai'] == 1): ?>
+                                    <button class="btn btn-sm btn-primary btn-respond" data-toggle="modal"
+                                        data-target="#modalPhanHoi<?= $ks['ID'] ?>">Phản hồi</button>
+                                <?php elseif ($ks['TrangThai'] == 2): ?>
+                                    <div class="alert alert-warning mt-2 mb-0 py-1 px-2" style="font-size: 14px;">
+                                        <i class="fa fa-clock-o"></i> Đã hết hạn phản hồi
+                                    </div>
+                                <?php endif; ?>
                             </div>
                         </div>
                     <?php endforeach; ?>
                 </div>
+
 
                 <!-- Modal phản hồi khảo sát -->
                 <?php foreach ($dsKhaoSat as $ks): ?>
