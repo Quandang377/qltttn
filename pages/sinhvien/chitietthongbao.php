@@ -9,33 +9,6 @@ if (!isset($_GET['id'])) {
 $id = intval($_GET['id']);
 
 $idTaiKhoan = $_SESSION['user']['ID_TaiKhoan'] ?? null;
-
-if($idTaiKhoan){
-$stmt = $conn->prepare("SELECT ID_Dot FROM SinhVien WHERE ID_TaiKhoan = ?");
-$stmt->execute([$idTaiKhoan]);
-$idDot = $stmt->fetchColumn();
-
-$idThongBao = $_POST['idThongBao'] ?? null;
-// ✅ Đánh dấu đã xem ngay khi truy cập chi tiết
-if ($idTaiKhoan && $id) {
-    $stmt = $conn->prepare("SELECT COUNT(*) FROM ThongBao_Xem WHERE ID_TaiKhoan = ? AND ID_ThongBao = ?");
-    $stmt->execute([$idTaiKhoan, $id]);
-    if ($stmt->fetchColumn() == 0) {
-        $stmt = $conn->prepare("INSERT INTO ThongBao_Xem (ID_TaiKhoan, ID_ThongBao) VALUES (?, ?)");
-        $stmt->execute([$idTaiKhoan, $id]);
-    }
-}
-// Lấy thông báo chi tiết (chỉ thuộc đợt của SV)
-$stmt = $conn->prepare("SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.ID_TAIKHOAN, tb.NGAYDANG, tb.TRANGTHAI, tb.ID_Dot, dt.TenDot
-    FROM THONGBAO tb
-    LEFT JOIN DotThucTap dt ON tb.ID_Dot = dt.ID
-    WHERE tb.ID = ? AND tb.ID_Dot = ?");
-$stmt->execute([$id, $idDot]);
-$thongbao = $stmt->fetch(PDO::FETCH_ASSOC);
-
-if (!$thongbao) {
-  die("Không tìm thấy thông báo.");
-}
 function renderMediaEmbed($content)
 {
   return preg_replace_callback('/<oembed url="([^"]+)"><\/oembed>/', function ($matches) {
@@ -59,6 +32,34 @@ function renderMediaEmbed($content)
     return '';
   }, $content);
 }
+if($idTaiKhoan){
+$stmt = $conn->prepare("SELECT ID_Dot FROM SinhVien WHERE ID_TaiKhoan = ?");
+$stmt->execute([$idTaiKhoan]);
+$idDot = $stmt->fetchColumn();
+
+$idThongBao = $_POST['idThongBao'] ?? null;
+
+// ✅ Đánh dấu đã xem ngay khi truy cập chi tiết
+if ($idTaiKhoan && $id) {
+    $stmt = $conn->prepare("SELECT COUNT(*) FROM ThongBao_Xem WHERE ID_TaiKhoan = ? AND ID_ThongBao = ?");
+    $stmt->execute([$idTaiKhoan, $id]);
+    if ($stmt->fetchColumn() == 0) {
+        $stmt = $conn->prepare("INSERT INTO ThongBao_Xem (ID_TaiKhoan, ID_ThongBao) VALUES (?, ?)");
+        $stmt->execute([$idTaiKhoan, $id]);
+    }
+}
+// Lấy thông báo chi tiết (chỉ thuộc đợt của SV)
+$stmt = $conn->prepare("SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.ID_TAIKHOAN, tb.NGAYDANG, tb.TRANGTHAI, tb.ID_Dot, dt.TenDot
+    FROM THONGBAO tb
+    LEFT JOIN DotThucTap dt ON tb.ID_Dot = dt.ID
+    WHERE tb.ID = ? AND tb.ID_Dot = ?");
+$stmt->execute([$id, $idDot]);
+$thongbao = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$thongbao) {
+  die("Không tìm thấy thông báo.");
+}
+
 // Lấy các thông báo khác cùng đợt
 $stmt_khac = $conn->prepare("SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.ID_TAIKHOAN, tb.NGAYDANG, tb.TRANGTHAI, tb.ID_Dot, dt.TenDot
     FROM THONGBAO tb
@@ -159,6 +160,7 @@ $thongbao_khac = $stmt_khac->fetchAll(PDO::FETCH_ASSOC);
 
 </html>
 <script>
+  const idTaiKhoan = <?= isset($idTaiKhoan) ? intval($idTaiKhoan) : 'null' ?>;
   const thongbao_khac = <?= json_encode($thongbao_khac) ?>;
   const pageSize = 5;
   let currentPage = 0;
@@ -176,29 +178,29 @@ $thongbao_khac = $stmt_khac->fetchAll(PDO::FETCH_ASSOC);
       container.innerHTML = '';
 
       list.forEach(tb => {
-  const html = `
-    <div class="row" style="margin-bottom: 15px; border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
-      <div class="col-md-2 text-center">
-        <a href="pages/sinhvien/chitietthongbao.php?id=${tb.ID}">
-          <img src="/datn/uploads/Images/ThongBao.jpg" alt="${tb.TIEUDE}" style="width: 100px; height: 70px; object-fit: cover;">
-        </a>
-      </div>
-      <div class="col-lg-10">
-        <p style="margin-bottom: 5px;">
-          <a href="#" class="thongbao-link" data-id="${tb.ID}" style="font-weight: bold; text-decoration: none;">
-            ${tb.TIEUDE}
-          </a>
-        </p>
-        <ul class="list-inline" style="color: #888; font-size: 13px; margin: 0;">
-          <li>Thông báo</li>
-          <li>|</li>
-          <li>${new Date(tb.NGAYDANG).toLocaleDateString('vi-VN')}</li>
-        </ul>
-      </div>
-    </div>
-  `;
-  container.insertAdjacentHTML('beforeend', html);
-});
+        const html = `
+          <div class="row" style="margin-bottom: 15px; border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
+            <div class="col-md-2 text-center">
+              <a href="#" class="thongbao-link" data-id="${tb.ID}">
+                <img src="/datn/uploads/Images/ThongBao.jpg" alt="${tb.TIEUDE}" style="width: 100px; height: 70px; object-fit: cover;">
+              </a>
+            </div>
+            <div class="col-lg-10">
+              <p style="margin-bottom: 5px;">
+                <a href="#" class="thongbao-link" data-id="${tb.ID}" style="font-weight: bold; text-decoration: none;">
+                  ${tb.TIEUDE}
+                </a>
+              </p>
+              <ul class="list-inline" style="color: #888; font-size: 13px; margin: 0;">
+                <li>Thông báo</li>
+                <li>|</li>
+                <li>${new Date(tb.NGAYDANG).toLocaleDateString('vi-VN')}</li>
+              </ul>
+            </div>
+          </div>
+        `;
+        container.insertAdjacentHTML('beforeend', html);
+      });
 
       document.getElementById('prevBtn').disabled = currentPage === 0;
       document.getElementById('nextBtn').disabled = end >= thongbao_khac.length;
@@ -226,20 +228,25 @@ $thongbao_khac = $stmt_khac->fetchAll(PDO::FETCH_ASSOC);
 
   renderNotifications();
   document.addEventListener('click', function (e) {
-  // Tìm phần tử cha có class .thongbao-link nếu click vào ảnh bên trong
   let link = e.target.closest('.thongbao-link');
   if (link) {
     e.preventDefault();
     const id = link.getAttribute('data-id');
-    fetch('pages/sinhvien/ajax_danhdau_thongbao.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: 'idThongBao=' + encodeURIComponent(id)
-    }).then(() => {
+
+    if (idTaiKhoan !== null) {
+      fetch('pages/sinhvien/ajax_danhdau_thongbao.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'idThongBao=' + encodeURIComponent(id)
+      }).then(() => {
+        window.location.href = 'pages/sinhvien/chitietthongbao.php?id=' + id;
+      });
+    } else {
       window.location.href = 'pages/sinhvien/chitietthongbao.php?id=' + id;
-    });
+    }
   }
 });
+
 </script>
 <style>
   .news-content p,
