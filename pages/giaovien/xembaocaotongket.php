@@ -712,57 +712,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['diem_baocao'], $_POST
         color: #0ea5e9;
         border-color: #0ea5e9;
     }
-        box-shadow: 0 4px 20px rgba(14, 165, 233, 0.1);
-    }
-    
-    .nav-pills .nav-link {
-        color: #64748b;
-        font-weight: 600;
-        border-radius: 12px;
-        margin-right: 12px;
-        margin-bottom: 8px;
-        padding: 14px 24px;
-        background: white;
-        border: 2px solid transparent;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
-        overflow: hidden;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        font-size: 13px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    }
-    
-    .nav-pills .nav-link::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(14, 165, 233, 0.1), transparent);
-        transition: left 0.6s ease;
-    }
-    
-    .nav-pills .nav-link:hover::before {
-        left: 100%;
-    }
-    
-    .nav-pills .nav-link.active {
-        background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
-        color: white;
-        border-color: #0ea5e9;
-        box-shadow: 0 6px 20px rgba(14, 165, 233, 0.4);
-        transform: translateY(-2px);
-    }
-    
-    .nav-pills .nav-link:hover:not(.active) {
-        background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
-        color: #0ea5e9;
-        border-color: #0ea5e9;
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(14, 165, 233, 0.2);
-    }
 
     /* === FORM STYLES === */
     .form-control {
