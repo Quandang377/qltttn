@@ -1,31 +1,51 @@
 <?php
+session_start();
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
+// Định nghĩa BASE_PATH để sử dụng trong form
+if (!function_exists('isLocalhost')) {
+    function isLocalhost() {
+        return in_array($_SERVER['HTTP_HOST'], ['localhost', '127.0.0.1', '::1']) || 
+               strpos($_SERVER['HTTP_HOST'], '.local') !== false;
+    }
+}
+
+if (isLocalhost()) {
+    define('BASE_PATH', '/datn');
+} else {
+    define('BASE_PATH', '/datn'); // Hoặc '' nếu đặt ở root hosting
+}
+
+$error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = $_POST['email'];
     $password = $_POST['password'];
 
-    $stmt = $conn->prepare("SELECT ID_TaiKhoan,TaiKhoan,MatKhau,VaiTro,TrangThai FROM TaiKhoan WHERE TaiKhoan = ? AND TrangThai = 1");
-    $stmt->execute([$username]);
-    $user = $stmt->fetch();
+    try {
+        $stmt = $conn->prepare("SELECT ID_TaiKhoan,TaiKhoan,MatKhau,VaiTro,TrangThai FROM taikhoan WHERE TaiKhoan = ? AND TrangThai = 1");
+        $stmt->execute([$username]);
+        $user = $stmt->fetch();
 
-    if ($user) {
-        $_SESSION['user'] = $user;
-        $_SESSION['user_id'] = $user['ID_TaiKhoan'];
-        $_SESSION['user_role'] = $user['VaiTro'];
-        $_SESSION['user_email'] = $user['TaiKhoan'];
-        if (!empty($_POST['remember'])) {
-            $token = bin2hex(random_bytes(32)); // tạo chuỗi ngẫu nhiên
-            setcookie('remember_token', $token, time() + (86400 * 30), "/"); // 30 ngày
+        if ($user && ($password === $user['MatKhau'] || password_verify($password, $user['MatKhau']))) {
+            $_SESSION['user'] = $user;
+            $_SESSION['user_id'] = $user['ID_TaiKhoan'];
+            $_SESSION['user_role'] = $user['VaiTro'];
+            $_SESSION['user_email'] = $user['TaiKhoan'];
+            if (!empty($_POST['remember'])) {
+                $token = bin2hex(random_bytes(32)); // tạo chuỗi ngẫu nhiên
+                setcookie('remember_token', $token, time() + (86400 * 30), "/"); // 30 ngày
 
-            // lưu vào DB
-            $stmt = $conn->prepare("UPDATE taikhoan SET remember_token = ? WHERE ID_TaiKhoan = ?");
-            $stmt->execute([$token, $thongTinNguoiDung['ID_TaiKhoan']]);
+                // lưu vào DB
+                $stmt = $conn->prepare("UPDATE taikhoan SET remember_token = ? WHERE ID_TaiKhoan = ?");
+                $stmt->execute([$token, $user['ID_TaiKhoan']]);
+            }
+            header("Location: " . BASE_PATH . "/");
+            exit;
+        } else {
+            $error = "Tài khoản hoặc mật khẩu không đúng hoặc đã bị khóa.";
         }
-        header("Location: " . BASE_PATH . "/");
-        exit;
-    } else {
-        $error = "Tài khoản hoặc mật khẩu không đúng hoặc đã bị khóa.";
+    } catch (Exception $e) {
+        $error = "Lỗi hệ thống: " . $e->getMessage();
     }
 }
 ?>
