@@ -1,5 +1,14 @@
 RewriteEngine On
+
+# Tự động phát hiện môi trường
+# Trên localhost: /datn/
+# Trên hosting: có thể là / hoặc /datn/
 RewriteBase /datn/
+
+# Bật hiển thị lỗi PHP (chỉ khi debug)
+php_flag display_errors on
+php_flag display_startup_errors on
+php_value error_reporting "E_ALL"
 
 # Cho phép truy cập trực tiếp đến các file tĩnh
 RewriteCond %{REQUEST_URI} \.(css|js|png|jpg|jpeg|gif|woff|woff2|ttf|svg|eot|pdf|txt|mp4)$ [NC]
@@ -9,5 +18,24 @@ RewriteRule ^ - [L]
 RewriteCond %{REQUEST_URI} ^/datn/download\.php$ [NC]
 RewriteRule ^ - [L]
 
+# Cho phép truy cập debug.php
+RewriteCond %{REQUEST_URI} ^/datn/debug\.php$ [NC]
+RewriteRule ^ - [L]
+
 # Mặc định: chuyển tất cả yêu cầu còn lại về index.php
 RewriteRule ^(.*)$ index.php [QSA,L]
+
+# Security headers
+Header always set X-Content-Type-Options nosniff
+
+# Prevent access to sensitive files
+<Files ~ "^\.">
+    Require all denied
+</Files>
+
+<Files ~ "\.log$">
+    Require all denied
+</Files>
+
+# Set default charset
+AddDefaultCharset UTF-8

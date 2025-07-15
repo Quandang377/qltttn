@@ -1,8 +1,28 @@
 <?php
-require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
+// Kiểm tra đường dẫn config
+$configPath = $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
+if (!file_exists($configPath)) {
+    die("Config file not found: " . $configPath);
+}
+
+require_once $configPath;
 
 date_default_timezone_set('Asia/Ho_Chi_Minh');
-define('BASE_PATH', '/datn');
+
+// Cấu hình BASE_PATH tự động
+if (!function_exists('isLocalhost')) {
+    function isLocalhost() {
+        return in_array($_SERVER['HTTP_HOST'], ['localhost', '127.0.0.1', '::1']) || 
+               strpos($_SERVER['HTTP_HOST'], '.local') !== false;
+    }
+}
+
+if (isLocalhost()) {
+    define('BASE_PATH', '/datn');
+} else {
+    // Trên hosting, có thể là root hoặc subfolder
+    define('BASE_PATH', '/datn'); // Hoặc '' nếu đặt ở root
+}
 
 $URL = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 session_start();

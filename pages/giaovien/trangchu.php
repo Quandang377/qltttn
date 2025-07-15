@@ -1,17 +1,18 @@
-<?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
-
+<?php 
+session_start();
+require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
 $idTaiKhoan = $_SESSION['user_id'] ?? null;
 $today = date('Y-m-d');
 // Cập nhật trạng thái kết thúc
-$updateStmt = $conn->prepare("UPDATE DotThucTap 
+$updateStmt = $conn->prepare("UPDATE dotthuctap 
     SET TrangThai = 0 
-    WHERE ThoiGianKetThuc <= :today AND TRANGTHAI != -1");
+    WHERE ThoiGianKetThuc <= :today AND TrangThai != -1");
 $updateStmt->execute(['today' => $today]);
 
 // Cập nhật trạng thái đã bắt đầu
-$updateStmt2 = $conn->prepare("UPDATE DotThucTap 
+$updateStmt2 = $conn->prepare("UPDATE dotthuctap 
     SET TrangThai = 2 
     WHERE ThoiGianBatDau <= :today AND TrangThai > 0");
 $updateStmt2->execute(['today' => $today]);
@@ -19,7 +20,7 @@ $updateStmt2->execute(['today' => $today]);
 $now = date('Y-m-d H:i:s');
 
 // Cập nhật trạng thái khảo sát: 2 = Đã hết hạn
-$updateKhaoSatStmt = $conn->prepare("UPDATE KhaoSat 
+$updateKhaoSatStmt = $conn->prepare("UPDATE khaosat 
     SET TrangThai = 2 
     WHERE ThoiHan <= :now AND TrangThai != 2 AND TrangThai != 0");
 $updateKhaoSatStmt->execute(['now' => $now]);
@@ -45,11 +46,11 @@ $thongbaos = [];
 if (!empty($dsDotIDs)) {
   $placeholders = implode(',', array_fill(0, count($dsDotIDs), '?'));
   $stmt = $conn->prepare("
-        SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.NGAYDANG, tb.ID_Dot, dt.TenDot
-        FROM THONGBAO tb
-        LEFT JOIN DotThucTap dt ON tb.ID_Dot = dt.ID
-        WHERE tb.ID_Dot IN ($placeholders) AND tb.TRANGTHAI = 1
-        ORDER BY tb.NGAYDANG DESC
+        SELECT tb.ID, tb.TieuDe, tb.NoiDung, tb.NgayDang, tb.ID_Dot, dt.TenDot
+        FROM thongbao tb
+        LEFT JOIN dotthuctap dt ON tb.ID_Dot = dt.ID
+        WHERE tb.ID_Dot IN ($placeholders) AND tb.TrangThai = 1
+        ORDER BY tb.NgayDang DESC
         LIMIT 50
     ");
   $stmt->execute($dsDotIDs);
@@ -63,8 +64,8 @@ if (!empty($dsDotIDs)) {
   $stmt = $conn->prepare("
         SELECT dt.ID, dt.TenDot, dt.ThoiGianBatDau, dt.ThoiGianKetThuc, dt.TrangThai, 
         COUNT(sv.ID_TaiKhoan) as SoLuongSV
-        FROM DotThucTap dt
-        LEFT JOIN SinhVien sv ON dt.ID = sv.ID_Dot AND sv.ID_GVHD = ?
+        FROM dotthuctap dt
+        LEFT JOIN sinhvien sv ON dt.ID = sv.ID_Dot AND sv.ID_GVHD = ?
         WHERE dt.ID IN ($placeholders)
         GROUP BY dt.ID, dt.TenDot, dt.ThoiGianBatDau, dt.ThoiGianKetThuc, dt.TrangThai
         ORDER BY dt.ThoiGianBatDau DESC
@@ -149,7 +150,7 @@ if ($activeDot) {
 <body>
   <div id="wrapper">
     <?php
-    require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_GiaoVien.php";
+    require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_Giaovien.php";
     ?>
     <div id="page-wrapper">
       <div class="container-fluid" style="margin-top: 60px;">
@@ -396,13 +397,13 @@ if ($activeDot) {
                 <div class="notification-card row"> 
                   <div class="notification-image-container col-sm-2 col-xs-3">
                     <a href="#" class="thongbao-link" data-id="${tb.ID}">
-                      <img src="/datn/uploads/Images/ThongBao.jpg" alt="${tb.TIEUDE}" class="notification-image">
+                      <img src="/datn/uploads/Images/ThongBao.jpg" alt="${tb.TieuDe}" class="notification-image">
                     </a>
                   </div>
                   <div class="notification-content col-sm-10 col-xs-9">
                     <div>
                       <a href="#" class="thongbao-link notification-title" data-id="${tb.ID}">
-                        ${tb.TIEUDE}
+                        ${tb.TieuDe}
                       </a>
                       <div class="notification-meta">
                         <span class="meta-item">
@@ -410,7 +411,7 @@ if ($activeDot) {
                         </span>
                         <span class="meta-separator">|</span>
                         <span class="meta-item">
-                          <i class="fa fa-calendar"></i> ${new Date(tb.NGAYDANG).toLocaleDateString('vi-VN')}
+                          <i class="fa fa-calendar"></i> ${new Date(tb.NgayDang).toLocaleDateString('vi-VN')}
                         </span>
                         ${tb.TenDot ? `
                         <span class="meta-separator">|</span>

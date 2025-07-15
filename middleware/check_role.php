@@ -1,6 +1,18 @@
 <?php
+// Cấu hình BASE_PATH tự động
+if (!function_exists('isLocalhost')) {
+    function isLocalhost() {
+        return in_array($_SERVER['HTTP_HOST'], ['localhost', '127.0.0.1', '::1']) || 
+               strpos($_SERVER['HTTP_HOST'], '.local') !== false;
+    }
+}
+
 if (!defined('BASE_PATH')) {
-    define('BASE_PATH', '/datn');
+    if (isLocalhost()) {
+        define('BASE_PATH', '/datn');
+    } else {
+        define('BASE_PATH', '/datn'); // Hoặc '' nếu đặt ở root
+    }
 }
 
 $uriClean = strtok($_SERVER['REQUEST_URI'], '?');

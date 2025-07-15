@@ -1,10 +1,8 @@
 <?php
 // Cấu hình tự động phát hiện môi trường
-if (!function_exists('isLocalhost')) {
-    function isLocalhost() {
-        return in_array($_SERVER['HTTP_HOST'], ['localhost', '127.0.0.1', '::1']) || 
-               strpos($_SERVER['HTTP_HOST'], '.local') !== false;
-    }
+function isLocalhost() {
+    return in_array($_SERVER['HTTP_HOST'], ['localhost', '127.0.0.1', '::1']) || 
+           strpos($_SERVER['HTTP_HOST'], '.local') !== false;
 }
 
 if (isLocalhost()) {
@@ -14,11 +12,11 @@ if (isLocalhost()) {
     $password = "";
     $dbname = "thuctapdb";
 } else {
-    // Cấu hình cho hosting - BẠN CẦN CẬP NHẬT THÔNG TIN NÀY
+    // Cấu hình cho hosting
     $servername = "localhost";
-    $username = "siektefuhosting_root"; // Thay bằng username database thực tế từ hosting
-    $password = "0933519887Lol@"; // Thay bằng password database thực tế từ hosting
-    $dbname = "siektefuhosting_thuctapdb"; // Thay bằng tên database thực tế từ hosting
+    $username = "tttn_caothang"; // Thay bằng username thực tế
+    $password = "your_password"; // Thay bằng password thực tế
+    $dbname = "tttn_caothang_db"; // Thay bằng tên database thực tế
 }
 
 try {

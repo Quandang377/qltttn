@@ -1,4 +1,5 @@
 <?php
+session_start();
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 
@@ -8,24 +9,25 @@ if (!$id_gvhd) die('Bạn chưa đăng nhập!');
 
 $errorMsg = '';
 
-// Xử lý đóng/mở nộp báo cáo tổng kết - AJAX (không reload trang)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['luu_trangthai_tongket'], $_POST['id_dot'])) {
+try {
+    // Xử lý đóng/mở nộp báo cáo tổng kết - AJAX (không reload trang)
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['luu_trangthai_tongket'], $_POST['id_dot'])) {
     $id_dot = (int)$_POST['id_dot'];
     $trangthai_tongket = isset($_POST['trangthai_tongket']) && $_POST['trangthai_tongket'] == '1' ? 1 : 0;
     
     try {
         // Kiểm tra xem đã có bản ghi nào chưa
-        $stmt = $conn->prepare("SELECT ID FROM Baocaotongket WHERE ID_TaiKhoan = ? AND ID_Dot = ?");
+        $stmt = $conn->prepare("SELECT ID FROM baocaotongket WHERE ID_TaiKhoan = ? AND ID_Dot = ?");
         $stmt->execute([$id_gvhd, $id_dot]);
         $existing_record = $stmt->fetch();
         
         if ($existing_record) {
             // Nếu đã có bản ghi thì chỉ update trường TrangThai
-            $stmt = $conn->prepare("UPDATE Baocaotongket SET TrangThai = ? WHERE ID_TaiKhoan = ? AND ID_Dot = ?");
+            $stmt = $conn->prepare("UPDATE baocaotongket SET TrangThai = ? WHERE ID_TaiKhoan = ? AND ID_Dot = ?");
             $result = $stmt->execute([$trangthai_tongket, $id_gvhd, $id_dot]);
         } else {
             // Nếu chưa có bản ghi thì insert mới
-            $stmt = $conn->prepare("INSERT INTO Baocaotongket (ID_TaiKhoan, ID_Dot, TrangThai) VALUES (?, ?, ?)");
+            $stmt = $conn->prepare("INSERT INTO baocaotongket (ID_TaiKhoan, ID_Dot, TrangThai) VALUES (?, ?, ?)");
             $result = $stmt->execute([$id_gvhd, $id_dot, $trangthai_tongket]);
         }
         
@@ -55,10 +57,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['luu_trangthai_tongket
     header("Location: " . $_SERVER['REQUEST_URI']);
     exit;
 }
+} catch (Exception $e) {
+    $errorMsg = 'Có lỗi trong quá trình xử lý: ' . $e->getMessage();
+}
 
 // Lấy trạng thái cho phép nộp báo cáo tổng kết cho từng đợt
 $trangthai_tongket_dot = [];
-$stmt = $conn->prepare("SELECT ID_Dot, TrangThai FROM Baocaotongket WHERE ID_TaiKhoan = ?");
+$stmt = $conn->prepare("SELECT ID_Dot, TrangThai FROM baocaotongket WHERE ID_TaiKhoan = ?");
 $stmt->execute([$id_gvhd]);
 while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $trangthai_tongket_dot[$row['ID_Dot']] = $row['TrangThai'];
@@ -67,7 +72,7 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
 // Lấy danh sách sinh viên thuộc giáo viên này và cùng đợt
 $stmt = $conn->prepare("
     SELECT sv.ID_TaiKhoan, sv.Ten, sv.MSSV
-    FROM SinhVien sv
+    FROM sinhvien sv
     WHERE sv.ID_GVHD = ? AND sv.ID_Dot = ?
 ");
 $sinhviens = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -105,10 +110,10 @@ foreach ($sinhviens as $sv) {
 // Lấy tất cả các đợt mà giáo viên này đang hướng dẫn sinh viên, trạng thái đã bắt đầu
 $stmt = $conn->prepare("
     SELECT dt.ID, dt.TenDot, dt.TrangThai
-    FROM DotThucTap dt
+    FROM dotthuctap dt
     WHERE dt.ID IN (
         SELECT DISTINCT sv.ID_Dot
-        FROM SinhVien sv
+        FROM sinhvien sv
         WHERE sv.ID_GVHD = ?
     ) AND dt.TrangThai = 2 OR dt.TrangThai >=4
     ORDER BY dt.ID DESC
@@ -121,7 +126,7 @@ $ds_sinhvien_theo_dot = [];
 foreach ($dots as $dot) {
     $stmt = $conn->prepare("
         SELECT sv.ID_TaiKhoan, sv.Ten, sv.MSSV
-        FROM SinhVien sv
+        FROM sinhvien sv
         WHERE sv.ID_GVHD = ? AND sv.ID_Dot = ?
     ");
     $stmt->execute([$id_gvhd, $dot['ID']]);
@@ -130,7 +135,12 @@ foreach ($dots as $dot) {
 
 // Xử lý tải xuống tất cả báo cáo thành file zip
 if (isset($_GET['download_all']) && $_GET['download_all'] == 1) {
-    $zip = new ZipArchive();
+    // Kiểm tra ZipArchive extension
+    if (!class_exists('ZipArchive')) {
+        $errorMsg = "ZipArchive extension không được cài đặt trên server!";
+    } else {
+        try {
+            $zip = new ZipArchive();
     
     // Kiểm tra nếu có dot_id cụ thể
     $specific_dot_id = isset($_GET['dot_id']) ? (int)$_GET['dot_id'] : null;
@@ -224,6 +234,10 @@ if (isset($_GET['download_all']) && $_GET['download_all'] == 1) {
         }
     } else {
         $errorMsg = "Không thể tạo file zip!";
+    }
+        } catch (Exception $e) {
+            $errorMsg = "Lỗi khi tạo file zip: " . $e->getMessage();
+        }
     }
 }
 

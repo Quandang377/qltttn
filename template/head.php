@@ -1,4 +1,12 @@
-<base href="/datn/">
+<?php
+if (!function_exists('isLocalhost')) {
+    function isLocalhost() {
+        return in_array($_SERVER['HTTP_HOST'], ['localhost', '127.0.0.1', '::1']) || 
+               strpos($_SERVER['HTTP_HOST'], '.local') !== false;
+    }
+}
+?>
+<base href="<?= (isLocalhost() ? '/datn/' : '/datn/') ?>">
 <link href="access/css/bootstrap.min.css" rel="stylesheet">
 <link href="access/css/startmin.css" rel="stylesheet">
 <link href="access/css/font-awesome.min.css" rel="stylesheet">

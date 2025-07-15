@@ -1,69 +1,75 @@
-<?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
+<?php
+require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
 $idTaiKhoan = $_SESSION['user']['ID_TaiKhoan'] ?? null;
 $today = date('Y-m-d');
 
-// Cập nhật trạng thái kết thúc
-$updateStmt = $conn->prepare("UPDATE DOTTHUCTAP 
-    SET TRANGTHAI = 0 
-    WHERE THOIGIANKETTHUC <= :today AND TRANGTHAI != -1");
+// Cập nhật trạng thái kết thúc (sử dụng tên bảng đúng)
+$updateStmt = $conn->prepare("UPDATE dotthuctap 
+    SET TrangThai = 0 
+    WHERE ThoiGianKetThuc <= :today AND TrangThai != -1");
 $updateStmt->execute(['today' => $today]);
 
 // Cập nhật trạng thái đã bắt đầu
-$updateStmt2 = $conn->prepare("UPDATE DOTTHUCTAP 
-    SET TRANGTHAI = 2 
-    WHERE THOIGIANBATDAU <= :today AND TRANGTHAI > 0");
+$updateStmt2 = $conn->prepare("UPDATE dotthuctap 
+    SET TrangThai = 2 
+    WHERE ThoiGianBatDau <= :today AND TrangThai > 0");
 $updateStmt2->execute(['today' => $today]);
 
 $now = date('Y-m-d H:i:s');
 
-// Cập nhật trạng thái khảo sát: 2 = Đã hết hạn
-$updateKhaoSatStmt = $conn->prepare("UPDATE KhaoSat 
+// Cập nhật trạng thái khảo sát: 2 = Đã hết hạn (tên bảng và cột đúng)
+$updateKhaoSatStmt = $conn->prepare("UPDATE khaosat 
     SET TrangThai = 2 
     WHERE ThoiHan <= :now AND TrangThai != 2 AND TrangThai != 0");
 $updateKhaoSatStmt->execute(['now' => $now]);
 
+// Lấy thông tin đợt của sinh viên
 $stmt = $conn->prepare("SELECT sv.ID_Dot, dt.TrangThai 
-    FROM SinhVien sv 
-    LEFT JOIN DotThucTap dt ON sv.ID_Dot = dt.ID 
+    FROM sinhvien sv 
+    LEFT JOIN dotthuctap dt ON sv.ID_Dot = dt.ID 
     WHERE sv.ID_TaiKhoan = ?");
 $stmt->execute([$idTaiKhoan]);
 $row = $stmt->fetch(PDO::FETCH_ASSOC);
 $idDot = $row['ID_Dot'] ?? null;
 $trangThaiDot = $row['TrangThai'] ?? null;
 
+// Lấy thông báo
 $thongbaos = [];
 if ($idTaiKhoan == null) {
-  $stmt = $conn->prepare("
-    SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.NGAYDANG, tb.ID_Dot, dt.TenDot
-    FROM THONGBAO tb
-    LEFT JOIN DotThucTap dt ON tb.ID_Dot = dt.ID
-    WHERE tb.TRANGTHAI = 1
-    ORDER BY tb.NGAYDANG DESC
-    LIMIT 10
-");
-  $stmt->execute();
-  $thongbaos = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} elseif ($idDot) {
-  $stmt = $conn->prepare("
-        SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.NGAYDANG, tb.ID_Dot, dt.TenDot
-        FROM THONGBAO tb
-        LEFT JOIN DotThucTap dt ON tb.ID_Dot = dt.ID
-        WHERE tb.ID_Dot = ? AND tb.TRANGTHAI=1
-        ORDER BY tb.NGAYDANG DESC
+    $stmt = $conn->prepare("
+        SELECT tb.ID, tb.TieuDe, tb.NoiDung, tb.NgayDang, tb.ID_Dot, dt.TenDot
+        FROM thongbao tb
+        LEFT JOIN dotthuctap dt ON tb.ID_Dot = dt.ID
+        WHERE tb.TrangThai = 1
+        ORDER BY tb.NgayDang DESC
         LIMIT 10
     ");
-  $stmt->execute([$idDot]);
-  $thongbaos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $stmt->execute();
+    $thongbaos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} elseif ($idDot) {
+    $stmt = $conn->prepare("
+        SELECT tb.ID, tb.TieuDe, tb.NoiDung, tb.NgayDang, tb.ID_Dot, dt.TenDot
+        FROM thongbao tb
+        LEFT JOIN dotthuctap dt ON tb.ID_Dot = dt.ID
+        WHERE tb.ID_Dot = ? AND tb.TrangThai=1
+        ORDER BY tb.NgayDang DESC
+        LIMIT 10
+    ");
+    $stmt->execute([$idDot]);
+    $thongbaos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
+
+// Lấy trạng thái đợt cuối cùng
 $stmt = $conn->prepare("SELECT dt.TrangThai 
-    FROM SinhVien sv 
-    LEFT JOIN DotThucTap dt ON sv.ID_Dot = dt.ID 
+    FROM sinhvien sv 
+    LEFT JOIN dotthuctap dt ON sv.ID_Dot = dt.ID 
     WHERE sv.ID_TaiKhoan = ?");
 $stmt->execute([$idTaiKhoan]);
 $trangThaiDot = $stmt->fetchColumn();
 
+// Xử lý trạng thái panel
 $panelActive = [];
 $statusInfo = [
   'message' => '',
@@ -120,7 +126,6 @@ if($idTaiKhoan){
   }
 }
 
-
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -140,7 +145,7 @@ if($idTaiKhoan){
 
   <div id="wrapper">
     <?php
-    require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_SinhVien.php";
+    require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_Sinhvien.php";
     ?>
     <div id="page-wrapper">
       <div class="container-fluid">
@@ -315,17 +320,17 @@ if($idTaiKhoan){
                     <div class="row">
                       <div class="col-sm-2 text-center">
                         <a href="pages/sinhvien/chitietthongbao?id=${tb.ID}">
-                          <img src="/datn/uploads/Images/ThongBao.jpg" alt="${tb.TIEUDE}" class="notification-image">
+                          <img src="/datn/uploads/Images/ThongBao.jpg" alt="${tb.TieuDe}" class="notification-image">
                         </a>
                       </div>
                       <div class="col-sm-10">
                         <a href="#" class="thongbao-link notification-title" data-id="${tb.ID}">
-                          ${tb.TIEUDE}
+                          ${tb.TieuDe}
                         </a>
                         <ul class="list-inline notification-meta">
                           <li><i class="fa fa-bullhorn"></i> Thông báo</li>
                           <li>|</li>
-                          <li><i class="fa fa-calendar"></i> ${new Date(tb.NGAYDANG).toLocaleDateString('vi-VN')}</li>
+                          <li><i class="fa fa-calendar"></i> ${new Date(tb.NgayDang).toLocaleDateString('vi-VN')}</li>
                           ${tb.TenDot ? `<li>|</li><li><i class="fa fa-tag"></i> ${tb.TenDot}</li>` : ''}
                         </ul>
                       </div>
