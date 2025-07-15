@@ -3,7 +3,8 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
 // Tạm thời gán id tài khoản sinh viên là 3
-$id_taikhoan = 3;
+$id_taikhoan = $_SESSION['user']['ID_TaiKhoan'] ?? null;
+
 $baocao = null;
 $baocao_dir = null;
 $baocao_trangthai = null;

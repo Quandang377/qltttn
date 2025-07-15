@@ -34,11 +34,32 @@ $stmt->execute([$idTaiKhoan]);
 $row = $stmt->fetch(PDO::FETCH_ASSOC);
 $idDot = $row['ID_Dot'] ?? null;
 $trangThaiDot = $row['TrangThai'] ?? null;
+$baocao = null;
+$baocao_dir = null;
+$baocao_trangthai = null;
+$ten_sv = '';
+$cho_phep_nop = false;
+$errorMsg = ''; // Thêm biến này ở đầu file
+
+// Lấy tên sinh viên và id tài khoản giáo viên hướng dẫn
+$stmt = $conn->prepare("SELECT Ten, ID_GVHD FROM sinhvien WHERE ID_TaiKhoan = ?");
+$stmt->execute([$idTaiKhoan]);
+$row_sv = $stmt->fetch(PDO::FETCH_ASSOC);
+$id_gvhd = $row_sv['ID_GVHD'] ?? null;
+
+// Kiểm tra trạng thái cho phép nộp báo cáo tổng kết của giáo viên hướng dẫn
+if ($id_gvhd) {
+  $stmt = $conn->prepare("SELECT TrangThai FROM Baocaotongket WHERE ID_TaiKhoan = ?");
+  $stmt->execute([$id_gvhd]);
+  $trangthai_baocaotongket = $stmt->fetchColumn();
+  $cho_phep_nop = ($trangthai_baocaotongket == 1);
+}
+
 
 // Lấy thông báo
 $thongbaos = [];
 if ($idTaiKhoan == null) {
-    $stmt = $conn->prepare("
+  $stmt = $conn->prepare("
         SELECT tb.ID, tb.TieuDe, tb.NoiDung, tb.NgayDang, tb.ID_Dot, dt.TenDot
         FROM thongbao tb
         LEFT JOIN dotthuctap dt ON tb.ID_Dot = dt.ID
@@ -46,10 +67,10 @@ if ($idTaiKhoan == null) {
         ORDER BY tb.NgayDang DESC
         LIMIT 10
     ");
-    $stmt->execute();
-    $thongbaos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+  $stmt->execute();
+  $thongbaos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } elseif ($idDot) {
-    $stmt = $conn->prepare("
+  $stmt = $conn->prepare("
         SELECT tb.ID, tb.TieuDe, tb.NoiDung, tb.NgayDang, tb.ID_Dot, dt.TenDot
         FROM thongbao tb
         LEFT JOIN dotthuctap dt ON tb.ID_Dot = dt.ID
@@ -57,8 +78,8 @@ if ($idTaiKhoan == null) {
         ORDER BY tb.NgayDang DESC
         LIMIT 10
     ");
-    $stmt->execute([$idDot]);
-    $thongbaos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+  $stmt->execute([$idDot]);
+  $thongbaos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
 // Lấy trạng thái đợt cuối cùng
@@ -77,31 +98,40 @@ $statusInfo = [
   'icon' => ''
 ];
 
-if($idTaiKhoan){
-  if ($trangThaiDot >= 2) {
-    if ($trangThaiDot < 4) {
-      $panelActive = [0, 1]; // Nổi bật cả tìm công ty và xin giấy giới thiệu
+if ($idTaiKhoan) {
+  if ($trangThaiDot >= 1) {
+    if ($trangThaiDot == 1) {
+      $panelActive = [0]; // Nổi bật cả tìm công ty và xin giấy giới thiệu
       $statusInfo = [
         'message' => 'Giai đoạn: Tìm công ty và xin giấy giới thiệu thực tập (cùng thực hiện)',
         'class' => 'status-finding',
         'icon' => 'fa-search'
       ];
-    } elseif ($trangThaiDot == 4) {
-      $panelActive = [2]; // Thực tập và báo cáo
+    } elseif ($trangThaiDot == 2) {
+      if ($cho_phep_nop) {
+        $panelActive = [3]; // Kết thúc và nộp báo cáo
+        $statusInfo = [
+          'message' => 'Giai đoạn: Kết thúc và nộp báo cáo',
+          'class' => 'status-completion',
+          'icon' => 'fa-check-circle'
+        ];
+      } else {
+        $panelActive = [2]; // Thực tập và báo cáo tuần
+        $statusInfo = [
+          'message' => 'Giai đoạn: Thực tâp, báo cáo tuần',
+          'class' => 'status-finding',
+          'icon' => 'fa-search'
+        ];
+      }
+    } elseif ($trangThaiDot == 3) {
+      $panelActive = [0, 1];
       $statusInfo = [
-        'message' => 'Giai đoạn: Thực tập và báo cáo tuần',
+        'message' => 'Giai đoạn: Tìm công ty và xin giấy giới thiệu thực tập (cùng thực hiện)',
         'class' => 'status-internship',
         'icon' => 'fa-briefcase'
       ];
-    } elseif ($trangThaiDot == 5) {
-      $panelActive = [3]; // Kết thúc và nộp báo cáo
-      $statusInfo = [
-        'message' => 'Giai đoạn: Kết thúc và nộp báo cáo',
-        'class' => 'status-completion',
-        'icon' => 'fa-check-circle'
-      ];
     }
-  } elseif ($trangThaiDot <=0) {
+  } elseif ($trangThaiDot <= 0) {
     // Đợt đã kết thúc
     $statusInfo = [
       'message' => 'Đợt thực tập đã kết thúc',
@@ -152,19 +182,20 @@ if($idTaiKhoan){
         <div class="row">
           <div class="col-lg-12">
             <h1 class="page-header">Quy Trình Thực Tập Tốt Nghiệp</h1>
-            
+
             <?php if ($idTaiKhoan && $statusInfo['message']): ?>
-            <div class="status-indicator <?= $statusInfo['class'] ?>">
-              <i class="fa <?= $statusInfo['icon'] ?>"></i>
-              <span class="status-message"><?= $statusInfo['message'] ?></span>
-            </div>
+              <div class="status-indicator <?= $statusInfo['class'] ?>">
+                <i class="fa <?= $statusInfo['icon'] ?>"></i>
+                <span class="status-message"><?= $statusInfo['message'] ?></span>
+              </div>
             <?php endif; ?>
           </div>
         </div>
         <div class="row panel-row">
           <div class="col-md-3 panel-container">
             <a href="pages/sinhvien/xemdanhsachcongty" style="text-decoration: none; color: inherit;">
-              <div class="panel panel-default <?= in_array(0, $panelActive) ? 'active-step' : '' ?>" style="min-height: 180px;">
+              <div class="panel panel-default <?= in_array(0, $panelActive) ? 'active-step' : '' ?>"
+                style="min-height: 180px;">
                 <div class="panel-heading">
                   <i class="fa fa-search"></i> Tìm công ty thực tập
                 </div>
@@ -179,7 +210,8 @@ if($idTaiKhoan){
           <div class="col-md-3 panel-container">
             <a <?= ($trangThaiDot >= 2) ? 'href="pages/sinhvien/dangkygiaygioithieu"' : '' ?>
               style="text-decoration: none; color: inherit;">
-              <div class="panel panel-default <?= in_array(1, $panelActive) ? 'active-step' : '' ?>" style="min-height: 180px;">
+              <div class="panel panel-default <?= in_array(1, $panelActive) ? 'active-step' : '' ?>"
+                style="min-height: 180px;">
                 <div class="panel-heading">
                   <i class="fa fa-file-text"></i> Xin giấy giới thiệu thực tập
                 </div>
@@ -187,33 +219,34 @@ if($idTaiKhoan){
                   <p><i class="fa fa-info-circle text-info"></i> Gửi thông tin đăng ký xin giấy giới thiệu thực tập</p>
                   <p><i class="fa fa-clock-o text-warning"></i> Chờ phê duyệt từ khoa</p>
                   <?php if ($trangThaiDot < 2): ?>
-                  <p><i class="fa fa-lock text-muted"></i> <small>Chưa mở</small></p>
+                    <p><i class="fa fa-lock text-muted"></i> <small>Chưa mở</small></p>
                   <?php endif; ?>
                 </div>
               </div>
             </a>
           </div>
           <div class="col-md-3 panel-container">
-            <a <?= ($trangThaiDot == 4) ? 'href="pages/sinhvien/baocaotuan"' : '' ?>
+            <a <?= (!$trangThaiDot >= 2 && $trangThaiDot != 3) ? 'href="pages/sinhvien/baocaotuan"' : '' ?>
               style="text-decoration: none; color: inherit;">
-              <div class="panel panel-default <?= in_array(2, $panelActive) ? 'active-step' : '' ?>" style="min-height: 180px;">
+              <div class="panel panel-default <?= in_array(2, $panelActive) ? 'active-step' : '' ?>"
+                style="min-height: 180px;">
                 <div class="panel-heading">
                   <i class="fa fa-briefcase"></i> Thực tập, báo cáo tuần
                 </div>
                 <div class="panel-body">
                   <p><i class="fa fa-calendar text-primary"></i> Bắt đầu thực tập</p>
                   <p><i class="fa fa-file-text-o text-primary"></i> Gửi báo cáo hằng tuần</p>
-                  <?php if ($trangThaiDot < 4): ?>
-                  <p><i class="fa fa-lock text-muted"></i> <small>Chưa mở</small></p>
+                  <?php if ($trangThaiDot >= 2 && $trangThaiDot != 3): ?>
+                    <p><i class="fa fa-lock text-muted"></i> <small>Chưa mở</small></p>
                   <?php endif; ?>
                 </div>
               </div>
             </a>
           </div>
           <div class="col-md-3 panel-container">
-            <a <?= ($trangThaiDot == 5) ? 'href="pages/sinhvien/nopketqua"' : 'href="#" data-toggle="modal" data-target="#detailModal"' ?> 
-              style="text-decoration: none; color: inherit;">
-              <div class="panel panel-default <?= in_array(3, $panelActive) ? 'active-step' : '' ?>" style="min-height: 180px;">
+            <a <?= ($cho_phep_nop) ? 'href="pages/sinhvien/nopketqua"' : 'href="#" data-toggle="modal" data-target="#detailModal"' ?> style="text-decoration: none; color: inherit;">
+              <div class="panel panel-default <?= in_array(3, $panelActive) ? 'active-step' : '' ?>"
+                style="min-height: 180px;">
                 <div class="panel-heading">
                   <i class="fa fa-check-circle"></i> Kết thúc và nộp báo cáo
                 </div>
@@ -221,51 +254,51 @@ if($idTaiKhoan){
                   <p><i class="fa fa-file-pdf-o text-danger"></i> Phiếu chấm điểm...</p>
                   <p><i class="fa fa-comment text-info"></i> Nhận xét thực tập...</p>
                   <p><i class="fa fa-book text-success"></i> Quyển báo cáo...</p>
-                  <?php if ($trangThaiDot < 5): ?>
-                  <p><i class="fa fa-lock text-muted"></i> <small>Chưa mở</small></p>
+                  <?php if (!$cho_phep_nop): ?>
+                    <p><i class="fa fa-lock text-muted"></i> <small>Chưa mở</small></p>
                   <?php endif; ?>
                 </div>
               </div>
             </a>
           </div>
-            <div class="modal fade" id="detailModal" tabindex="-1" role="dialog">
-              <div class="modal-dialog">
-                <div class="modal-content">
-                  <div class="modal-header">
-                    <h4 class="modal-title">Chấm điểm kết thúc</h4>
-                  </div>
-                  <div class="modal-body">
-                    <ul>
-                      <li>Phiếu chấm điểm thực tập tốt nghiệp (có điểm và chữ ký của Cán bộ hướng dẫn của công ty, kèm
-                        mộc)</li>
-                      <li>Phiếu khảo sát thực tập</li>
-                      <li>Nhận xét thực tập (đính kèm trong báo cáo, kèm mộc)</li>
-                      <li>Quyển báo cáo theo quy định</li>
-                    </ul>
-                  </div>
-                  <div class="modal-footer">
-                    <button class="btn btn-default" data-dismiss="modal">Đóng</button>
-                    <a <?= ($trangThaiDot != 5) ? 'disabled' : '' ?> href="pages/sinhvien/nopketqua"
-                      class="btn btn-primary">Đến nộp</a>
-                  </div>
+          <div class="modal fade" id="detailModal" tabindex="-1" role="dialog">
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title">Chấm điểm kết thúc</h4>
+                </div>
+                <div class="modal-body">
+                  <ul>
+                    <li>Phiếu chấm điểm thực tập tốt nghiệp (có điểm và chữ ký của Cán bộ hướng dẫn của công ty, kèm
+                      mộc)</li>
+                    <li>Phiếu khảo sát thực tập</li>
+                    <li>Nhận xét thực tập (đính kèm trong báo cáo, kèm mộc)</li>
+                    <li>Quyển báo cáo theo quy định</li>
+                  </ul>
+                </div>
+                <div class="modal-footer">
+                  <button class="btn btn-default" data-dismiss="modal">Đóng</button>
+                  <a <?= ($trangThaiDot != 5) ? 'disabled' : '' ?> href="pages/sinhvien/nopketqua"
+                    class="btn btn-primary">Đến nộp</a>
                 </div>
               </div>
             </div>
           </div>
         </div>
-        <div class="row">
-          <h1>Thông Báo</h1>
+      </div>
+      <div class="row">
+        <h1>Thông Báo</h1>
+      </div>
+      <div class="container mt-4">
+        <div id="notification-list">
         </div>
-        <div class="container mt-4">
-          <div id="notification-list">
-          </div>
-          <div class="text-center" style="margin-top: 20px;">
-            <button id="prevBtn" class="btn btn-default">&laquo; Trước</button>
-            <button id="nextBtn" class="btn btn-default">Sau &raquo;</button>
-          </div>
+        <div class="text-center" style="margin-top: 20px;">
+          <button id="prevBtn" class="btn btn-default">&laquo; Trước</button>
+          <button id="nextBtn" class="btn btn-default">Sau &raquo;</button>
         </div>
       </div>
     </div>
+  </div>
   </div>
 
   <?
@@ -392,7 +425,7 @@ if($idTaiKhoan){
     });
 
     // Thêm class has-active cho các panel container có panel active
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
       const activePanels = document.querySelectorAll('.panel.active-step');
       activePanels.forEach(panel => {
         const container = panel.closest('.panel-container');
@@ -404,7 +437,7 @@ if($idTaiKhoan){
 
     history.pushState(null, "", location.href);
     window.onpopstate = function () {
-        history.pushState(null, "", location.href);
+      history.pushState(null, "", location.href);
     };
   </script>
 </body>
@@ -424,39 +457,42 @@ if($idTaiKhoan){
     font-weight: 500;
     animation: fadeInDown 0.8s ease-out;
   }
-  
+
   .status-indicator.status-finding {
     background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
     animation: pulse-status 3s infinite;
   }
-  
+
   .status-indicator.status-internship {
     background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
   }
-  
+
   .status-indicator.status-completion {
     background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
   }
-  
+
   .status-indicator.status-preparing {
     background: linear-gradient(135deg, #fdbb2d 0%, #22c1c3 100%);
   }
-  
+
   .status-indicator.status-ended {
     background: linear-gradient(135deg, #bdc3c7 0%, #2c3e50 100%);
   }
-  
+
   .status-indicator i {
     margin-right: 10px;
     font-size: 18px;
   }
 
   @keyframes pulse-status {
-    0%, 100% { 
+
+    0%,
+    100% {
       transform: scale(1);
       box-shadow: 0 4px 15px rgba(240, 147, 251, 0.3);
     }
-    50% { 
+
+    50% {
       transform: scale(1.02);
       box-shadow: 0 6px 25px rgba(240, 147, 251, 0.5);
     }
@@ -501,7 +537,7 @@ if($idTaiKhoan){
   }
 
   /* Hiệu ứng đặc biệt cho mũi tên khi 2 panel đầu cùng active */
-  .panel-container:first-child.has-active + .panel-container.has-active::before {
+  .panel-container:first-child.has-active+.panel-container.has-active::before {
     content: "↔";
     position: absolute;
     top: 50%;
@@ -515,11 +551,14 @@ if($idTaiKhoan){
   }
 
   @keyframes pulse-arrow {
-    0%, 100% { 
+
+    0%,
+    100% {
       transform: translateY(-50%) scale(1);
       color: #28a745;
     }
-    50% { 
+
+    50% {
       transform: translateY(-50%) scale(1.2);
       color: #20c997;
     }
@@ -556,8 +595,7 @@ if($idTaiKhoan){
   }
 
   /* Hiệu ứng đặc biệt khi 2 panel đầu cùng active */
-  .panel-container:first-child .panel.active-step + 
-  .panel-container:nth-child(2) .panel.active-step {
+  .panel-container:first-child .panel.active-step+.panel-container:nth-child(2) .panel.active-step {
     animation: sync-pulse 2s infinite;
   }
 
@@ -566,11 +604,14 @@ if($idTaiKhoan){
   }
 
   @keyframes sync-pulse {
-    0%, 100% { 
+
+    0%,
+    100% {
       transform: scale(1.02);
       box-shadow: 0 4px 24px rgba(40, 167, 69, 0.3);
     }
-    50% { 
+
+    50% {
       transform: scale(1.05);
       box-shadow: 0 8px 35px rgba(40, 167, 69, 0.5);
     }
@@ -597,6 +638,7 @@ if($idTaiKhoan){
     from {
       box-shadow: 0 0 5px rgba(40, 167, 69, 0.5);
     }
+
     to {
       box-shadow: 0 0 20px rgba(40, 167, 69, 0.8);
     }
@@ -629,6 +671,7 @@ if($idTaiKhoan){
     from {
       box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.2);
     }
+
     to {
       box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.4);
     }
@@ -701,13 +744,13 @@ if($idTaiKhoan){
       flex-direction: column;
       flex-wrap: wrap;
     }
-    
+
     .panel-container {
       margin: 10px 0;
       max-width: 100%;
       flex: none;
     }
-    
+
     .panel-container:not(:last-child)::after {
       display: none;
     }
@@ -730,7 +773,7 @@ if($idTaiKhoan){
     .panel-container {
       max-width: 50%;
     }
-    
+
     .panel-row {
       flex-wrap: wrap;
     }
@@ -800,7 +843,8 @@ if($idTaiKhoan){
     opacity: 0.5;
   }
 
-  .empty-notification h4, .empty-notification h5 {
+  .empty-notification h4,
+  .empty-notification h5 {
     margin: 15px 0 10px 0;
   }
 
