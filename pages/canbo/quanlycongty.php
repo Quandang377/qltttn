@@ -356,13 +356,21 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
                     $msg = '<div class="alert alert-danger">Vui lòng nhập đầy đủ thông tin!</div>';
                 } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
                     $msg = '<div class="alert alert-danger">Email không hợp lệ!</div>';
-                } elseif (!preg_match('/^[0-9]{10,15}$/', $sdt)) {
-                    $msg = '<div class="alert alert-danger">Số điện thoại không hợp lệ!</div>';
+                } elseif (!preg_match('/^0[0-9]{9,14}$/', $sdt)) {
+                    $msg = '<div class="alert alert-danger">Số điện thoại không hợp lệ! Số điện thoại phải bắt đầu bằng 0 và có 10-15 chữ số.</div>';
                 } else {
+                    // Lấy thông tin hiện tại của công ty
+                    $stmt = $conn->prepare("SELECT TenCty, MaSoThue, DiaChi, Sdt, Email FROM congty WHERE ID = ?");
+                    $stmt->execute([$id]);
+                    $current = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                    // Kiểm tra mã số thuế trùng
                     $stmt = $conn->prepare("SELECT COUNT(*) FROM congty WHERE MaSoThue = ? AND ID != ?");
                     $stmt->execute([$masothue, $id]);
                     if ($stmt->fetchColumn() > 0) {
                         $msg = '<div class="alert alert-danger">Mã số thuế đã tồn tại!</div>';
+                    } elseif ($current && $ten === $current['TenCty'] && $masothue === $current['MaSoThue'] && $diachi === $current['DiaChi'] && $sdt === $current['Sdt'] && $email === $current['Email']) {
+                        $msg = '<div class="alert alert-info">Không có thay đổi nào để cập nhật!</div>';
                     } else {
                         $stmt = $conn->prepare("UPDATE congty SET TenCty = ?, MaSoThue = ?, DiaChi = ?, Sdt = ?, Email = ? WHERE ID = ?");
                         if ($stmt->execute([$ten, $masothue, $diachi, $sdt, $email, $id])) {
@@ -587,7 +595,9 @@ $(document).ready(function () {
             $('#ten-cong-ty').val(data[1].replace(/<[^>]*>/g, ''));
             $('#ma-so-thue').val(data[2].replace(/<[^>]*>/g, ''));
             $('#dia-chi').val(data[3]);
-            $('#sdt').val(data[4].replace(/<[^>]*>/g, ''));
+            // Loại bỏ khoảng trắng đầu/cuối cho số điện thoại
+            var sdt = data[4].replace(/<[^>]*>/g, '').trim();
+            $('#sdt').val(sdt);
             $('#email-cong-ty').val(data[5].replace(/<[^>]*>/g, ''));
             
             $('#company-form').removeClass('loading');
