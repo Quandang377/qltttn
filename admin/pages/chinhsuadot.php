@@ -386,10 +386,10 @@ else {
                         <div class="col-sm-10">
                             <select <?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?> id="BacDaoTao" name="BacDaoTao"
                                 class="form-control" required>
-                                <option value="Cao đẳng" <?= $dot['BacDaoTao'] == 'Cao đẳng' ? 'selected' : '' ?>>Cao đẳng
+                                <option value="Cao đẳng ngành" <?= $dot['BacDaoTao'] == 'Cao đẳng ngành' ? 'selected' : '' ?>>Cao đẳng ngành
                                 </option>
-                                <option value="Cao đẳng ngành" <?= $dot['BacDaoTao'] == 'Cao đẳng ngành' ? 'selected' : '' ?>>
-                                    Cao đẳng ngành</option>
+                                <option value="Cao đẳng nghề" <?= $dot['BacDaoTao'] == 'Cao đẳng nghề' ? 'selected' : '' ?>>
+                                    Cao đẳng nghề</option>
                             </select>
                         </div>
                     </div>

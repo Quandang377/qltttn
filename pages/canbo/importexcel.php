@@ -450,7 +450,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_excel'])) {
                                         <button type="submit" name="upload_excel" class="btn btn-primary btn-lg">
                                             <i class="fa fa-upload"></i> Tải lên và Import
                                         </button>
-                                        <a href="javascript:history.back()" class="btn btn-default btn-lg">
+                                        <a href="/datn/pages/canbo/chitietdot?id=<?=$id?>" class="btn btn-default btn-lg">
                                             <i class="fa fa-arrow-left"></i> Quay lại
                                         </a>
                                     </div>

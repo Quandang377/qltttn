@@ -44,26 +44,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($count > 0) {
         $errors[] = "Tên đợt đã tồn tại!";
     }
-    if($dot['TrangThai']==1)
-    {
-    $today = date('Y-m-d');
-    $ngayMai = date('Y-m-d', strtotime('+1 day'));
-    if ($thoiGianBatDau < $ngayMai) {
-        $errors[] = "Thời gian bắt đầu phải từ ngày mai trở đi!";
-    }
-    if ($thoiGianBatDau >= $thoiGianKetThuc) {
-        $errors[] = "Thời gian bắt đầu phải nhỏ hơn thời gian kết thúc!";
-    }
-    $diff = (strtotime($thoiGianKetThuc) - strtotime($thoiGianBatDau)) / (60 * 60 * 24);
-    if ($diff < 28) {
-        $errors[] = "Thời gian kết thúc phải cách thời gian bắt đầu ít nhất 4 tuần!";
-    }
+    if ($dot['TrangThai'] == 1) {
+        $today = date('Y-m-d');
+        $ngayMai = date('Y-m-d', strtotime('+1 day'));
+        if ($thoiGianBatDau < $ngayMai) {
+            $errors[] = "Thời gian bắt đầu phải từ ngày mai trở đi!";
+        }
+        if ($thoiGianBatDau >= $thoiGianKetThuc) {
+            $errors[] = "Thời gian bắt đầu phải nhỏ hơn thời gian kết thúc!";
+        }
+        $diff = (strtotime($thoiGianKetThuc) - strtotime($thoiGianBatDau)) / (60 * 60 * 24);
+        if ($diff < 28) {
+            $errors[] = "Thời gian kết thúc phải cách thời gian bắt đầu ít nhất 4 tuần!";
+        }
 
-    if (!empty($errors)) {
-        $notification = implode("<br>", $errors);
-    }
-else {
-        $updateStmt = $conn->prepare("
+        if (!empty($errors)) {
+            $notification = implode("<br>", $errors);
+        } else {
+            $updateStmt = $conn->prepare("
             UPDATE DOTTHUCTAP SET
                 TenDot = :tenDot,
                 Nam = :nam,
@@ -74,23 +72,23 @@ else {
             WHERE ID = :id
         ");
 
-        $updateStmt->execute([
-            'tenDot' => $tenDot,
-            'nam' => $nam,
-            'BacDaoTao' => $BacDaoTao,
-            'thoiGianBatDau' => $thoiGianBatDau,
-            'thoiGianKetThuc' => $thoiGianKetThuc,
-            'nguoiQuanLy' => $nguoiQuanLy,
-            'id' => $id
-        ]);
+            $updateStmt->execute([
+                'tenDot' => $tenDot,
+                'nam' => $nam,
+                'BacDaoTao' => $BacDaoTao,
+                'thoiGianBatDau' => $thoiGianBatDau,
+                'thoiGianKetThuc' => $thoiGianKetThuc,
+                'nguoiQuanLy' => $nguoiQuanLy,
+                'id' => $id
+            ]);
 
-        $successMessage = "Cập nhật thành công!";
+            $successMessage = "Cập nhật thành công!";
 
-        $stmt = $conn->prepare("SELECT ID,TenDot,BacDaoTao,Nam,NguoiMoDot,NguoiQuanLy,ThoiGianBatDau,ThoiGianKetThuc,TrangThai FROM DOTTHUCTAP WHERE ID = :id");
-        $stmt->execute(['id' => $id]);
-        $dot = $stmt->fetch();
-    }
-} else {
+            $stmt = $conn->prepare("SELECT ID,TenDot,BacDaoTao,Nam,NguoiMoDot,NguoiQuanLy,ThoiGianBatDau,ThoiGianKetThuc,TrangThai FROM DOTTHUCTAP WHERE ID = :id");
+            $stmt->execute(['id' => $id]);
+            $dot = $stmt->fetch();
+        }
+    } else {
         $updateStmt = $conn->prepare("
             UPDATE DOTTHUCTAP SET
                 NguoiQuanLy = :nguoiQuanLy
@@ -162,10 +160,10 @@ else {
                         <div class="col-sm-10">
                             <select <?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?> id="BacDaoTao" name="BacDaoTao"
                                 class="form-control" required>
-                                <option value="Cao đẳng" <?= $dot['BacDaoTao'] == 'Cao đẳng' ? 'selected' : '' ?>>Cao đẳng
+                                <option value="Cao đẳng ngành" <?= $dot['BacDaoTao'] == 'Cao đẳng ngành' ? 'selected' : '' ?>>Cao đẳng ngành
                                 </option>
-                                <option value="Cao đẳng ngành" <?= $dot['BacDaoTao'] == 'Cao đẳng ngành' ? 'selected' : '' ?>>
-                                    Cao đẳng ngành</option>
+                                <option value="Cao đẳng nghề" <?= $dot['BacDaoTao'] == 'Cao đẳng nghề' ? 'selected' : '' ?>>
+                                    Cao đẳng nghề</option>
                             </select>
                         </div>
                     </div>
@@ -229,22 +227,21 @@ else {
             const kt = new Date(ketThuc);
 
             let errors = [];
-            if($dot['TrangThai']==1)
-        {
-            if (bd < ngayMai) {
-                errors.push("Thời gian bắt đầu phải từ ngày mai trở đi!");
-            }
-            if (bd >= kt) {
-                errors.push("Thời gian bắt đầu phải nhỏ hơn thời gian kết thúc!");
-            }
-            const diff = (kt - bd) / (1000 * 60 * 60 * 24);
-            if (diff < 28) {
-                errors.push("Thời gian kết thúc phải cách thời gian bắt đầu ít nhất 4 tuần!");
-            }
-            if (errors.length > 0) {
-                alert(errors.join('\n'));
-                e.preventDefault();
-            }
+            if ($dot['TrangThai'] == 1) {
+                if (bd < ngayMai) {
+                    errors.push("Thời gian bắt đầu phải từ ngày mai trở đi!");
+                }
+                if (bd >= kt) {
+                    errors.push("Thời gian bắt đầu phải nhỏ hơn thời gian kết thúc!");
+                }
+                const diff = (kt - bd) / (1000 * 60 * 60 * 24);
+                if (diff < 28) {
+                    errors.push("Thời gian kết thúc phải cách thời gian bắt đầu ít nhất 4 tuần!");
+                }
+                if (errors.length > 0) {
+                    alert(errors.join('\n'));
+                    e.preventDefault();
+                }
             }
         });
 

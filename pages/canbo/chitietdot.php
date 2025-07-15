@@ -51,7 +51,7 @@ $stmt = $conn->prepare("
         LEFT JOIN sinhvien SV ON GV.ID_TaiKhoan = SV.ID_GVHD AND SV.ID_Dot = DG.ID_Dot
         WHERE DG.ID_Dot = :id
         GROUP BY GV.ID_TaiKhoan, GV.Ten
-        ORDER BY SoLuong
+        ORDER BY SoLuong DESC
     ");
 $stmt->execute(['id' => $id]);
 $dsGiaoVien = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -1108,14 +1108,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             max-height: 100%;
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
         }
-        
+
         .page-header {
             color: #2c3e50;
             font-weight: 700;
             margin-bottom: 30px;
             margin-top: 28px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
+
         @media (max-width: 900px) {
             .dot-info-row {
                 flex-direction: column;
@@ -1260,6 +1261,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             }, 'json');
         }
         var allGiaoVien = <?= json_encode($allGiaoVien) ?>;
+
         function xemSinhVienGV(idGV, tenGV) {
             $.get(window.location.pathname, {
                 ajax: 1,
@@ -1269,43 +1271,79 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 let html = `<h4>Giáo viên: ${tenGV}</h4>`;
                 if (res.ds && res.ds.length > 0) {
                     html += `<table class="table table-striped"><thead>
-                            <tr>
-                                <th>STT</th>
-                                <th>MSSV</th>
-                                <th>Họ tên</th>
-                                <th>Lớp</th>
-                                <th>Chuyển GVHD</th>
-                            </tr></thead><tbody>`;
+                    <tr>
+                        <th>STT</th>
+                        <th>MSSV</th>
+                        <th>Họ tên</th>
+                        <th>Lớp</th>
+                        <th>Chuyển GVHD</th>
+                    </tr></thead><tbody>`;
+
                     res.ds.forEach(function (sv, idx) {
-                        let select = `<select class="form-control select-gvhd-modal" data-mssv="${sv.ID_TaiKhoan}" <?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?>>`;
+                        // Thêm data-current="${sv.ID_GVHD ?? ''}"
+                        let select = `<select class="form-control select-gvhd-modal" 
+                                data-mssv="${sv.ID_TaiKhoan}" 
+                                data-current="${sv.ID_GVHD ?? ''}"
+                                ${<?= json_encode($dot['TrangThai']) ?> <= 0 ? 'disabled' : ''}>`;
+
                         select += `<option value="">-- Phân công sau --</option>`;
                         allGiaoVien.forEach(function (gv) {
                             select += `<option value="${gv.ID_TaiKhoan}" ${sv.ID_GVHD == gv.ID_TaiKhoan ? 'selected' : ''}>${gv.Ten}</option>`;
                         });
                         select += `</select>`;
+
                         html += `<tr>
-                                <td>${idx + 1}</td>
-                                <td>${sv.MSSV}</td>
-                                <td>${sv.Ten}</td>
-                                <td>${sv.Lop}</td>
-                                <td>${select}</td>
-                            </tr>`;
+                        <td>${idx + 1}</td>
+                        <td>${sv.MSSV}</td>
+                        <td>${sv.Ten}</td>
+                        <td>${sv.Lop}</td>
+                        <td>${select}</td>
+                    </tr>`;
                     });
+
                     html += `</tbody></table>`;
                 } else {
                     html += `<div class="alert alert-warning">Chưa có sinh viên nào được phân công cho giáo viên này.</div>`;
                 }
+
                 $('#modalDanhSachSVBody').html(html);
                 $('#modalDanhSachSV').modal('show');
             }, 'json');
         }
+
         // Xử lý chuyển giáo viên hướng dẫn (cả ngoài bảng và trong modal)
+        var trangThaiDot = <?= json_encode($trangThaiDot) ?>; // truyền từ PHP
+
         $(document).on('change', '.select-gvhd, .select-gvhd-modal', function () {
             var id_sv = $(this).data('mssv');
             var id_gv = $(this).val();
             var id_dot = <?= json_encode($id) ?>;
             var select = this;
+
             if (id_gv === "") id_gv = null;
+
+            if (trangThaiDot != 1) {
+                Swal.fire({
+                    title: 'Xác nhận chuyển giáo viên?',
+                    text: 'Bạn có chắc muốn chuyển giáo viên hướng dẫn cho sinh viên này?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Chuyển',
+                    cancelButtonText: 'Hủy'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        thucHienChuyenGV(id_sv, id_gv, id_dot, select);
+                    } else {
+                        // Nếu hủy thì khôi phục lại lựa chọn ban đầu
+                        $(select).val($(select).data('current'));
+                    }
+                });
+            } else {
+                thucHienChuyenGV(id_sv, id_gv, id_dot, select);
+            }
+        });
+
+        function thucHienChuyenGV(id_sv, id_gv, id_dot, select) {
             $.ajax({
                 url: window.location.href,
                 method: 'POST',
@@ -1322,7 +1360,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                         $(select).closest('td').removeClass('success');
                     }, 1000);
 
-                    // Cập nhật số lượng sinh viên hướng dẫn ở bảng table-gv
+                    // Cập nhật số lượng sinh viên của giáo viên cũ
                     if (res.gvhdCu) {
                         var rowCu = $('#table-gv tbody tr').filter(function () {
                             return $(this).find('td').eq(1).data('id') == res.gvhdCu;
@@ -1331,6 +1369,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                             rowCu.find('td').eq(2).text(res.soLuongCu);
                         }
                     }
+
+                    // Cập nhật số lượng sinh viên của giáo viên mới
                     if (res.gvhdMoi) {
                         var rowMoi = $('#table-gv tbody tr').filter(function () {
                             return $(this).find('td').eq(1).data('id') == res.gvhdMoi;
@@ -1339,16 +1379,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                             rowMoi.find('td').eq(2).text(res.soLuongMoi);
                         }
                     }
-                    // Gọi cập nhật info ngay sau khi chuyển GVHD thành công
+
                     reloadInfoBox();
                     loadTabGV();
-                    capNhatNutPhanCong(<?= json_encode($id) ?>);
+                    capNhatNutPhanCong(id_dot);
                 },
                 error: function (xhr) {
                     alert("Cập nhật thất bại: " + xhr.responseText);
                 }
             });
-        });
+        }
+
         $(document).ready(function () {
             $('#btnAutoPhanCong').on('click', function () {
                 const mode = $(this).data('mode');
@@ -1478,7 +1519,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                 if (res.trim() === 'OK') {
                                     Swal.fire('Thành công!', 'Phân công tự động thành công!', 'success')
                                         .then(() => location.reload());
-                                        
+
                                 } else {
                                     Swal.fire('Lỗi', res, 'error');
                                 }
@@ -1597,7 +1638,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     if (res.success) {
                         Swal.fire('Thành công', `Đã phân công ${res.da_phancong} sinh viên. `, 'success')
                             .then(() => location.reload());
-                    capNhatNutPhanCong(<?= json_encode($id) ?>);
+                        capNhatNutPhanCong(<?= json_encode($id) ?>);
 
                     } else {
                         Swal.fire('Lỗi', res.error, 'error');

@@ -102,7 +102,7 @@ foreach ($sinhviens as $sv) {
     }
 }
 
-// Lấy tất cả các đợt mà giáo viên này đang hướng dẫn sinh viên, trạng thái >= 3
+// Lấy tất cả các đợt mà giáo viên này đang hướng dẫn sinh viên, trạng thái đã bắt đầu
 $stmt = $conn->prepare("
     SELECT dt.ID, dt.TenDot, dt.TrangThai
     FROM DotThucTap dt
@@ -110,7 +110,7 @@ $stmt = $conn->prepare("
         SELECT DISTINCT sv.ID_Dot
         FROM SinhVien sv
         WHERE sv.ID_GVHD = ?
-    ) AND dt.TrangThai >= 3
+    ) AND dt.TrangThai = 2 OR dt.TrangThai >=4
     ORDER BY dt.ID DESC
 ");
 $stmt->execute([$id_gvhd]);
@@ -1072,7 +1072,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['diem_baocao'], $_POST
                 <?php if (empty($dots)): ?>
                     <div class="alert alert-warning text-center mb-4" style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border-left: 4px solid #f59e0b; border-radius: 12px;">
                         <i class="fa fa-exclamation-triangle" style="margin-right: 10px; color: #d97706;"></i>
-                        <strong>Thông báo:</strong> Không có đợt nào bạn đang hướng dẫn sinh viên (hoặc chưa có đợt nào trạng thái >= 3).
+                        <strong>Thông báo:</strong> Không có đợt nào đã bắt đầu (hoặc chưa có đợt nào bạn đang hướng dẫn sinh viên).
                     </div>
                 <?php else: ?>
                     <!-- Tabs và nội dung các đợt -->

@@ -51,7 +51,7 @@ $stmt = $conn->prepare("
         LEFT JOIN sinhvien SV ON GV.ID_TaiKhoan = SV.ID_GVHD AND SV.ID_Dot = DG.ID_Dot
         WHERE DG.ID_Dot = :id
         GROUP BY GV.ID_TaiKhoan, GV.Ten
-        ORDER BY SoLuong
+        ORDER BY SoLuong DESC
     ");
 $stmt->execute(['id' => $id]);
 $dsGiaoVien = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -1301,7 +1301,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                 <th>Chuyển GVHD</th>
                             </tr></thead><tbody>`;
                     res.ds.forEach(function (sv, idx) {
-                        let select = `<select class="form-control select-gvhd-modal" data-mssv="${sv.ID_TaiKhoan}" <?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?>>`;
+                        let select = `<select class="form-control select-gvhd-modal" data-mssv="${sv.ID_TaiKhoan}" <?= $dot['TrangThai'] <= 0 ? 'disabled' : '' ?>>`;
                         select += `<option value="">-- Phân công sau --</option>`;
                         allGiaoVien.forEach(function (gv) {
                             select += `<option value="${gv.ID_TaiKhoan}" ${sv.ID_GVHD == gv.ID_TaiKhoan ? 'selected' : ''}>${gv.Ten}</option>`;

@@ -389,7 +389,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_excel'])) {
 </head>
 
 <body>
-
     <div id="wrapper">
         <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/admin/template/slidebar.php"; ?>
         <div id="page-wrapper">
@@ -450,7 +449,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_excel'])) {
                                         <button type="submit" name="upload_excel" class="btn btn-primary btn-lg">
                                             <i class="fa fa-upload"></i> Tải lên và Import
                                         </button>
-                                        <a href="javascript:history.back()" class="btn btn-default btn-lg">
+                                        <a href="/datn/admin/pages/chitietdot?id=<?=$id?>" class="btn btn-default btn-lg">
                                             <i class="fa fa-arrow-left"></i> Quay lại
                                         </a>
                                     </div>

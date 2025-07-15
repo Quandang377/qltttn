@@ -22,7 +22,7 @@ if ($idDot > 0) {
     $dotInfoStmt->bindParam(':id', $idDot, PDO::PARAM_INT);
     $dotInfoStmt->execute();
     $dotThucTapInfo = $dotInfoStmt->fetch(PDO::FETCH_ASSOC);
-    $isDotActive = $dotThucTapInfo && $dotThucTapInfo['TrangThai'] >= 3;
+    $isDotActive = $dotThucTapInfo && ($dotThucTapInfo['TrangThai'] == 2 || $dotThucTapInfo['TrangThai'] >= 4);
 }
 
 // Fetch tasks for the entire month for calendar display
