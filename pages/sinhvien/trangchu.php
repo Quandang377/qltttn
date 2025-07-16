@@ -51,9 +51,20 @@ try {
         SET TrangThai = 2 
         WHERE ThoiGianBatDau <= :today AND TrangThai > 0");
     $updateStmt2->execute(['today' => $today]);
+    // Cập nhật trạng thái đã bắt đầu
+    $updateStmt2 = $conn->prepare("UPDATE dotthuctap 
+        SET TrangThai = 2 
+        WHERE ThoiGianBatDau <= :today AND TrangThai > 0");
+    $updateStmt2->execute(['today' => $today]);
 
     $now = date('Y-m-d H:i:s');
+    $now = date('Y-m-d H:i:s');
 
+    // Cập nhật trạng thái khảo sát: 2 = Đã hết hạn (tên bảng và cột đúng)
+    $updateKhaoSatStmt = $conn->prepare("UPDATE khaosat 
+        SET TrangThai = 2 
+        WHERE ThoiHan <= :now AND TrangThai != 2 AND TrangThai != 0");
+    $updateKhaoSatStmt->execute(['now' => $now]);
     // Cập nhật trạng thái khảo sát: 2 = Đã hết hạn (tên bảng và cột đúng)
     $updateKhaoSatStmt = $conn->prepare("UPDATE khaosat 
         SET TrangThai = 2 
@@ -69,13 +80,34 @@ try {
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     $idDot = $row['ID_Dot'] ?? null;
     $trangThaiDot = $row['TrangThai'] ?? null;
+    // Lấy thông tin đợt của sinh viên
+    $stmt = $conn->prepare("SELECT sv.ID_Dot, dt.TrangThai 
+        FROM sinhvien sv 
+        LEFT JOIN dotthuctap dt ON sv.ID_Dot = dt.ID 
+        WHERE sv.ID_TaiKhoan = ?");
+    $stmt->execute([$idTaiKhoan]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    $idDot = $row['ID_Dot'] ?? null;
+    $trangThaiDot = $row['TrangThai'] ?? null;
 
     // Lấy tên sinh viên và id tài khoản giáo viên hướng dẫn
     $stmt = $conn->prepare("SELECT Ten, ID_GVHD FROM sinhvien WHERE ID_TaiKhoan = ?");
     $stmt->execute([$idTaiKhoan]);
     $row_sv = $stmt->fetch(PDO::FETCH_ASSOC);
     $id_gvhd = $row_sv['ID_GVHD'] ?? null;
+    // Lấy tên sinh viên và id tài khoản giáo viên hướng dẫn
+    $stmt = $conn->prepare("SELECT Ten, ID_GVHD FROM sinhvien WHERE ID_TaiKhoan = ?");
+    $stmt->execute([$idTaiKhoan]);
+    $row_sv = $stmt->fetch(PDO::FETCH_ASSOC);
+    $id_gvhd = $row_sv['ID_GVHD'] ?? null;
 
+    // Kiểm tra trạng thái cho phép nộp báo cáo tổng kết của giáo viên hướng dẫn
+    if ($id_gvhd) {
+        $stmt = $conn->prepare("SELECT TrangThai FROM baocaotongket WHERE ID_TaiKhoan = ? AND ID_Dot = ?");
+        $stmt->execute([$id_gvhd, $idDot]);
+        $trangthai_baocaotongket = $stmt->fetchColumn();
+        $cho_phep_nop = ($trangthai_baocaotongket == 1);
+    }
     // Kiểm tra trạng thái cho phép nộp báo cáo tổng kết của giáo viên hướng dẫn
     if ($id_gvhd) {
         $stmt = $conn->prepare("SELECT TrangThai FROM baocaotongket WHERE ID_TaiKhoan = ? AND ID_Dot = ?");
@@ -229,6 +261,7 @@ if ($idTaiKhoan) {
   <title>Trang Chủ</title>
   <?php
   require_once __DIR__ . "/../../template/head.php";
+  require_once __DIR__ . "/../../template/head.php";
   ?>
   <style>
 
@@ -239,6 +272,7 @@ if ($idTaiKhoan) {
 
   <div id="wrapper">
     <?php
+    require_once __DIR__ . "/../../template/slidebar_Sinhvien.php";
     require_once __DIR__ . "/../../template/slidebar_Sinhvien.php";
     ?>
     <div id="page-wrapper">
@@ -397,6 +431,9 @@ if ($idTaiKhoan) {
   </div>
   </div>
 
+  <?php
+  require __DIR__ . "/../../template/footer.php";
+  ?>
   <?php
   require __DIR__ . "/../../template/footer.php";
   ?>

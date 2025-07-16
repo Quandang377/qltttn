@@ -6,6 +6,13 @@ if (session_status() == PHP_SESSION_NONE) {
 
 require_once __DIR__ . '/../../middleware/check_role.php';
 require_once __DIR__ . "/../../template/config.php";
+// Bắt đầu session an toàn
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
+require_once __DIR__ . '/../../middleware/check_role.php';
+require_once __DIR__ . "/../../template/config.php";
 
 $message = '';
 $messageType = 'success';
@@ -21,6 +28,7 @@ $idSinhVien = $_SESSION['user']['ID_TaiKhoan'] ?? 3;
 
 // Lấy thông tin đợt thực tập của sinh viên
 $stmt = $conn->prepare("SELECT ID_Dot FROM sinhvien WHERE ID_TaiKhoan = ?");
+$stmt = $conn->prepare("SELECT ID_Dot FROM sinhvien WHERE ID_TaiKhoan = ?");
 $stmt->execute([$idSinhVien]);
 $sinhVienInfo = $stmt->fetch(PDO::FETCH_ASSOC);
 $idDot = $sinhVienInfo['ID_Dot'] ?? null;
@@ -28,6 +36,7 @@ $idDot = $sinhVienInfo['ID_Dot'] ?? null;
 // Lấy thông tin chi tiết đợt thực tập
 $dotThucTapInfo = null;
 if ($idDot) {
+    $stmt = $conn->prepare("SELECT TenDot, ThoiGianBatDau, ThoiGianKetThuc, TrangThai FROM dotthuctap WHERE ID = ?");
     $stmt = $conn->prepare("SELECT TenDot, ThoiGianBatDau, ThoiGianKetThuc, TrangThai FROM dotthuctap WHERE ID = ?");
     $stmt->execute([$idDot]);
     $dotThucTapInfo = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -99,6 +108,7 @@ $stmt = $conn->prepare("
            d.TenDot, d.ThoiGianBatDau, d.ThoiGianKetThuc
     FROM giaygioithieu g
     LEFT JOIN dotthuctap d ON g.id_dot = d.ID
+    LEFT JOIN dotthuctap d ON g.id_dot = d.ID
     WHERE g.IdSinhVien = ?
     ORDER BY g.ID DESC
 ");
@@ -110,6 +120,7 @@ $giayList = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <head>
     <meta charset="UTF-8">
     <title>Đăng ký giấy giới thiệu</title>
+    <?php require_once __DIR__ . "/../../template/head.php"; ?>
     <?php require_once __DIR__ . "/../../template/head.php"; ?>
     <style>
         /* === RESET & BASE === */
@@ -706,6 +717,7 @@ $giayList = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <body>
     <div id="wrapper">
         <?php
+            require_once __DIR__ . "/../../template/slidebar_Sinhvien.php";
             require_once __DIR__ . "/../../template/slidebar_Sinhvien.php";
         ?>
         <div id="page-wrapper">
