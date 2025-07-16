@@ -1,6 +1,11 @@
 <?php
-require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
+// Bắt đầu session an toàn
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
+require_once __DIR__ . '/../../middleware/check_role.php';
+require_once __DIR__ . '/../../template/config.php';
 
 // Tạm thời gán id tài khoản sinh viên là 3
 $id_taikhoan = $_SESSION['user']['ID_TaiKhoan'] ?? null;
@@ -21,7 +26,7 @@ $id_gvhd = $row_sv['ID_GVHD'] ?? null;
     
 // Kiểm tra trạng thái cho phép nộp báo cáo tổng kết của giáo viên hướng dẫn
 if ($id_gvhd) {
-    $stmt = $conn->prepare("SELECT TrangThai FROM Baocaotongket WHERE ID_TaiKhoan = ?");
+    $stmt = $conn->prepare("SELECT TrangThai FROM baocaotongket WHERE ID_TaiKhoan = ?");
     $stmt->execute([$id_gvhd]);
     $trangthai_baocaotongket = $stmt->fetchColumn();
     $cho_phep_nop = ($trangthai_baocaotongket == 1);
@@ -30,7 +35,7 @@ if ($id_gvhd) {
 // Xử lý xóa file (cập nhật trạng thái về false và xóa file vật lý)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_baocao'])) {
     // Kiểm tra lại trạng thái cho phép nộp báo cáo tổng kết của giáo viên hướng dẫn
-    $stmt = $conn->prepare("SELECT TrangThai FROM Baocaotongket WHERE ID_TaiKhoan = ?");
+    $stmt = $conn->prepare("SELECT TrangThai FROM baocaotongket WHERE ID_TaiKhoan = ?");
     $stmt->execute([$id_gvhd]);
     $trangthai_baocaotongket = $stmt->fetchColumn();
     $cho_phep_nop = ($trangthai_baocaotongket == 1);
@@ -62,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_baocao'])) {
 // Xử lý xóa file nhận xét
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_nhanxet'])) {
     // Kiểm tra lại trạng thái cho phép nộp báo cáo tổng kết của giáo viên hướng dẫn
-    $stmt = $conn->prepare("SELECT TrangThai FROM Baocaotongket WHERE ID_TaiKhoan = ?");
+    $stmt = $conn->prepare("SELECT TrangThai FROM baocaotongket WHERE ID_TaiKhoan = ?");
     $stmt->execute([$id_gvhd]);
     $trangthai_baocaotongket = $stmt->fetchColumn();
     $cho_phep_nop = ($trangthai_baocaotongket == 1);
@@ -94,7 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_nhanxet'])) {
 // Xử lý xóa file phiếu thực tập
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_phieuthuctap'])) {
     // Kiểm tra lại trạng thái cho phép nộp báo cáo tổng kết của giáo viên hướng dẫn
-    $stmt = $conn->prepare("SELECT TrangThai FROM Baocaotongket WHERE ID_TaiKhoan = ?");
+    $stmt = $conn->prepare("SELECT TrangThai FROM baocaotongket WHERE ID_TaiKhoan = ?");
     $stmt->execute([$id_gvhd]);
     $trangthai_baocaotongket = $stmt->fetchColumn();
     $cho_phep_nop = ($trangthai_baocaotongket == 1);
@@ -126,7 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_phieuthuctap'])) 
 // Xử lý xóa file khảo sát
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_khoasat'])) {
     // Kiểm tra lại trạng thái cho phép nộp báo cáo tổng kết của giáo viên hướng dẫn
-    $stmt = $conn->prepare("SELECT TrangThai FROM Baocaotongket WHERE ID_TaiKhoan = ?");
+    $stmt = $conn->prepare("SELECT TrangThai FROM baocaotongket WHERE ID_TaiKhoan = ?");
     $stmt->execute([$id_gvhd]);
     $trangthai_baocaotongket = $stmt->fetchColumn();
     $cho_phep_nop = ($trangthai_baocaotongket == 1);
@@ -237,7 +242,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_file_panel']))
             $tenFile = $file['name'];
             $ext = strtolower(pathinfo($tenFile, PATHINFO_EXTENSION));
             if (in_array($ext, $allow[$type])) {
-                $targetDir = $_SERVER['DOCUMENT_ROOT'] . "/datn/file/";
+                $targetDir = __DIR__ . "/../../file/";
                 if (!is_dir($targetDir)) mkdir($targetDir, 0777, true);
                 $targetFile = $targetDir . basename($tenFile);
                 if (file_exists($targetFile)) {
@@ -246,7 +251,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_file_panel']))
                     $tenFile = basename($targetFile);
                 }
                 if (move_uploaded_file($file['tmp_name'], $targetFile)) {
-                    $dirForDB = realpath($targetFile);
+                    // Lưu đường dẫn tương đối vào database
+                    $dirForDB = 'file/' . basename($targetFile);
                     $stmt = $conn->prepare("INSERT INTO file (TenFile, Dir, ID_SV, TrangThai, Loai, NgayNop) VALUES (?, ?, ?, 1, ?, ?)");
                     $stmt->execute([$tenFile, $dirForDB, $id_taikhoan, $loai_db[$type], date('Y-m-d H:i:s')]);
                     header("Location: " . $_SERVER['REQUEST_URI']);
@@ -267,7 +273,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_file_panel']))
     <meta charset="UTF-8">
     <title>Nộp kết quả</title>
     <?php
-    require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php";
+    require_once __DIR__ . "/../../template/head.php";
     ?>
     <style>
         body {
@@ -522,7 +528,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_file_panel']))
 </head>
 <body>
     <div id="wrapper">
-    <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_Sinhvien.php"; ?>
+    <?php require_once __DIR__ . "/../../template/slidebar_Sinhvien.php"; ?>
     <div id="page-wrapper">
         <div class="container-fluid">
             <div class="row">
@@ -570,7 +576,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_file_panel']))
                                 
                                 <?php if ($baocao): ?>
                                     <div class="file-actions">
-                                        <a href="<?php echo htmlspecialchars($baocao_dir); ?>" target="_blank" class="file-link" title="<?php echo htmlspecialchars($baocao); ?>">
+                                        <a href="download_file.php?file=<?php echo urlencode($baocao); ?>&type=baocao" target="_blank" class="file-link" title="<?php echo htmlspecialchars($baocao); ?>">
                                             <?php
                                                 $maxLen = 12;
                                                 $tenHienThi = (mb_strlen($baocao) > $maxLen)
@@ -579,7 +585,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_file_panel']))
                                                 echo htmlspecialchars($tenHienThi);
                                             ?>
                                         </a>
-                                        <a href="/datn/download.php?file=<?php echo urlencode(basename($baocao_dir)); ?>" download class="btn-action btn-download" title="Tải xuống">
+                                        <a href="download_file.php?file=<?php echo urlencode($baocao); ?>&type=baocao" class="btn-action btn-download" title="Tải xuống">
                                             <i class="fa fa-download"></i>
                                         </a>
                                         <?php if ($cho_phep_nop): ?>
@@ -618,7 +624,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_file_panel']))
                                 
                                 <?php if ($nhanxet): ?>
                                     <div class="file-actions">
-                                        <a href="<?php echo htmlspecialchars($nhanxet_dir); ?>" target="_blank" class="file-link" title="<?php echo htmlspecialchars($nhanxet); ?>">
+                                        <a href="download_file.php?file=<?php echo urlencode($nhanxet); ?>&type=nhanxet" target="_blank" class="file-link" title="<?php echo htmlspecialchars($nhanxet); ?>">
                                             <?php
                                                 $maxLen = 12;
                                                 $tenHienThi = (mb_strlen($nhanxet) > $maxLen)
@@ -627,7 +633,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_file_panel']))
                                                 echo htmlspecialchars($tenHienThi);
                                             ?>
                                         </a>
-                                        <a href="/datn/download.php?file=<?php echo urlencode(basename($nhanxet_dir)); ?>" download class="btn-action btn-download" title="Tải xuống">
+                                        <a href="download_file.php?file=<?php echo urlencode($nhanxet); ?>&type=nhanxet" class="btn-action btn-download" title="Tải xuống">
                                             <i class="fa fa-download"></i>
                                         </a>
                                         <?php if ($cho_phep_nop): ?>
@@ -665,7 +671,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_file_panel']))
                                 
                                 <?php if ($phieuthuctap): ?>
                                     <div class="file-actions">
-                                        <a href="<?php echo htmlspecialchars($phieuthuctap_dir); ?>" target="_blank" class="file-link" title="<?php echo htmlspecialchars($phieuthuctap); ?>">
+                                        <a href="download_file.php?file=<?php echo urlencode($phieuthuctap); ?>&type=phieuthuctap" target="_blank" class="file-link" title="<?php echo htmlspecialchars($phieuthuctap); ?>">
                                             <?php
                                                 $maxLen = 12;
                                                 $tenHienThi = (mb_strlen($phieuthuctap) > $maxLen)
@@ -674,7 +680,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_file_panel']))
                                                 echo htmlspecialchars($tenHienThi);
                                             ?>
                                         </a>
-                                        <a href="/datn/download.php?file=<?php echo urlencode(basename($phieuthuctap_dir)); ?>" download class="btn-action btn-download" title="Tải xuống">
+                                        <a href="download_file.php?file=<?php echo urlencode($phieuthuctap); ?>&type=phieuthuctap" class="btn-action btn-download" title="Tải xuống">
                                             <i class="fa fa-download"></i>
                                         </a>
                                         <?php if ($cho_phep_nop): ?>
@@ -712,7 +718,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_file_panel']))
                                 
                                 <?php if ($khoasat): ?>
                                     <div class="file-actions">
-                                        <a href="<?php echo htmlspecialchars($khoasat_dir); ?>" target="_blank" class="file-link" title="<?php echo htmlspecialchars($khoasat); ?>">
+                                        <a href="download_file.php?file=<?php echo urlencode($khoasat); ?>&type=khoasat" target="_blank" class="file-link" title="<?php echo htmlspecialchars($khoasat); ?>">
                                             <?php
                                                 $maxLen = 12;
                                                 $tenHienThi = (mb_strlen($khoasat) > $maxLen)
@@ -721,7 +727,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_file_panel']))
                                                 echo htmlspecialchars($tenHienThi);
                                             ?>
                                         </a>
-                                        <a href="/datn/download.php?file=<?php echo urlencode(basename($khoasat_dir)); ?>" download class="btn-action btn-download" title="Tải xuống">
+                                        <a href="download_file.php?file=<?php echo urlencode($khoasat); ?>&type=khoasat" class="btn-action btn-download" title="Tải xuống">
                                             <i class="fa fa-download"></i>
                                         </a>
                                         <?php if ($cho_phep_nop): ?>
@@ -877,7 +883,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_file_panel']))
   </div>
 </div>
     </div>  
-        <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"; ?>                                               
+        <?php require_once __DIR__ . "/../../template/footer.php"; ?>                                               
 </body>
 </html>
 <script>

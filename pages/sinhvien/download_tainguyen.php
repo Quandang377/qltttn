@@ -1,6 +1,11 @@
 <?php
-require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
-require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
+// Bắt đầu session an toàn
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
+require_once __DIR__ . "/../../template/config.php";
+require_once __DIR__ . '/../../middleware/check_role.php';
 
 // Lấy thông tin user trước
 $idTaiKhoan = $_SESSION['user']['ID_TaiKhoan'] ?? null;
@@ -20,7 +25,7 @@ if (!isset($_GET['file'])) {
 $fileParam = $_GET['file'];
 
 // Lấy thông tin đợt của sinh viên
-$stmt = $conn->prepare("SELECT ID_Dot FROM SinhVien WHERE ID_TaiKhoan = ?");
+$stmt = $conn->prepare("SELECT ID_Dot FROM sinhvien WHERE ID_TaiKhoan = ?");
 $stmt->execute([$idTaiKhoan]);
 $idDot = $stmt->fetchColumn();
 
@@ -44,13 +49,102 @@ if (!$fileInfo) {
     die('File không tồn tại hoặc không có quyền truy cập');
 }
 
-// Sử dụng đường dẫn tuyệt đối
-$filePath = $fileInfo['DIR'];
+// Xử lý đường dẫn file để đảm bảo tính chính xác
+$originalPath = $fileInfo['DIR'];
 
-// Kiểm tra file có tồn tại không
-if (!file_exists($filePath)) {
+// Kiểm tra nhiều khả năng đường dẫn
+$possiblePaths = [];
+
+// Path 1: Nếu là đường dẫn Windows localhost
+if (strpos($originalPath, 'C:\\xampp\\htdocs\\datn\\file\\') !== false) {
+    $fileName = basename($originalPath);
+    $possiblePaths[] = __DIR__ . '/../../file/' . $fileName;
+}
+
+// Path 2: Nếu đường dẫn chứa "file/" hoặc "file\"
+if (strpos($originalPath, 'file/') !== false || strpos($originalPath, 'file\\') !== false) {
+    $fileName = basename($originalPath);
+    $possiblePaths[] = __DIR__ . '/../../file/' . $fileName;
+}
+
+// Path 3: Nếu đường dẫn bắt đầu bằng "file/"
+if (strpos($originalPath, 'file/') === 0) {
+    $possiblePaths[] = __DIR__ . '/../../' . $originalPath;
+}
+
+// Path 4: Nếu chỉ là tên file
+if (strpos($originalPath, '/') === false && strpos($originalPath, '\\') === false) {
+    $possiblePaths[] = __DIR__ . '/../../file/' . $originalPath;
+}
+
+// Path 5: Thêm các path backup
+$possiblePaths[] = __DIR__ . '/../../file/' . basename($originalPath);
+$possiblePaths[] = __DIR__ . '/../../file/' . $fileInfo['TenFile'];
+
+// Path 6: Nếu originalPath đã là đường dẫn đầy đủ
+if (is_file($originalPath)) {
+    $possiblePaths[] = $originalPath;
+}
+
+// Loại bỏ path trùng lặp
+$possiblePaths = array_unique($possiblePaths);
+
+// Tìm đường dẫn file tồn tại
+$filePath = null;
+foreach ($possiblePaths as $path) {
+    if (file_exists($path)) {
+        $filePath = $path;
+        break;
+    }
+}
+
+// Nếu không tìm thấy file nào, báo lỗi
+if (!$filePath) {
     http_response_code(404);
-    die('File không tồn tại trên server');
+    
+    // Debug mode
+    if (isset($_GET['debug'])) {
+        echo "<h1>Debug: File không tồn tại</h1>";
+        echo "<p><strong>File ID:</strong> " . htmlspecialchars($fileParam) . "</p>";
+        echo "<p><strong>User ID:</strong> " . htmlspecialchars($idTaiKhoan) . "</p>";
+        echo "<p><strong>Dot ID:</strong> " . htmlspecialchars($idDot) . "</p>";
+        echo "<p><strong>Đường dẫn gốc:</strong> " . htmlspecialchars($originalPath) . "</p>";
+        echo "<p><strong>Đã thử tìm tại:</strong></p><ul>";
+        foreach ($possiblePaths as $path) {
+            echo "<li>" . htmlspecialchars($path) . 
+                 " - " . (file_exists($path) ? "EXISTS" : "NOT EXISTS") . "</li>";
+        }
+        echo "</ul>";
+        
+        // Check file directory
+        $fileDir = __DIR__ . '/../../file/';
+        echo "<p><strong>File directory:</strong> " . htmlspecialchars($fileDir) . "</p>";
+        if (is_dir($fileDir)) {
+            echo "<p><strong>Directory contents:</strong></p><ul>";
+            $files = scandir($fileDir);
+            foreach ($files as $file) {
+                if ($file !== '.' && $file !== '..') {
+                    echo "<li>" . htmlspecialchars($file) . "</li>";
+                }
+            }
+            echo "</ul>";
+        }
+        
+        echo "<p><a href='tainguyen2.php'>Quay lại trang tài nguyên</a></p>";
+    } else {
+        echo "<!DOCTYPE html><html><head><title>File không tồn tại</title></head><body>";
+        echo "<h1>File không tồn tại</h1>";
+        echo "<p>Đường dẫn gốc: " . htmlspecialchars($originalPath) . "</p>";
+        echo "<p>Đã thử tìm tại:</p><ul>";
+        foreach ($possiblePaths as $path) {
+            echo "<li>" . htmlspecialchars($path) . "</li>";
+        }
+        echo "</ul>";
+        echo "<p><a href='tainguyen2.php'>Quay lại trang tài nguyên</a></p>";
+        echo "<p><a href='download_tainguyen.php?file=" . urlencode($fileParam) . "&debug=1'>Xem debug chi tiết</a></p>";
+        echo "</body></html>";
+    }
+    exit;
 }
 
 // Xử lý tên file download
@@ -133,14 +227,24 @@ header('Accept-Ranges: bytes');
 
 // Kiểm tra headers
 if (headers_sent()) {
-    die('Headers đã được gửi. Không thể tải file.');
+    echo "<!DOCTYPE html><html><head><title>Lỗi tải file</title></head><body>";
+    echo "<h1>Lỗi tải file</h1>";
+    echo "<p>Headers đã được gửi. Không thể tải file.</p>";
+    echo "<p><a href='tainguyen2.php'>Quay lại trang tài nguyên</a></p>";
+    echo "</body></html>";
+    exit;
 }
 
 // Đọc và xuất file
 $fp = fopen($filePath, 'rb');
 if ($fp === false) {
     http_response_code(500);
-    die('Không thể mở file.');
+    echo "<!DOCTYPE html><html><head><title>Lỗi mở file</title></head><body>";
+    echo "<h1>Lỗi mở file</h1>";
+    echo "<p>Không thể mở file: " . htmlspecialchars($filePath) . "</p>";
+    echo "<p><a href='tainguyen2.php'>Quay lại trang tài nguyên</a></p>";
+    echo "</body></html>";
+    exit;
 }
 
 // Gửi file theo chunk

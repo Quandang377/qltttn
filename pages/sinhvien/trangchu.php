@@ -1,94 +1,135 @@
 <?php
-require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
+// Bật error reporting để debug
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/../../error.log');
 
-$idTaiKhoan = $_SESSION['user']['ID_TaiKhoan'] ?? null;
+// Bắt đầu session nếu chưa có
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Kiểm tra session user - cho phép truy cập trang chủ sinh viên mà không cần đăng nhập
+// Trang này được thiết kế để hiển thị thông tin cơ bản cho sinh viên chưa đăng nhập
+$isLoggedIn = isset($_SESSION['user']);
+$userRole = $isLoggedIn ? $_SESSION['user']['VaiTro'] : null;
+
+// Include files với error handling
+try {
+    require_once __DIR__ . '/../../middleware/check_role.php';
+    require_once __DIR__ . "/../../template/config.php";
+} catch (Exception $e) {
+    die("Lỗi load file: " . $e->getMessage());
+}
+
+$idTaiKhoan = $isLoggedIn ? ($_SESSION['user']['ID_TaiKhoan'] ?? null) : null;
 $today = date('Y-m-d');
 
-// Cập nhật trạng thái kết thúc (sử dụng tên bảng đúng)
-$updateStmt = $conn->prepare("UPDATE dotthuctap 
-    SET TrangThai = 0 
-    WHERE ThoiGianKetThuc <= :today AND TrangThai != -1");
-$updateStmt->execute(['today' => $today]);
-
-// Cập nhật trạng thái đã bắt đầu
-$updateStmt2 = $conn->prepare("UPDATE dotthuctap 
-    SET TrangThai = 2 
-    WHERE ThoiGianBatDau <= :today AND TrangThai > 0");
-$updateStmt2->execute(['today' => $today]);
-
-$now = date('Y-m-d H:i:s');
-
-// Cập nhật trạng thái khảo sát: 2 = Đã hết hạn (tên bảng và cột đúng)
-$updateKhaoSatStmt = $conn->prepare("UPDATE khaosat 
-    SET TrangThai = 2 
-    WHERE ThoiHan <= :now AND TrangThai != 2 AND TrangThai != 0");
-$updateKhaoSatStmt->execute(['now' => $now]);
-
-// Lấy thông tin đợt của sinh viên
-$stmt = $conn->prepare("SELECT sv.ID_Dot, dt.TrangThai 
-    FROM sinhvien sv 
-    LEFT JOIN dotthuctap dt ON sv.ID_Dot = dt.ID 
-    WHERE sv.ID_TaiKhoan = ?");
-$stmt->execute([$idTaiKhoan]);
-$row = $stmt->fetch(PDO::FETCH_ASSOC);
-$idDot = $row['ID_Dot'] ?? null;
-$trangThaiDot = $row['TrangThai'] ?? null;
+// Khởi tạo biến mặc định
 $baocao = null;
 $baocao_dir = null;
 $baocao_trangthai = null;
 $ten_sv = '';
 $cho_phep_nop = false;
-$errorMsg = ''; // Thêm biến này ở đầu file
-
-// Lấy tên sinh viên và id tài khoản giáo viên hướng dẫn
-$stmt = $conn->prepare("SELECT Ten, ID_GVHD FROM sinhvien WHERE ID_TaiKhoan = ?");
-$stmt->execute([$idTaiKhoan]);
-$row_sv = $stmt->fetch(PDO::FETCH_ASSOC);
-$id_gvhd = $row_sv['ID_GVHD'] ?? null;
-
-// Kiểm tra trạng thái cho phép nộp báo cáo tổng kết của giáo viên hướng dẫn
-if ($id_gvhd) {
-  $stmt = $conn->prepare("SELECT TrangThai FROM Baocaotongket WHERE ID_TaiKhoan = ?");
-  $stmt->execute([$id_gvhd]);
-  $trangthai_baocaotongket = $stmt->fetchColumn();
-  $cho_phep_nop = ($trangthai_baocaotongket == 1);
-}
-
-
-// Lấy thông báo
+$errorMsg = '';
 $thongbaos = [];
-if ($idTaiKhoan == null) {
-  $stmt = $conn->prepare("
-        SELECT tb.ID, tb.TieuDe, tb.NoiDung, tb.NgayDang, tb.ID_Dot, dt.TenDot
-        FROM thongbao tb
-        LEFT JOIN dotthuctap dt ON tb.ID_Dot = dt.ID
-        WHERE tb.TrangThai = 1
-        ORDER BY tb.NgayDang DESC
-        LIMIT 10
-    ");
-  $stmt->execute();
-  $thongbaos = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} elseif ($idDot) {
-  $stmt = $conn->prepare("
-        SELECT tb.ID, tb.TieuDe, tb.NoiDung, tb.NgayDang, tb.ID_Dot, dt.TenDot
-        FROM thongbao tb
-        LEFT JOIN dotthuctap dt ON tb.ID_Dot = dt.ID
-        WHERE tb.ID_Dot = ? AND tb.TrangThai=1
-        ORDER BY tb.NgayDang DESC
-        LIMIT 10
-    ");
-  $stmt->execute([$idDot]);
-  $thongbaos = $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
+$idDot = null;
+$trangThaiDot = null;
 
-// Lấy trạng thái đợt cuối cùng
-$stmt = $conn->prepare("SELECT dt.TrangThai 
-    FROM sinhvien sv 
-    LEFT JOIN dotthuctap dt ON sv.ID_Dot = dt.ID 
-    WHERE sv.ID_TaiKhoan = ?");
-$stmt->execute([$idTaiKhoan]);
-$trangThaiDot = $stmt->fetchColumn();
+try {
+    // Chỉ thực hiện các thao tác database nếu người dùng đã đăng nhập
+    if ($isLoggedIn && $idTaiKhoan) {
+        // Cập nhật trạng thái kết thúc (sử dụng tên bảng đúng)
+    $updateStmt = $conn->prepare("UPDATE dotthuctap 
+        SET TrangThai = 0 
+        WHERE ThoiGianKetThuc <= :today AND TrangThai != -1");
+    $updateStmt->execute(['today' => $today]);
+
+    // Cập nhật trạng thái đã bắt đầu
+    $updateStmt2 = $conn->prepare("UPDATE dotthuctap 
+        SET TrangThai = 2 
+        WHERE ThoiGianBatDau <= :today AND TrangThai > 0");
+    $updateStmt2->execute(['today' => $today]);
+
+    $now = date('Y-m-d H:i:s');
+
+    // Cập nhật trạng thái khảo sát: 2 = Đã hết hạn (tên bảng và cột đúng)
+    $updateKhaoSatStmt = $conn->prepare("UPDATE khaosat 
+        SET TrangThai = 2 
+        WHERE ThoiHan <= :now AND TrangThai != 2 AND TrangThai != 0");
+    $updateKhaoSatStmt->execute(['now' => $now]);
+
+    // Lấy thông tin đợt của sinh viên
+    $stmt = $conn->prepare("SELECT sv.ID_Dot, dt.TrangThai 
+        FROM sinhvien sv 
+        LEFT JOIN dotthuctap dt ON sv.ID_Dot = dt.ID 
+        WHERE sv.ID_TaiKhoan = ?");
+    $stmt->execute([$idTaiKhoan]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    $idDot = $row['ID_Dot'] ?? null;
+    $trangThaiDot = $row['TrangThai'] ?? null;
+
+    // Lấy tên sinh viên và id tài khoản giáo viên hướng dẫn
+    $stmt = $conn->prepare("SELECT Ten, ID_GVHD FROM sinhvien WHERE ID_TaiKhoan = ?");
+    $stmt->execute([$idTaiKhoan]);
+    $row_sv = $stmt->fetch(PDO::FETCH_ASSOC);
+    $id_gvhd = $row_sv['ID_GVHD'] ?? null;
+
+    // Kiểm tra trạng thái cho phép nộp báo cáo tổng kết của giáo viên hướng dẫn
+    if ($id_gvhd) {
+        $stmt = $conn->prepare("SELECT TrangThai FROM baocaotongket WHERE ID_TaiKhoan = ? AND ID_Dot = ?");
+        $stmt->execute([$id_gvhd, $idDot]);
+        $trangthai_baocaotongket = $stmt->fetchColumn();
+        $cho_phep_nop = ($trangthai_baocaotongket == 1);
+    }
+
+    // Lấy thông báo
+    if ($idTaiKhoan == null) {
+        $stmt = $conn->prepare("
+            SELECT tb.ID, tb.TieuDe, tb.NoiDung, tb.NgayDang, tb.ID_Dot, dt.TenDot
+            FROM thongbao tb
+            LEFT JOIN dotthuctap dt ON tb.ID_Dot = dt.ID
+            WHERE tb.TrangThai = 1
+            ORDER BY tb.NgayDang DESC
+            LIMIT 10
+        ");
+        $stmt->execute();
+        $thongbaos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } elseif ($idDot) {
+        $stmt = $conn->prepare("
+            SELECT tb.ID, tb.TieuDe, tb.NoiDung, tb.NgayDang, tb.ID_Dot, dt.TenDot
+            FROM thongbao tb
+            LEFT JOIN dotthuctap dt ON tb.ID_Dot = dt.ID
+            WHERE tb.ID_Dot = ? AND tb.TrangThai=1
+            ORDER BY tb.NgayDang DESC
+            LIMIT 10
+        ");
+        $stmt->execute([$idDot]);
+        $thongbaos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // Lấy trạng thái đợt cuối cùng
+    $stmt = $conn->prepare("SELECT dt.TrangThai 
+        FROM sinhvien sv 
+        LEFT JOIN dotthuctap dt ON sv.ID_Dot = dt.ID 
+        WHERE sv.ID_TaiKhoan = ?");
+    $stmt->execute([$idTaiKhoan]);
+    $trangThaiDot = $stmt->fetchColumn();
+
+    } // Kết thúc if ($isLoggedIn && $idTaiKhoan)
+
+} catch (PDOException $e) {
+    // Ghi log lỗi
+    error_log("Database error in trangchu.php: " . $e->getMessage());
+    $errorMsg = "Có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại sau.";
+    
+    // Đặt giá trị mặc định để tránh lỗi
+    $thongbaos = [];
+    $trangThaiDot = 0;
+    $cho_phep_nop = false;
+    $idDot = null;
+}
 
 // Xử lý trạng thái panel
 $panelActive = [];
@@ -130,6 +171,20 @@ if ($idTaiKhoan) {
         'class' => 'status-internship',
         'icon' => 'fa-briefcase'
       ];
+    } elseif ($trangThaiDot == 4) {
+      $panelActive = [2]; // Panel số 3 từ trái sang phải (index 2)
+      $statusInfo = [
+        'message' => 'Giai đoạn: Thực tập và báo cáo tuần',
+        'class' => 'status-internship',
+        'icon' => 'fa-briefcase'
+      ];
+    } elseif ($trangThaiDot == 5) {
+      $panelActive = [3]; // Panel cuối (index 3)
+      $statusInfo = [
+        'message' => 'Giai đoạn: Kết thúc và nộp báo cáo',
+        'class' => 'status-completion',
+        'icon' => 'fa-check-circle'
+      ];
     }
   } elseif ($trangThaiDot <= 0) {
     // Đợt đã kết thúc
@@ -154,6 +209,15 @@ if ($idTaiKhoan) {
     elseif ($trangThaiDot == 0)
       $panelActive = [2];
   }
+} else {
+  // Trường hợp không có tài khoản hoặc trạng thái đợt < 1
+  if ($trangThaiDot < 1) {
+    $statusInfo = [
+      'message' => 'Bạn không có đợt thực tập',
+      'class' => 'status-no-batch',
+      'icon' => 'fa-exclamation-triangle'
+    ];
+  }
 }
 
 ?>
@@ -164,7 +228,7 @@ if ($idTaiKhoan) {
   <meta charset="UTF-8">
   <title>Trang Chủ</title>
   <?php
-  require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php";
+  require_once __DIR__ . "/../../template/head.php";
   ?>
   <style>
 
@@ -175,7 +239,7 @@ if ($idTaiKhoan) {
 
   <div id="wrapper">
     <?php
-    require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_Sinhvien.php";
+    require_once __DIR__ . "/../../template/slidebar_Sinhvien.php";
     ?>
     <div id="page-wrapper">
       <div class="container-fluid">
@@ -183,17 +247,43 @@ if ($idTaiKhoan) {
           <div class="col-lg-12">
             <h1 class="page-header">Quy Trình Thực Tập Tốt Nghiệp</h1>
 
-            <?php if ($idTaiKhoan && $statusInfo['message']): ?>
+            <?php if (!empty($errorMsg)): ?>
+              <div class="alert alert-danger">
+                <i class="fa fa-exclamation-triangle"></i> <?= htmlspecialchars($errorMsg) ?>
+              </div>
+            <?php endif; ?>
+
+            <?php if ($isLoggedIn && $idTaiKhoan && $statusInfo['message']): ?>
               <div class="status-indicator <?= $statusInfo['class'] ?>">
                 <i class="fa <?= $statusInfo['icon'] ?>"></i>
                 <span class="status-message"><?= $statusInfo['message'] ?></span>
+              </div>
+            <?php endif; ?>
+
+            <?php if ($trangThaiDot < 1 && $isLoggedIn && $idTaiKhoan): ?>
+              <div class="no-batch-notice">
+                <div class="alert alert-warning text-center">
+                  <i class="fa fa-exclamation-triangle fa-2x"></i>
+                  <h4>Bạn không có đợt thực tập</h4>
+                  <p>Hiện tại bạn chưa được phân công vào đợt thực tập nào. Vui lòng liên hệ phòng đào tạo để biết thêm chi tiết.</p>
+                </div>
+              </div>
+            <?php endif; ?>
+
+            <?php if (!$isLoggedIn): ?>
+              <div class="login-notice">
+                <div class="alert alert-info text-center">
+                  <i class="fa fa-info-circle fa-2x"></i>
+                  <h4>Chào mừng bạn đến với hệ thống quản lý thực tập</h4>
+                  <p>Để sử dụng đầy đủ tính năng, vui lòng <a href="/datn/login.php" class="btn btn-primary btn-sm">đăng nhập</a></p>
+                </div>
               </div>
             <?php endif; ?>
           </div>
         </div>
         <div class="row panel-row">
           <div class="col-md-3 panel-container">
-            <a href="pages/sinhvien/xemdanhsachcongty" style="text-decoration: none; color: inherit;">
+            <a <?= ($isLoggedIn && $trangThaiDot >= 1) ? 'href="pages/sinhvien/xemdanhsachcongty"' : 'href="/datn/login.php"' ?> style="text-decoration: none; color: inherit;">
               <div class="panel panel-default <?= in_array(0, $panelActive) ? 'active-step' : '' ?>"
                 style="min-height: 180px;">
                 <div class="panel-heading">
@@ -208,7 +298,7 @@ if ($idTaiKhoan) {
             </a>
           </div>
           <div class="col-md-3 panel-container">
-            <a <?= ($trangThaiDot >= 2) ? 'href="pages/sinhvien/dangkygiaygioithieu"' : '' ?>
+            <a <?= ($isLoggedIn && $trangThaiDot >= 2) ? 'href="pages/sinhvien/dangkygiaygioithieu"' : 'href="/datn/login.php"' ?>
               style="text-decoration: none; color: inherit;">
               <div class="panel panel-default <?= in_array(1, $panelActive) ? 'active-step' : '' ?>"
                 style="min-height: 180px;">
@@ -218,7 +308,9 @@ if ($idTaiKhoan) {
                 <div class="panel-body">
                   <p><i class="fa fa-info-circle text-info"></i> Gửi thông tin đăng ký xin giấy giới thiệu thực tập</p>
                   <p><i class="fa fa-clock-o text-warning"></i> Chờ phê duyệt từ khoa</p>
-                  <?php if ($trangThaiDot < 2): ?>
+                  <?php if (!$isLoggedIn): ?>
+                    <p><i class="fa fa-lock text-muted"></i> <small>Cần đăng nhập</small></p>
+                  <?php elseif ($trangThaiDot < 2): ?>
                     <p><i class="fa fa-lock text-muted"></i> <small>Chưa mở</small></p>
                   <?php endif; ?>
                 </div>
@@ -226,7 +318,7 @@ if ($idTaiKhoan) {
             </a>
           </div>
           <div class="col-md-3 panel-container">
-            <a <?= (!$trangThaiDot >= 2 && $trangThaiDot != 3) ? 'href="pages/sinhvien/baocaotuan"' : '' ?>
+            <a <?= ($isLoggedIn && $trangThaiDot >= 2 && $trangThaiDot != 3) ? 'href="pages/sinhvien/baocaotuan"' : 'href="/datn/login.php"' ?>
               style="text-decoration: none; color: inherit;">
               <div class="panel panel-default <?= in_array(2, $panelActive) ? 'active-step' : '' ?>"
                 style="min-height: 180px;">
@@ -236,7 +328,9 @@ if ($idTaiKhoan) {
                 <div class="panel-body">
                   <p><i class="fa fa-calendar text-primary"></i> Bắt đầu thực tập</p>
                   <p><i class="fa fa-file-text-o text-primary"></i> Gửi báo cáo hằng tuần</p>
-                  <?php if ($trangThaiDot >= 2 && $trangThaiDot != 3): ?>
+                  <?php if (!$isLoggedIn): ?>
+                    <p><i class="fa fa-lock text-muted"></i> <small>Cần đăng nhập</small></p>
+                  <?php elseif ($trangThaiDot >= 2 && $trangThaiDot != 3): ?>
                     <p><i class="fa fa-lock text-muted"></i> <small>Chưa mở</small></p>
                   <?php endif; ?>
                 </div>
@@ -244,7 +338,7 @@ if ($idTaiKhoan) {
             </a>
           </div>
           <div class="col-md-3 panel-container">
-            <a <?= ($cho_phep_nop) ? 'href="pages/sinhvien/nopketqua"' : 'href="#" data-toggle="modal" data-target="#detailModal"' ?> style="text-decoration: none; color: inherit;">
+            <a <?= ($isLoggedIn && $cho_phep_nop) ? 'href="pages/sinhvien/nopketqua"' : ($isLoggedIn ? 'href="#" data-toggle="modal" data-target="#detailModal"' : 'href="/datn/login.php"') ?> style="text-decoration: none; color: inherit;">
               <div class="panel panel-default <?= in_array(3, $panelActive) ? 'active-step' : '' ?>"
                 style="min-height: 180px;">
                 <div class="panel-heading">
@@ -254,7 +348,9 @@ if ($idTaiKhoan) {
                   <p><i class="fa fa-file-pdf-o text-danger"></i> Phiếu chấm điểm...</p>
                   <p><i class="fa fa-comment text-info"></i> Nhận xét thực tập...</p>
                   <p><i class="fa fa-book text-success"></i> Quyển báo cáo...</p>
-                  <?php if (!$cho_phep_nop): ?>
+                  <?php if (!$isLoggedIn): ?>
+                    <p><i class="fa fa-lock text-muted"></i> <small>Cần đăng nhập</small></p>
+                  <?php elseif (!$cho_phep_nop): ?>
                     <p><i class="fa fa-lock text-muted"></i> <small>Chưa mở</small></p>
                   <?php endif; ?>
                 </div>
@@ -278,7 +374,7 @@ if ($idTaiKhoan) {
                 </div>
                 <div class="modal-footer">
                   <button class="btn btn-default" data-dismiss="modal">Đóng</button>
-                  <a <?= ($trangThaiDot != 5) ? 'disabled' : '' ?> href="pages/sinhvien/nopketqua"
+                  <a <?= ($isLoggedIn && $trangThaiDot == 5) ? 'href="pages/sinhvien/nopketqua"' : 'href="/datn/login.php"' ?>
                     class="btn btn-primary">Đến nộp</a>
                 </div>
               </div>
@@ -301,10 +397,9 @@ if ($idTaiKhoan) {
   </div>
   </div>
 
-  <?
-
-  require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
-    ?>
+  <?php
+  require __DIR__ . "/../../template/footer.php";
+  ?>
   <script>
     const thongbaos = <?= json_encode($thongbaos) ?>;
     const pageSize = 5;
@@ -477,6 +572,22 @@ if ($idTaiKhoan) {
 
   .status-indicator.status-ended {
     background: linear-gradient(135deg, #bdc3c7 0%, #2c3e50 100%);
+  }
+
+  .status-indicator.status-no-batch {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    animation: pulse-warning 3s infinite;
+  }
+
+  @keyframes pulse-warning {
+    0%, 100% {
+      transform: scale(1);
+      box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+    }
+    50% {
+      transform: scale(1.02);
+      box-shadow: 0 6px 25px rgba(255, 107, 107, 0.5);
+    }
   }
 
   .status-indicator i {
@@ -849,6 +960,66 @@ if ($idTaiKhoan) {
   }
 
   .empty-notification p {
+    margin-bottom: 0;
+    font-size: 14px;
+  }
+
+  /* === NO BATCH NOTICE === */
+  .no-batch-notice {
+    margin-bottom: 25px;
+  }
+
+  .no-batch-notice .alert {
+    border-radius: 15px;
+    border: 2px solid #ffc107;
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+    box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+    padding: 30px 20px;
+  }
+
+  .no-batch-notice .alert i {
+    color: #856404;
+    margin-bottom: 15px;
+  }
+
+  .no-batch-notice .alert h4 {
+    color: #856404;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+
+  .no-batch-notice .alert p {
+    color: #856404;
+    margin-bottom: 0;
+    font-size: 14px;
+  }
+
+  /* === LOGIN NOTICE === */
+  .login-notice {
+    margin-bottom: 25px;
+  }
+
+  .login-notice .alert {
+    border-radius: 15px;
+    border: 2px solid #17a2b8;
+    background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+    box-shadow: 0 4px 15px rgba(23, 162, 184, 0.3);
+    padding: 30px 20px;
+  }
+
+  .login-notice .alert i {
+    color: #0c5460;
+    margin-bottom: 15px;
+  }
+
+  .login-notice .alert h4 {
+    color: #0c5460;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+
+  .login-notice .alert p {
+    color: #0c5460;
     margin-bottom: 0;
     font-size: 14px;
   }

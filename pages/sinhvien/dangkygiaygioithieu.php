@@ -1,6 +1,11 @@
 <?php
-require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
+// Bắt đầu session an toàn
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
+require_once __DIR__ . '/../../middleware/check_role.php';
+require_once __DIR__ . "/../../template/config.php";
 
 $message = '';
 $messageType = 'success';
@@ -15,7 +20,7 @@ if (isset($_GET['success']) && $_GET['success'] == '1' && isset($_GET['msg'])) {
 $idSinhVien = $_SESSION['user']['ID_TaiKhoan'] ?? 3;
 
 // Lấy thông tin đợt thực tập của sinh viên
-$stmt = $conn->prepare("SELECT ID_Dot FROM SinhVien WHERE ID_TaiKhoan = ?");
+$stmt = $conn->prepare("SELECT ID_Dot FROM sinhvien WHERE ID_TaiKhoan = ?");
 $stmt->execute([$idSinhVien]);
 $sinhVienInfo = $stmt->fetch(PDO::FETCH_ASSOC);
 $idDot = $sinhVienInfo['ID_Dot'] ?? null;
@@ -23,7 +28,7 @@ $idDot = $sinhVienInfo['ID_Dot'] ?? null;
 // Lấy thông tin chi tiết đợt thực tập
 $dotThucTapInfo = null;
 if ($idDot) {
-    $stmt = $conn->prepare("SELECT TenDot, ThoiGianBatDau, ThoiGianKetThuc, TrangThai FROM DotThucTap WHERE ID = ?");
+    $stmt = $conn->prepare("SELECT TenDot, ThoiGianBatDau, ThoiGianKetThuc, TrangThai FROM dotthuctap WHERE ID = ?");
     $stmt->execute([$idDot]);
     $dotThucTapInfo = $stmt->fetch(PDO::FETCH_ASSOC);
 }
@@ -93,7 +98,7 @@ $stmt = $conn->prepare("
     SELECT g.ID, g.TenCty, g.MaSoThue, g.DiaChi, g.Sdt, g.Email, g.LinhVuc, g.TrangThai,
            d.TenDot, d.ThoiGianBatDau, d.ThoiGianKetThuc
     FROM giaygioithieu g
-    LEFT JOIN DotThucTap d ON g.id_dot = d.ID
+    LEFT JOIN dotthuctap d ON g.id_dot = d.ID
     WHERE g.IdSinhVien = ?
     ORDER BY g.ID DESC
 ");
@@ -105,7 +110,7 @@ $giayList = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <head>
     <meta charset="UTF-8">
     <title>Đăng ký giấy giới thiệu</title>
-    <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php"; ?>
+    <?php require_once __DIR__ . "/../../template/head.php"; ?>
     <style>
         /* === RESET & BASE === */
         * {
@@ -701,106 +706,7 @@ $giayList = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <body>
     <div id="wrapper">
         <?php
-            require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
-            require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_Sinhvien.php";
-
-            $message = '';
-            $messageType = 'success';
-
-            // Kiểm tra thông báo từ URL sau khi redirect
-            if (isset($_GET['success']) && $_GET['success'] == '1' && isset($_GET['msg'])) {
-                $message = urldecode($_GET['msg']);
-                $messageType = 'success';
-            }
-
-            // Lấy ID sinh viên từ session
-            $idSinhVien = $_SESSION['user']['ID_TaiKhoan'] ?? 3;
-            
-            // Lấy thông tin đợt thực tập của sinh viên
-            $stmt = $conn->prepare("SELECT ID_Dot FROM SinhVien WHERE ID_TaiKhoan = ?");
-            $stmt->execute([$idSinhVien]);
-            $sinhVienInfo = $stmt->fetch(PDO::FETCH_ASSOC);
-            $idDot = $sinhVienInfo['ID_Dot'] ?? null;
-            
-            // Lấy thông tin chi tiết đợt thực tập
-            $dotThucTapInfo = null;
-            if ($idDot) {
-                $stmt = $conn->prepare("SELECT TenDot, ThoiGianBatDau, ThoiGianKetThuc, TrangThai FROM DotThucTap WHERE ID = ?");
-                $stmt->execute([$idDot]);
-                $dotThucTapInfo = $stmt->fetch(PDO::FETCH_ASSOC);
-            }
-
-            if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['from_panel'])) {
-                $taxCode = trim($_POST['ma_so_thue']);
-                $name = trim($_POST['ten_cong_ty']);
-                $address = trim($_POST['dia_chi']);
-                $field = trim($_POST['linh_vuc']);
-                $phone = trim($_POST['sdt']);
-                $email = trim($_POST['email']);
-
-                // Kiểm tra dữ liệu phía server
-                if (!$taxCode || !$name || !$address || !$field || !$phone || !$email) {
-                    $message = 'Vui lòng nhập đầy đủ tất cả các trường!';
-                    $messageType = 'danger';
-                } elseif (!$idDot) {
-                    $message = 'Bạn chưa được phân công vào đợt thực tập nào!';
-                    $messageType = 'danger';
-                } elseif ($dotThucTapInfo && $dotThucTapInfo['TrangThai'] < 2) {
-                    $message = 'Đợt thực tập của bạn đã kết thúc hoặc chưa bắt đầu. Không thể đăng ký giấy giới thiệu!';
-                    $messageType = 'danger';
-                } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                    $message = 'Email không hợp lệ!';
-                    $messageType = 'danger';
-                } elseif (!preg_match('/^[0-9\-\+\s]{8,}$/', $phone)) {
-                    $message = 'Số điện thoại không hợp lệ!';
-                    $messageType = 'danger';
-                } else {
-                    try {
-                        // Kiểm tra xem công ty đã có trong database hay chưa
-                        $checkStmt = $conn->prepare("SELECT ID FROM congty WHERE MaSoThue = ? AND TrangThai = 1");
-                        $checkStmt->execute([$taxCode]);
-                        $existingCompany = $checkStmt->fetch(PDO::FETCH_ASSOC);
-                        
-                        // Nếu công ty đã có trong DB và trạng thái active thì set trạng thái = 1 (đã duyệt)
-                        // Ngược lại set trạng thái = 0 (chờ duyệt)
-                        $trangThai = $existingCompany ? 1 : 0;
-                        
-                        $stmt = $conn->prepare("INSERT INTO giaygioithieu (TenCty, MaSoThue, DiaChi, LinhVuc, Sdt, Email, IdSinhVien, id_dot, TrangThai) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                        $stmt->execute([$name, $taxCode, $address, $field, $phone, $email, $idSinhVien, $idDot, $trangThai]);
-                        
-                        if ($trangThai == 1) {
-                            $message = 'Đã gửi phiếu đăng ký thực tập và tự động duyệt (công ty đã có trong hệ thống)!';
-                        } else {
-                            $message = 'Đã gửi phiếu đăng ký thực tập, vui lòng chờ duyệt!';
-                        }
-                        $messageType = 'success';
-                        
-                        // Redirect để tránh resubmit form khi refresh
-                        header("Location: " . $_SERVER['PHP_SELF'] . "?success=1&msg=" . urlencode($message));
-                        exit();
-                    } catch (Exception $e) {
-                        $message = 'Có lỗi xảy ra khi lưu dữ liệu: ' . $e->getMessage();
-                        $messageType = 'danger';
-                    }
-                }
-            }
-
-            // Lấy danh sách công ty
-            $stmt = $conn->prepare("SELECT ID, TenCty, MaSoThue, DiaChi, Sdt, Email, Linhvuc FROM congty WHERE TrangThai = 1");
-            $stmt->execute();
-            $companyList = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            // Lấy danh sách giấy giới thiệu của sinh viên với thông tin đợt thực tập
-            $stmt = $conn->prepare("
-                SELECT g.ID, g.TenCty, g.MaSoThue, g.DiaChi, g.Sdt, g.Email, g.LinhVuc, g.TrangThai,
-                       d.TenDot, d.ThoiGianBatDau, d.ThoiGianKetThuc
-                FROM giaygioithieu g
-                LEFT JOIN DotThucTap d ON g.id_dot = d.ID
-                WHERE g.IdSinhVien = ?
-                ORDER BY g.ID DESC
-            ");
-            $stmt->execute([$idSinhVien]);
-            $giayList = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            require_once __DIR__ . "/../../template/slidebar_Sinhvien.php";
         ?>
         <div id="page-wrapper">
             <div class="container-fluid">
@@ -1041,7 +947,36 @@ $giayList = $stmt->fetchAll(PDO::FETCH_ASSOC);
             </div>
         </div>
     </div>
-    <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"; ?>
+    <?php require_once __DIR__ . "/../../template/footer.php"; ?>
+    <script>
+    /**
+     * Gọi API VietQR để lấy thông tin doanh nghiệp theo mã số thuế
+     * @param {string} taxCode - Mã số thuế doanh nghiệp
+     * @returns {Promise<Object>} - Trả về Promise chứa dữ liệu doanh nghiệp hoặc null nếu lỗi
+     */
+    async function getBusinessInfoByTaxCode(taxCode) {
+        try {
+            // Gọi trực tiếp API VietQR
+            const response = await fetch(`https://api.vietqr.io/v2/business/${taxCode}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data && data.data) {
+                    return data.data;
+                }
+            }
+            return null;
+        } catch (error) {
+            console.error('Lỗi khi gọi API VietQR:', error);
+            return null;
+        }
+    }
+    </script>
     <script>
     const companyList = <?= json_encode($companyList) ?>;
     let filteredCompanies = [...companyList];
@@ -1361,6 +1296,19 @@ $giayList = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 return;
             }
             
+            // Kiểm tra định dạng mã số thuế
+            const cleanTaxCode = taxCode.replace(/[^0-9]/g, '');
+            if (cleanTaxCode.length < 10) {
+                alert('Mã số thuế phải có ít nhất 10 chữ số');
+                return;
+            }
+            
+            // Kiểm tra xem hàm API có tồn tại không
+            if (typeof getBusinessInfoByTaxCode !== 'function') {
+                alert('Chức năng lấy thông tin doanh nghiệp chưa sẵn sàng. Vui lòng thử lại sau.');
+                return;
+            }
+            
             // Hiển thị loading
             const btn = this;
             const originalText = btn.innerHTML;
@@ -1368,19 +1316,25 @@ $giayList = $stmt->fetchAll(PDO::FETCH_ASSOC);
             btn.disabled = true;
             
             try {
-                const info = await getBusinessInfoByTaxCode(taxCode);
+                // Sử dụng hàm API có sẵn
+                const info = await getBusinessInfoByTaxCode(cleanTaxCode);
+                
                 if (info) {
+                    // Fill dữ liệu vào form
                     document.getElementById('manual-ten-cong-ty').value = info.name || info.shortName || '';
                     document.getElementById('manual-dia-chi').value = info.address || info.diaChi || '';
                     document.getElementById('manual-linh-vuc').value = info.businessLine || info.linhVuc || '';
                     document.getElementById('manual-sdt').value = info.phone || info.soDienThoai || '';
                     document.getElementById('manual-email').value = info.email || '';
+                    
+                    // Hiển thị thông báo thành công
+                    alert('Đã lấy thông tin doanh nghiệp thành công!');
                 } else {
-                    alert('Không tìm thấy thông tin doanh nghiệp hoặc API bị lỗi.');
+                    alert('Không tìm thấy thông tin doanh nghiệp với mã số thuế này. Vui lòng nhập thủ công.');
                 }
             } catch (error) {
-                console.error('API Error:', error);
-                alert('Có lỗi xảy ra khi gọi API. Vui lòng thử lại.');
+                console.error('Lỗi khi lấy thông tin doanh nghiệp:', error);
+                alert('Không thể kết nối đến dịch vụ thông tin doanh nghiệp. Vui lòng kiểm tra kết nối mạng hoặc nhập thông tin thủ công.');
             } finally {
                 // Khôi phục trạng thái button
                 btn.innerHTML = originalText;
@@ -1433,6 +1387,5 @@ $giayList = $stmt->fetchAll(PDO::FETCH_ASSOC);
         };
     });
     </script>
-    <script src="/datn/api/getapi.js"></script>
 </body>
 </html>

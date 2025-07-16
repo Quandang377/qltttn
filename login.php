@@ -39,7 +39,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt = $conn->prepare("UPDATE taikhoan SET remember_token = ? WHERE ID_TaiKhoan = ?");
                 $stmt->execute([$token, $user['ID_TaiKhoan']]);
             }
-            header("Location: " . BASE_PATH . "/");
+            
+            // Redirect về trang được yêu cầu trước khi đăng nhập hoặc trang chủ tương ứng với vai trò
+            if (isset($_SESSION['redirect_after_login'])) {
+                $redirect_url = $_SESSION['redirect_after_login'];
+                unset($_SESSION['redirect_after_login']);
+                header("Location: " . $redirect_url);
+            } else {
+                // Redirect theo vai trò
+                switch ($user['VaiTro']) {
+                    case 'Admin':
+                        header("Location: " . BASE_PATH . "/admin/pages/trangchu");
+                        break;
+                    case 'Cán bộ Khoa/Bộ môn':
+                        header("Location: " . BASE_PATH . "/pages/canbo/trangchu");
+                        break;
+                    case 'Giáo viên':
+                        header("Location: " . BASE_PATH . "/pages/giaovien/trangchu");
+                        break;
+                    case 'Sinh viên':
+                        header("Location: " . BASE_PATH . "/pages/sinhvien/trangchu");
+                        break;
+                    default:
+                        header("Location: " . BASE_PATH . "/");
+                }
+            }
             exit;
         } else {
             $error = "Tài khoản hoặc mật khẩu không đúng hoặc đã bị khóa.";

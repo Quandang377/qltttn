@@ -27,10 +27,19 @@ $publicPages = [
     BASE_PATH . "/pages/sinhvien/require_login",
 ];
 
-if (!isset($_SESSION['user']) && !in_array($uriClean, $publicPages)) {
+// Kiểm tra xem có phải trang công khai không
+$isPublicPage = in_array($uriClean, $publicPages);
+
+// Nếu chưa đăng nhập và không phải trang công khai thì redirect về login
+if (!isset($_SESSION['user']) && !$isPublicPage) {
     $_SESSION['redirect_after_login'] = $_SERVER['REQUEST_URI'];
     header("Location: " . BASE_PATH . "/login");
     exit;
+}
+
+// Nếu chưa đăng nhập nhưng đang truy cập trang công khai thì cho phép
+if (!isset($_SESSION['user']) && $isPublicPage) {
+    return; // Cho phép truy cập trang công khai
 }
 
 // nếu đã đăng nhập thì kiểm tra vai trò

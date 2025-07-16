@@ -7,8 +7,8 @@ $currentPath = $_SERVER['REQUEST_URI'];
 $tenDot = '';
 if ($idTaiKhoan) {
     $stmt = $conn->prepare("SELECT dt.TenDot 
-        FROM SinhVien sv 
-        LEFT JOIN DotThucTap dt ON sv.ID_Dot = dt.ID 
+        FROM sinhvien sv 
+        LEFT JOIN dotthuctap dt ON sv.ID_Dot = dt.ID 
         WHERE sv.ID_TaiKhoan = ?");
     $stmt->execute([$idTaiKhoan]);
     $tenDot = $stmt->fetchColumn();
@@ -16,14 +16,14 @@ if ($idTaiKhoan) {
 
 $coThongBaoMoi = false;
 if ($idTaiKhoan) {
-    $stmt = $conn->prepare("SELECT ID_Dot FROM SinhVien WHERE ID_TaiKhoan = ?");
+    $stmt = $conn->prepare("SELECT ID_Dot FROM sinhvien WHERE ID_TaiKhoan = ?");
     $stmt->execute([$idTaiKhoan]);
     $idDot = $stmt->fetchColumn();
 
     $stmt = $conn->prepare("
-        SELECT COUNT(*) FROM THONGBAO tb
+        SELECT COUNT(*) FROM thongbao tb
         WHERE tb.TRANGTHAI = 1 AND tb.ID_Dot = ? AND tb.ID NOT IN (
-            SELECT ID_ThongBao FROM ThongBao_Xem WHERE ID_TaiKhoan = ?
+            SELECT ID_ThongBao FROM thongbao_xem WHERE ID_TaiKhoan = ?
         )
     ");
     $stmt->execute([$idDot, $idTaiKhoan]);
@@ -32,13 +32,13 @@ if ($idTaiKhoan) {
 if ($idTaiKhoan) {
     $stmt = $conn->prepare("
         SELECT COUNT(*) 
-        FROM KhaoSat ks
+        FROM khaosat ks
         WHERE ks.TrangThai = 1
         AND (
             (
                 ks.NguoiNhan IN ('Tất cả', ?)
                 AND EXISTS (
-                    SELECT 1 FROM SinhVien sv
+                    SELECT 1 FROM sinhvien sv
                     WHERE sv.ID_TaiKhoan = ?
                     AND sv.ID_Dot = ks.ID_Dot
                 )
@@ -46,7 +46,7 @@ if ($idTaiKhoan) {
             OR (
                 ks.NguoiNhan = 'Sinh viên thuộc hướng dẫn'
                 AND EXISTS (
-                    SELECT 1 FROM SinhVien sv
+                    SELECT 1 FROM sinhvien sv
                     WHERE sv.ID_TaiKhoan = ?
                     AND sv.ID_GVHD = ks.NguoiTao
                     AND sv.ID_Dot = ks.ID_Dot
@@ -55,7 +55,7 @@ if ($idTaiKhoan) {
         )
         AND ks.ID NOT IN (
             SELECT ID_KhaoSat 
-            FROM PhanHoiKhaoSat 
+            FROM phanhoikhaosat 
             WHERE ID_TaiKhoan = ?
         )
     ");
