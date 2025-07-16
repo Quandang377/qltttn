@@ -1,9 +1,12 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 
 // Kiểm tra đăng nhập và quyền truy cập
-if (!isset($_SESSION['user']['ID_TaiKhoan'])) {
+if (!isset($_SESSION['user_id'])) {
     header('Location: /datn/login.php');
     exit();
 }
@@ -24,14 +27,14 @@ function getLettersByStatus() {
         // Optimized query - lấy tất cả trong một lần và group theo status
         $stmt = $conn->prepare("
                 SELECT 
-                    g.ID, g.TenCty, g.DiaChi, g.IdSinhVien, g.TrangThai, g.id_dot, 
+                    g.ID, g.TenCty, g.DiaChi, g.Idsinhvien, g.TrangThai, g.id_dot, 
                     g.id_nguoinhan, g.ngay_nhan, g.ghi_chu,
-                    s.Ten AS TenSinhVien, s.MSSV,
+                    s.Ten AS Tensinhvien, s.MSSV,
                     sn.Ten AS TenNguoiNhan, sn.MSSV AS MSSVNguoiNhan,
                     d.TenDot, d.ThoiGianBatDau, d.ThoiGianKetThuc
                 FROM giaygioithieu g
-                LEFT JOIN sinhvien s ON g.IdSinhVien = s.ID_TaiKhoan
-                LEFT JOIN sinhvien sn ON g.id_nguoinhan = sn.ID_TaiKhoan
+                LEFT JOIN sinhvien s ON g.Idsinhvien = s.ID_taikhoan
+                LEFT JOIN sinhvien sn ON g.id_nguoinhan = sn.ID_taikhoan
                 LEFT JOIN dotthuctap d ON g.id_dot = d.ID
                 ORDER BY g.TrangThai ASC, g.ID DESC
         ");
@@ -490,7 +493,7 @@ function groupLettersByCompany($letters) {
 </head>
 <body>
     <div id="wrapper">
-       <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_canbo.php"; ?>
+       <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_CanBo.php"; ?>
         
         <div id="page-wrapper">
             <div class="container-fluid">
@@ -551,7 +554,7 @@ function groupLettersByCompany($letters) {
                                      data-id="<?php echo $letter['ID']; ?>"
                                      data-status="approved"
                                      data-mssv="<?php echo htmlspecialchars($letter['MSSV']); ?>"
-                                     data-student="<?php echo htmlspecialchars($letter['TenSinhVien']); ?>"
+                                     data-student="<?php echo htmlspecialchars($letter['Tensinhvien']); ?>"
                                      data-company="<?php echo htmlspecialchars($letter['TenCty']); ?>"
                                      onclick="viewDetails(<?php echo $letter['ID']; ?>)">
                                     
@@ -566,7 +569,7 @@ function groupLettersByCompany($letters) {
                                     
                                     <div class="student-info">
                                         <i class="fa fa-user"></i>
-                                        <?php echo htmlspecialchars($letter['TenSinhVien']); ?> 
+                                        <?php echo htmlspecialchars($letter['Tensinhvien']); ?> 
                                         (<?php echo htmlspecialchars($letter['MSSV']); ?>)
                                         <?php if ($letter['TenDot']): ?>
                                             <br><i class="fa fa-calendar"></i>
@@ -607,7 +610,7 @@ function groupLettersByCompany($letters) {
                                      data-id="<?php echo $letter['ID']; ?>"
                                      data-status="pending"
                                      data-mssv="<?php echo htmlspecialchars($letter['MSSV']); ?>"
-                                     data-student="<?php echo htmlspecialchars($letter['TenSinhVien']); ?>"
+                                     data-student="<?php echo htmlspecialchars($letter['Tensinhvien']); ?>"
                                      data-company="<?php echo htmlspecialchars($letter['TenCty']); ?>"
                                      onclick="viewDetails(<?php echo $letter['ID']; ?>)">
                                     
@@ -622,7 +625,7 @@ function groupLettersByCompany($letters) {
                                     
                                     <div class="student-info">
                                         <i class="fa fa-user"></i>
-                                        <?php echo htmlspecialchars($letter['TenSinhVien']); ?> 
+                                        <?php echo htmlspecialchars($letter['Tensinhvien']); ?> 
                                         (<?php echo htmlspecialchars($letter['MSSV']); ?>)
                                         <?php if ($letter['TenDot']): ?>
                                             <br><i class="fa fa-calendar"></i>
@@ -663,7 +666,7 @@ function groupLettersByCompany($letters) {
                                      data-id="<?php echo $letter['ID']; ?>"
                                      data-status="printed"
                                      data-mssv="<?php echo htmlspecialchars($letter['MSSV']); ?>"
-                                     data-student="<?php echo htmlspecialchars($letter['TenSinhVien']); ?>"
+                                     data-student="<?php echo htmlspecialchars($letter['Tensinhvien']); ?>"
                                      data-company="<?php echo htmlspecialchars($letter['TenCty']); ?>">
                                     
                                     <div class="status-badge status-printed">
@@ -677,7 +680,7 @@ function groupLettersByCompany($letters) {
                                     
                                     <div class="student-info">
                                         <i class="fa fa-user"></i>
-                                        <?php echo htmlspecialchars($letter['TenSinhVien']); ?> 
+                                        <?php echo htmlspecialchars($letter['Tensinhvien']); ?> 
                                         (<?php echo htmlspecialchars($letter['MSSV']); ?>)
                                         <?php if ($letter['TenDot']): ?>
                                             <br><i class="fa fa-calendar"></i>
@@ -718,7 +721,7 @@ function groupLettersByCompany($letters) {
                                      data-id="<?php echo $letter['ID']; ?>"
                                      data-status="received"
                                      data-mssv="<?php echo htmlspecialchars($letter['MSSV']); ?>"
-                                     data-student="<?php echo htmlspecialchars($letter['TenSinhVien']); ?>"
+                                     data-student="<?php echo htmlspecialchars($letter['Tensinhvien']); ?>"
                                      data-company="<?php echo htmlspecialchars($letter['TenCty']); ?>">
                                     
                                     <div class="status-badge status-received">
@@ -732,7 +735,7 @@ function groupLettersByCompany($letters) {
                                     
                                     <div class="student-info">
                                         <i class="fa fa-user"></i>
-                                        <?php echo htmlspecialchars($letter['TenSinhVien']); ?> 
+                                        <?php echo htmlspecialchars($letter['Tensinhvien']); ?> 
                                         (<?php echo htmlspecialchars($letter['MSSV']); ?>)
                                         <?php if ($letter['TenDot']): ?>
                                             <br><i class="fa fa-calendar"></i>
@@ -1172,7 +1175,7 @@ function groupLettersByCompany($letters) {
         
         students.forEach(student => {
             const option = document.createElement('option');
-            option.value = student.ID_TaiKhoan;
+            option.value = student.ID_taikhoan;
             option.textContent = `${student.Ten} (${student.MSSV})`;
             select.appendChild(option);
         });

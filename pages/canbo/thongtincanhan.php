@@ -1,18 +1,21 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/middleware/check_role.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
-$idTaiKhoan = $_SESSION['user']['ID_TaiKhoan'] ?? null;
+$idTaiKhoan = $_SESSION['user_id'] ?? null;
 $vaiTro = $_SESSION['user']['VaiTro'] ?? '';
 
 // Lấy thông tin người dùng
 $stmt = $conn->prepare("
     SELECT 
         COALESCE(gv.Ten) AS Ten,
-        tk.TaiKhoan AS Email,
+        tk.taikhoan AS Email,
         tk.VaiTro
-    FROM TaiKhoan tk
-    LEFT JOIN CanBoKhoa gv ON tk.ID_TaiKhoan = gv.ID_TaiKhoan
+    FROM taikhoan tk
+    LEFT JOIN canbokhoa gv ON tk.ID_TaiKhoan = gv.ID_TaiKhoan
     WHERE tk.ID_TaiKhoan = ?
 ");
 

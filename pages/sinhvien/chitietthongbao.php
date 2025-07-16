@@ -1,4 +1,9 @@
-<?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
+<?php 
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/../../error.log');
+require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
@@ -33,7 +38,7 @@ function renderMediaEmbed($content)
   }, $content);
 }
 if($idTaiKhoan){
-$stmt = $conn->prepare("SELECT ID_Dot FROM SinhVien WHERE ID_TaiKhoan = ?");
+$stmt = $conn->prepare("SELECT ID_Dot FROM sinhvien WHERE ID_TaiKhoan = ?");
 $stmt->execute([$idTaiKhoan]);
 $idDot = $stmt->fetchColumn();
 
@@ -41,17 +46,17 @@ $idThongBao = $_POST['idThongBao'] ?? null;
 
 // ✅ Đánh dấu đã xem ngay khi truy cập chi tiết
 if ($idTaiKhoan && $id) {
-    $stmt = $conn->prepare("SELECT COUNT(*) FROM ThongBao_Xem WHERE ID_TaiKhoan = ? AND ID_ThongBao = ?");
+    $stmt = $conn->prepare("SELECT COUNT(*) FROM thongbao_xem WHERE ID_TaiKhoan = ? AND ID_ThongBao = ?");
     $stmt->execute([$idTaiKhoan, $id]);
     if ($stmt->fetchColumn() == 0) {
-        $stmt = $conn->prepare("INSERT INTO ThongBao_Xem (ID_TaiKhoan, ID_ThongBao) VALUES (?, ?)");
+        $stmt = $conn->prepare("INSERT INTO thongbao_xem (ID_TaiKhoan, ID_ThongBao) VALUES (?, ?)");
         $stmt->execute([$idTaiKhoan, $id]);
     }
 }
 // Lấy thông báo chi tiết (chỉ thuộc đợt của SV)
 $stmt = $conn->prepare("SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.ID_TAIKHOAN, tb.NGAYDANG, tb.TRANGTHAI, tb.ID_Dot, dt.TenDot
-    FROM THONGBAO tb
-    LEFT JOIN DotThucTap dt ON tb.ID_Dot = dt.ID
+    FROM thongbao tb
+    LEFT JOIN dotthuctap dt ON tb.ID_Dot = dt.ID
     WHERE tb.ID = ? AND tb.ID_Dot = ?");
 $stmt->execute([$id, $idDot]);
 $thongbao = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -62,22 +67,22 @@ if (!$thongbao) {
 
 // Lấy các thông báo khác cùng đợt
 $stmt_khac = $conn->prepare("SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.ID_TAIKHOAN, tb.NGAYDANG, tb.TRANGTHAI, tb.ID_Dot, dt.TenDot
-    FROM THONGBAO tb
-    LEFT JOIN DotThucTap dt ON tb.ID_Dot = dt.ID
+    FROM thongbao tb
+    LEFT JOIN dotthuctap dt ON tb.ID_Dot = dt.ID
     WHERE tb.ID != ? AND tb.ID_Dot = ? AND tb.TRANGTHAI = 1
     ORDER BY tb.NGAYDANG DESC LIMIT 20");
 $stmt_khac->execute([$id, $idDot]);
 $thongbao_khac = $stmt_khac->fetchAll(PDO::FETCH_ASSOC);
 
 // Lấy danh sách ID thông báo đã xem
-$stmt = $conn->prepare("SELECT ID_ThongBao FROM ThongBao_Xem WHERE ID_TaiKhoan = ?");
+$stmt = $conn->prepare("SELECT ID_ThongBao FROM thongbao_xem WHERE ID_TaiKhoan = ?");
 $stmt->execute([$idTaiKhoan]);
 $daXem = array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'ID_ThongBao');
 }
 else
 {
   $stmt = $conn->prepare("SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.NGAYDANG, tb.TRANGTHAI
-    FROM THONGBAO tb
+    FROM thongbao tb
     WHERE tb.ID = ?");
 $stmt->execute([$id]);
 $thongbao = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -86,7 +91,7 @@ if (!$thongbao) {
   die("Không tìm thấy thông báo.");
 }
 $stmt_khac = $conn->prepare("SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.ID_TAIKHOAN, tb.NGAYDANG, tb.TRANGTHAI
-    FROM THONGBAO tb
+    FROM thongbao tb
     WHERE tb.ID != ? AND tb.TRANGTHAI = 1
     ORDER BY tb.NGAYDANG DESC LIMIT 20");
 $stmt_khac->execute([$id]);
@@ -106,7 +111,7 @@ $thongbao_khac = $stmt_khac->fetchAll(PDO::FETCH_ASSOC);
 
 <body>
   <div id="wrapper">
-    <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_SinhVien.php"; ?>
+    <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_Sinhvien.php"; ?>
 
     <div id="page-wrapper">
       <div class="container-fluid">

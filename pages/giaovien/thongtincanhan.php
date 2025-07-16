@@ -1,21 +1,25 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/../../error.log');
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
-$idTaiKhoan = $_SESSION['user']['ID_TaiKhoan'] ?? null;
+$idtaikhoan = $_SESSION['user_id'] ?? null;
 $vaiTro = $_SESSION['user']['VaiTro'] ?? '';
 
 // Lấy thông tin người dùng
 $stmt = $conn->prepare("
     SELECT 
         COALESCE( gv.Ten) AS Ten,
-        tk.TaiKhoan AS Email,
+        tk.taikhoan AS Email,
         tk.VaiTro
-    FROM TaiKhoan tk
-    LEFT JOIN GiaoVien gv ON tk.ID_TaiKhoan = gv.ID_TaiKhoan
-    WHERE tk.ID_TaiKhoan = ?
+    FROM taikhoan tk
+    LEFT JOIN giaovien gv ON tk.ID_taikhoan = gv.ID_taikhoan
+    WHERE tk.ID_taikhoan = ?
 ");
-$stmt->execute([$idTaiKhoan]);
+$stmt->execute([$idtaikhoan]);
 $info = $stmt->fetch(PDO::FETCH_ASSOC);
 // Lấy các đợt thực tập mà người dùng này (giáo viên) đang tham gia (TrangThai != 0)
 $stmtDot = $conn->prepare("
@@ -25,7 +29,7 @@ $stmtDot = $conn->prepare("
     WHERE dg.ID_GVHD = ? AND dt.TrangThai != 0 AND dt.TrangThai != 0
     ORDER BY dt.ThoiGianBatDau DESC
 ");
-$stmtDot->execute([$idTaiKhoan]);
+$stmtDot->execute([$idtaikhoan]);
 $dsDotDangThamGia = $stmtDot->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
@@ -274,7 +278,7 @@ $dsDotDangThamGia = $stmtDot->fetchAll(PDO::FETCH_ASSOC);
 </head>
 <body>
     <div id="wrapper">
-        <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_GiaoVien.php"; ?>
+        <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_Giaovien.php"; ?>
         <div id="page-wrapper">
             <div id="pages-heading"><H1>Thông tin cá nhân</H1> </div>
             <div class="container-fluid"></div>
@@ -329,13 +333,7 @@ $dsDotDangThamGia = $stmtDot->fetchAll(PDO::FETCH_ASSOC);
                         </div>
                     </div>
                 </div>
-                <div class="row">
-                    <div class="col-md-12 text-center">
-                        <a href="doimatkhau" class="btn btn-primary btn-lg" style="margin-top: 20px;">
-                            <span class="glyphicon glyphicon-lock"></span> Đổi mật khẩu
-                        </a>
-                    </div>
-                </div>
+              
             </div>
         </div>
     </div>

@@ -1,12 +1,15 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
 $idTaiKhoan = $_SESSION['user_id'];
 $role = $_SESSION['user_role'];
 ($role == "Cán bộ Khoa/Bộ môn") ?
-    $stmt = $conn->prepare("SELECT Ten FROM CanBoKhoa WHERE ID_TaiKhoan = ?") :
-    $stmt = $conn->prepare("SELECT Ten FROM Admin WHERE ID_TaiKhoan = ?");
+    $stmt = $conn->prepare("SELECT Ten FROM canbokhoa WHERE ID_TaiKhoan = ?") :
+    $stmt = $conn->prepare("SELECT Ten FROM admin WHERE ID_TaiKhoan = ?");
 
 $stmt->execute([$idTaiKhoan]);
 $hoTen = $stmt->fetchColumn();
@@ -17,9 +20,9 @@ function getAllInternships($conn)
             d.ID, d.TenDot, d.Nam, d.BacDaoTao, d.NguoiQuanLy,
             COALESCE(cb.Ten, ad.Ten) AS TenNguoiQuanLy,
             d.ThoiGianBatDau, d.ThoiGianKetThuc, d.NguoiMoDot, d.TrangThai
-        FROM DOTTHUCTAP d
-        LEFT JOIN CanBoKhoa cb ON d.NguoiQuanLy = cb.ID_TaiKhoan
-        LEFT JOIN Admin ad ON d.NguoiQuanLy = ad.ID_TaiKhoan
+        FROM dotthuctap d
+        LEFT JOIN canbokhoa cb ON d.NguoiQuanLy = cb.ID_TaiKhoan
+        LEFT JOIN admin ad ON d.NguoiQuanLy = ad.ID_TaiKhoan
         WHERE d.TrangThai != -1
         ORDER BY d.ThoiGianBatDau DESC
     ");
@@ -29,13 +32,13 @@ function getAllInternships($conn)
 
 function countSimilar($conn, $tendot)
 {
-    $stmt = $conn->prepare("SELECT COUNT(*) FROM DOTTHUCTAP WHERE TENDOT LIKE :tendot");
+    $stmt = $conn->prepare("SELECT COUNT(*) FROM dotthuctap WHERE TENDOT LIKE :tendot");
     $stmt->execute(['tendot' => $tendot . '%']);
     return $stmt->fetchColumn();
 }
 function saveInternship($conn, $tendot, $BacDaoTao, $namHoc, $thoigianbatdau, $thoigianketthuc, $nguoiquanly, $nguoitao)
 {
-    $stmt = $conn->prepare("INSERT INTO DOTTHUCTAP (
+    $stmt = $conn->prepare("INSERT INTO dotthuctap (
         TENDOT, NAM, BACDAOTAO, NGUOIQUANLY, THOIGIANBATDAU, THOIGIANKETTHUC, NGUOIMODOT, TRANGTHAI
     ) VALUES (:tendot, :nam, :BacDaoTao, :nguoiquanly, :thoigianbatdau, :thoigianketthuc, :nguoimodot, 1)");
 
@@ -86,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 
 }
-$danhSachDotThucTap = getAllInternships($conn);
+$danhSachdotthuctap = getAllInternships($conn);
 $stmt = $conn->query("
     SELECT ID_TaiKhoan, Ten FROM canbokhoa WHERE TrangThai = 1
     UNION
@@ -434,6 +437,19 @@ if (isset($_SESSION['deleted'])) {
             padding: 10px 16px;
         }
     }
+    #TableDotTT th,
+#TableDotTT td {
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+#TableDotTT td:last-child {
+  text-align: center;
+}
+
+#TableDotTT td a.btn {
+  min-width: 100px;
+}
 </style>
 </head>
 
@@ -506,9 +522,9 @@ if (isset($_SESSION['deleted'])) {
                     </div>
                     </form>
                 </div>
-                <div id="containerDotThucTap" class="mt-3">
+                <div id="containerdotthuctap" class="mt-3">
 
-                    <div id="listDotThucTap" class="row">
+                    <div id="listdotthuctap" class="row">
                     </div>
                     <div class="row">
                         <div class="col-lg-12">
@@ -532,7 +548,7 @@ if (isset($_SESSION['deleted'])) {
                                 <div class="panel-body">
                                     <div class="table-responsive">
 
-                                        <table class="table" id="TableDotTT">
+                                        <table class="table table-bordered table-striped table-hover" id="TableDotTT">
                                             <thead>
                                                 <tr>
                                                     <th>#</th>
@@ -548,7 +564,7 @@ if (isset($_SESSION['deleted'])) {
                                             </thead>
                                             <tbody>
                                                 <?php $i = 1;
-                                                foreach ($danhSachDotThucTap as $dot):
+                                                foreach ($danhSachdotthuctap as $dot):
                                                     if ($dot['TrangThai'] == -1)
                                                         continue;
                                                     $link = '/datn/admin/pages/chitietdot?id=' . urlencode($dot['ID']);

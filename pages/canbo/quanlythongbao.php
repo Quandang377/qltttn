@@ -1,12 +1,15 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
-$idTaiKhoan = $_SESSION['user_id'] ?? null;
+$idtaikhoan = $_SESSION['user_id'] ?? null;
 
 // Lấy danh sách đợt mà cán bộ này quản lý
-$stmt = $conn->prepare("SELECT ID, TenDot FROM DotThucTap WHERE NguoiQuanLy = ?");
-$stmt->execute([$idTaiKhoan]);
+$stmt = $conn->prepare("SELECT ID, TenDot FROM dotthuctap WHERE NguoiQuanLy = ?");
+$stmt->execute([$idtaikhoan]);
 $dsDot = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Lấy danh sách ID đợt
@@ -27,13 +30,13 @@ if (!empty($dsDotID)) {
 
   $stmt = $conn->prepare("
         SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.NGAYDANG, tb.ID_Dot,
-            COALESCE(ad.Ten, cbk.Ten, tk.TaiKhoan) AS NguoiTao,
+            COALESCE(ad.Ten, cbk.Ten, tk.taikhoan) AS NguoiTao,
             dt.TenDot
-        FROM THONGBAO tb
-        LEFT JOIN admin ad ON tb.ID_TaiKhoan = ad.ID_TaiKhoan
-        LEFT JOIN canbokhoa cbk ON tb.ID_TaiKhoan = cbk.ID_TaiKhoan
-        LEFT JOIN TaiKhoan tk ON tb.ID_TaiKhoan = tk.ID_TaiKhoan
-        LEFT JOIN DotThucTap dt ON tb.ID_Dot = dt.ID
+        FROM thongbao tb
+        LEFT JOIN admin ad ON tb.ID_taikhoan = ad.ID_taikhoan
+        LEFT JOIN canbokhoa cbk ON tb.ID_taikhoan = cbk.ID_taikhoan
+        LEFT JOIN taikhoan tk ON tb.ID_taikhoan = tk.ID_taikhoan
+        LEFT JOIN dotthuctap dt ON tb.ID_Dot = dt.ID
         WHERE tb.TRANGTHAI = 1 AND tb.ID_Dot IN ($placeholders)
         ORDER BY tb.NGAYDANG DESC
     ");
@@ -44,7 +47,7 @@ if (!empty($dsDotID)) {
 // Xử lý xóa thông báo
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_thongbao_id'])) {
   $idThongBao = $_POST['xoa_thongbao_id'];
-  $stmt = $conn->prepare("UPDATE ThongBao SET TrangThai = 0 WHERE ID = ?");
+  $stmt = $conn->prepare("UPDATE thongbao SET TrangThai = 0 WHERE ID = ?");
   $stmt->execute([$idThongBao]);
   $_SESSION['success'] = "Xoá thông báo thành công.";
   header("Location: " . $_SERVER['REQUEST_URI']);

@@ -1,4 +1,7 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 
@@ -30,8 +33,8 @@ try {
     // Lấy thông tin giấy giới thiệu
     $stmt = $conn->prepare("
         SELECT g.*, s.Ten AS TenSinhVien, s.MSSV
-        FROM GiayGioiThieu g
-        LEFT JOIN SinhVien s ON g.IdSinhVien = s.ID_TaiKhoan
+        FROM giaygioithieu g
+        LEFT JOIN sinhvien s ON g.IdSinhVien = s.ID_TaiKhoan
         WHERE g.ID = ? AND g.TrangThai = 0
     ");
     $stmt->execute([$letterId]);
@@ -64,7 +67,7 @@ try {
     }
     
     // Cập nhật trạng thái giấy giới thiệu thành "đã duyệt"
-    $stmtUpdate = $conn->prepare("UPDATE GiayGioiThieu SET TrangThai = 1 WHERE ID = ?");
+    $stmtUpdate = $conn->prepare("UPDATE giaygioithieu SET TrangThai = 1 WHERE ID = ?");
     $stmtUpdate->execute([$letterId]);
     
     // Commit transaction

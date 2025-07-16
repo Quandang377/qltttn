@@ -7,7 +7,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
 $id_taikhoan = $_SESSION['user_id'] ?? null;
 
-$stmt = $conn->prepare("SELECT ID, TenDot FROM DotThucTap WHERE TrangThai >= 0 ORDER BY ID DESC");
+$stmt = $conn->prepare("SELECT ID, TenDot FROM dotthuctap WHERE TrangThai >= 0 ORDER BY ID DESC");
 $stmt->execute();
 $dsDot = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     die("Đợt thực tập không hợp lệ!");
   }
 
-  $stmt = $conn->prepare("INSERT INTO THONGBAO (TIEUDE, NOIDUNG, NGAYDANG, TRANGTHAI, ID_Dot, ID_TaiKhoan) VALUES (:tieude, :noidung, NOW(),1, :id_dot, :id_taikhoan)");
+  $stmt = $conn->prepare("INSERT INTO thongbao (TIEUDE, NOIDUNG, NGAYDANG, TRANGTHAI, ID_Dot, ID_TaiKhoan) VALUES (:tieude, :noidung, NOW(),1, :id_dot, :id_taikhoan)");
   $stmt->execute([
     'tieude' => $tieude,
     'noidung' => $noidung,
@@ -524,7 +524,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           </div>
           <div class="col-md-12">
             <div class="form-container mt-4">
-              <form id="FormThongBao" method="post" enctype="multipart/form-data">
+              <form id="Formthongbao" method="post" enctype="multipart/form-data">
 
                 <!-- Chọn đợt thực tập -->
                 <div class="form-group mb-3">
@@ -584,7 +584,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 </html>
 <script>
-  const form = document.querySelector('#FormThongBao');
+  const form = document.querySelector('#Formthongbao');
 
   form.addEventListener('submit', (e) => {
     const textarea = document.createElement('textarea');

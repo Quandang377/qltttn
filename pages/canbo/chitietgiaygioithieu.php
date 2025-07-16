@@ -1,4 +1,7 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
@@ -11,22 +14,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['giay_id'])) {
 }
 
 $giay = null;
-$tenSinhVien = '';
+$tensinhvien = '';
 $mssv = '';
 $message = '';
 
 // Lấy thông tin giấy giới thiệu và sinh viên
 if ($id) {
     $stmt = $conn->prepare("
-        SELECT g.*, s.Ten AS TenSinhVien, s.MSSV
-        FROM GiayGioiThieu g
-        LEFT JOIN SinhVien s ON g.IdSinhVien = s.ID_TaiKhoan
+        SELECT g.*, s.Ten AS Tensinhvien, s.MSSV
+        FROM giaygioithieu g
+        LEFT JOIN sinhvien s ON g.Idsinhvien = s.ID_taikhoan
         WHERE g.ID = ?
     ");
     $stmt->execute([$id]);
     $giay = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($giay) {
-        $tenSinhVien = $giay['TenSinhVien'] ?? '';
+        $tensinhvien = $giay['Tensinhvien'] ?? '';
         $mssv = $giay['MSSV'] ?? '';
     }
 }
@@ -36,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['duyet']) && $id) {
     // Lấy lại thông tin giấy để lấy mã số thuế và thông tin công ty
     $stmt = $conn->prepare("
         SELECT TenCty, MaSoThue, LinhVuc, Sdt, Email, DiaChi
-        FROM GiayGioiThieu
+        FROM giaygioithieu
         WHERE ID = ?
     ");
     $stmt->execute([$id]);
@@ -61,20 +64,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['duyet']) && $id) {
     }
 
     // Cập nhật trạng thái giấy giới thiệu
-    $stmt = $conn->prepare("UPDATE GiayGioiThieu SET TrangThai = 1 WHERE ID = ?");
+    $stmt = $conn->prepare("UPDATE giaygioithieu SET TrangThai = 1 WHERE ID = ?");
     if ($stmt->execute([$id])) {
         $message = "Đã duyệt giấy giới thiệu thành công!";
         // Cập nhật lại dữ liệu sau khi duyệt
         $stmt = $conn->prepare("
-            SELECT g.*, s.Ten AS TenSinhVien, s.MSSV
-            FROM GiayGioiThieu g
-            LEFT JOIN SinhVien s ON g.IdSinhVien = s.ID_TaiKhoan
+            SELECT g.*, s.Ten AS Tensinhvien, s.MSSV
+            FROM giaygioithieu g
+            LEFT JOIN sinhvien s ON g.Idsinhvien = s.ID_taikhoan
             WHERE g.ID = ?
         ");
         $stmt->execute([$id]);
         $giay = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($giay) {
-            $tenSinhVien = $giay['TenSinhVien'] ?? '';
+            $tensinhvien = $giay['Tensinhvien'] ?? '';
             $mssv = $giay['MSSV'] ?? '';
         }
     } else {
@@ -356,10 +359,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['duyet']) && $id) {
             </h1>
         </div>
         
-        <?php if ($tenSinhVien || $mssv): ?>
+        <?php if ($tensinhvien || $mssv): ?>
             <div class="student-info">
                 <i class="fa fa-user"></i>
-                <?php echo htmlspecialchars($tenSinhVien); ?>
+                <?php echo htmlspecialchars($tensinhvien); ?>
                 <?php if ($mssv): ?>
                     (<?php echo htmlspecialchars($mssv); ?>)
                 <?php endif; ?>

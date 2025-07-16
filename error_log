@@ -1,0 +1,444 @@
+[16-Jul-2025 19:56:27 Asia/Ho_Chi_Minh] Debug - Dòng 2 content: Array
+(
+    [A] => 
+    [B] => 
+    [C] => Lớp học phần:
+    [D] => CÐN QTM 22B-Thực tập tốt nghiệp
+    [E] => 
+    [F] => 
+    [G] => 
+    [H] => 
+    [I] => 
+    [J] => 
+    [K] => 
+    [L] => 
+    [M] => 
+    [N] => 
+    [O] => 
+    [P] => 
+    [Q] => 
+    [R] => 
+)
+
+[16-Jul-2025 19:56:27 Asia/Ho_Chi_Minh] Debug - Found class in D2: CÐN QTM 22B-Thực tập tốt nghiệp
+[16-Jul-2025 19:56:27 Asia/Ho_Chi_Minh] Debug - Extracted class: CÐN QTM 22B
+[16-Jul-2025 19:56:27 Asia/Ho_Chi_Minh] Row 4: MSSV='', Ho='', Ten='', NgaySinh=''
+[16-Jul-2025 19:56:27 Asia/Ho_Chi_Minh] Debug - Skipping empty row 4
+[16-Jul-2025 19:56:27 Asia/Ho_Chi_Minh] Debug - Skipping header row 5
+[16-Jul-2025 19:56:27 Asia/Ho_Chi_Minh] Row 6: MSSV='0468221088', Ho='Lê Vĩnh', Ten='An', NgaySinh='12/01/2004'
+[16-Jul-2025 19:56:27 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=179, ID_Dot=74, Ten='Lê Vĩnh An', MSSV='0468221088', Lop='CÐN QTM 22B', NgaySinh='2004-01-12'
+[16-Jul-2025 19:56:27 Asia/Ho_Chi_Minh] Row 7: MSSV='0468221090', Ho='Nguyễn Tiến', Ten='Anh', NgaySinh='23/12/2003'
+[16-Jul-2025 19:56:27 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=180, ID_Dot=74, Ten='Nguyễn Tiến Anh', MSSV='0468221090', Lop='CÐN QTM 22B', NgaySinh='2003-12-23'
+[16-Jul-2025 19:56:27 Asia/Ho_Chi_Minh] Row 8: MSSV='0468221094', Ho='Lê Đặng Thanh', Ten='Bình', NgaySinh='07/02/2004'
+[16-Jul-2025 19:56:27 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=181, ID_Dot=74, Ten='Lê Đặng Thanh Bình', MSSV='0468221094', Lop='CÐN QTM 22B', NgaySinh='2004-02-07'
+[16-Jul-2025 19:56:27 Asia/Ho_Chi_Minh] Row 9: MSSV='0468221099', Ho='Hà Đông', Ten='Cường', NgaySinh='07/05/2001'
+[16-Jul-2025 19:56:27 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=182, ID_Dot=74, Ten='Hà Đông Cường', MSSV='0468221099', Lop='CÐN QTM 22B', NgaySinh='2001-05-07'
+[16-Jul-2025 19:56:27 Asia/Ho_Chi_Minh] Row 10: MSSV='0468221100', Ho='Nguyễn Vĩnh', Ten='Cường', NgaySinh='26/12/2004'
+[16-Jul-2025 19:56:27 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=183, ID_Dot=74, Ten='Nguyễn Vĩnh Cường', MSSV='0468221100', Lop='CÐN QTM 22B', NgaySinh='2004-12-26'
+[16-Jul-2025 19:56:27 Asia/Ho_Chi_Minh] Row 11: MSSV='0468221105', Ho='Nguyễn Ngọc Bảo', Ten='Duy', NgaySinh='31/03/2004'
+[16-Jul-2025 19:56:27 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=184, ID_Dot=74, Ten='Nguyễn Ngọc Bảo Duy', MSSV='0468221105', Lop='CÐN QTM 22B', NgaySinh='2004-03-31'
+[16-Jul-2025 19:56:27 Asia/Ho_Chi_Minh] Row 12: MSSV='0468221107', Ho='Hồng Nguyễn Tuấn', Ten='Đạt', NgaySinh='14/09/2004'
+[16-Jul-2025 19:56:27 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=185, ID_Dot=74, Ten='Hồng Nguyễn Tuấn Đạt', MSSV='0468221107', Lop='CÐN QTM 22B', NgaySinh='2004-09-14'
+[16-Jul-2025 19:56:27 Asia/Ho_Chi_Minh] Row 13: MSSV='0468221110', Ho='Đào Trọng', Ten='Giáp', NgaySinh='11/02/2004'
+[16-Jul-2025 19:56:27 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=186, ID_Dot=74, Ten='Đào Trọng Giáp', MSSV='0468221110', Lop='CÐN QTM 22B', NgaySinh='2004-02-11'
+[16-Jul-2025 19:56:27 Asia/Ho_Chi_Minh] Row 14: MSSV='0468221111', Ho='Nguyễn Thanh', Ten='Hải', NgaySinh='02/12/2004'
+[16-Jul-2025 19:56:27 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=187, ID_Dot=74, Ten='Nguyễn Thanh Hải', MSSV='0468221111', Lop='CÐN QTM 22B', NgaySinh='2004-12-02'
+[16-Jul-2025 19:56:27 Asia/Ho_Chi_Minh] Row 15: MSSV='0468221112', Ho='Ngô Văn', Ten='Hoà', NgaySinh='27/10/2003'
+[16-Jul-2025 19:56:27 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=188, ID_Dot=74, Ten='Ngô Văn Hoà', MSSV='0468221112', Lop='CÐN QTM 22B', NgaySinh='2003-10-27'
+[16-Jul-2025 19:56:27 Asia/Ho_Chi_Minh] Row 16: MSSV='0468221113', Ho='Trần Văn', Ten='Hoàng', NgaySinh='18/07/2004'
+[16-Jul-2025 19:56:27 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=189, ID_Dot=74, Ten='Trần Văn Hoàng', MSSV='0468221113', Lop='CÐN QTM 22B', NgaySinh='2004-07-18'
+[16-Jul-2025 19:56:27 Asia/Ho_Chi_Minh] Row 17: MSSV='0468221114', Ho='Đinh Thị Cẩm', Ten='Hồng', NgaySinh='08/10/2004'
+[16-Jul-2025 19:56:27 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=190, ID_Dot=74, Ten='Đinh Thị Cẩm Hồng', MSSV='0468221114', Lop='CÐN QTM 22B', NgaySinh='2004-10-08'
+[16-Jul-2025 19:56:27 Asia/Ho_Chi_Minh] Row 18: MSSV='0468221115', Ho='Nguyễn Đăng', Ten='Huy', NgaySinh='21/04/2004'
+[16-Jul-2025 19:56:27 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=191, ID_Dot=74, Ten='Nguyễn Đăng Huy', MSSV='0468221115', Lop='CÐN QTM 22B', NgaySinh='2004-04-21'
+[16-Jul-2025 19:56:27 Asia/Ho_Chi_Minh] Row 19: MSSV='0468221119', Ho='Trần Quốc', Ten='Huy', NgaySinh='19/10/2004'
+[16-Jul-2025 19:56:27 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=192, ID_Dot=74, Ten='Trần Quốc Huy', MSSV='0468221119', Lop='CÐN QTM 22B', NgaySinh='2004-10-19'
+[16-Jul-2025 19:56:27 Asia/Ho_Chi_Minh] Row 20: MSSV='0468221121', Ho='Đoàn Huỳnh Gia', Ten='Khang', NgaySinh='14/10/2004'
+[16-Jul-2025 19:56:27 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=193, ID_Dot=74, Ten='Đoàn Huỳnh Gia Khang', MSSV='0468221121', Lop='CÐN QTM 22B', NgaySinh='2004-10-14'
+[16-Jul-2025 19:56:27 Asia/Ho_Chi_Minh] Row 21: MSSV='0468221125', Ho='Đoàn Quốc', Ten='Khánh', NgaySinh='31/03/2004'
+[16-Jul-2025 19:56:28 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=194, ID_Dot=74, Ten='Đoàn Quốc Khánh', MSSV='0468221125', Lop='CÐN QTM 22B', NgaySinh='2004-03-31'
+[16-Jul-2025 19:56:28 Asia/Ho_Chi_Minh] Row 22: MSSV='0468221126', Ho='Hoàng Văn', Ten='Khánh', NgaySinh='02/02/2004'
+[16-Jul-2025 19:56:28 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=195, ID_Dot=74, Ten='Hoàng Văn Khánh', MSSV='0468221126', Lop='CÐN QTM 22B', NgaySinh='2004-02-02'
+[16-Jul-2025 19:56:28 Asia/Ho_Chi_Minh] Row 23: MSSV='0468221129', Ho='Nguyễn Bùi Đăng', Ten='Khoa', NgaySinh='07/07/2004'
+[16-Jul-2025 19:56:28 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=196, ID_Dot=74, Ten='Nguyễn Bùi Đăng Khoa', MSSV='0468221129', Lop='CÐN QTM 22B', NgaySinh='2004-07-07'
+[16-Jul-2025 19:56:28 Asia/Ho_Chi_Minh] Row 24: MSSV='0468221134', Ho='Nguyễn Hoàng', Ten='Lâm', NgaySinh='14/11/2004'
+[16-Jul-2025 19:56:28 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=197, ID_Dot=74, Ten='Nguyễn Hoàng Lâm', MSSV='0468221134', Lop='CÐN QTM 22B', NgaySinh='2004-11-14'
+[16-Jul-2025 19:56:28 Asia/Ho_Chi_Minh] Row 25: MSSV='0468221136', Ho='Phan Tấn', Ten='Lộc', NgaySinh='08/12/2004'
+[16-Jul-2025 19:56:28 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=198, ID_Dot=74, Ten='Phan Tấn Lộc', MSSV='0468221136', Lop='CÐN QTM 22B', NgaySinh='2004-12-08'
+[16-Jul-2025 19:56:28 Asia/Ho_Chi_Minh] Row 26: MSSV='0468221141', Ho='Nguyễn Thị Hồng', Ten='Ngọc', NgaySinh='26/07/2004'
+[16-Jul-2025 19:56:28 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=199, ID_Dot=74, Ten='Nguyễn Thị Hồng Ngọc', MSSV='0468221141', Lop='CÐN QTM 22B', NgaySinh='2004-07-26'
+[16-Jul-2025 19:56:28 Asia/Ho_Chi_Minh] Row 27: MSSV='0468221142', Ho='Nguyễn Hoài', Ten='Nhân', NgaySinh='07/11/2004'
+[16-Jul-2025 19:56:28 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=200, ID_Dot=74, Ten='Nguyễn Hoài Nhân', MSSV='0468221142', Lop='CÐN QTM 22B', NgaySinh='2004-11-07'
+[16-Jul-2025 19:56:28 Asia/Ho_Chi_Minh] Row 28: MSSV='0468221143', Ho='Nguyễn Ngọc Yến', Ten='Nhi', NgaySinh='17/09/2004'
+[16-Jul-2025 19:56:28 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=201, ID_Dot=74, Ten='Nguyễn Ngọc Yến Nhi', MSSV='0468221143', Lop='CÐN QTM 22B', NgaySinh='2004-09-17'
+[16-Jul-2025 19:56:28 Asia/Ho_Chi_Minh] Row 29: MSSV='0468221151', Ho='Trần Thanh', Ten='Quân', NgaySinh='18/08/2001'
+[16-Jul-2025 19:56:28 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=202, ID_Dot=74, Ten='Trần Thanh Quân', MSSV='0468221151', Lop='CÐN QTM 22B', NgaySinh='2001-08-18'
+[16-Jul-2025 19:56:28 Asia/Ho_Chi_Minh] Row 30: MSSV='0468221152', Ho='Phan Tiến', Ten='Sĩ', NgaySinh='03/07/2004'
+[16-Jul-2025 19:56:28 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=203, ID_Dot=74, Ten='Phan Tiến Sĩ', MSSV='0468221152', Lop='CÐN QTM 22B', NgaySinh='2004-07-03'
+[16-Jul-2025 19:56:28 Asia/Ho_Chi_Minh] Row 31: MSSV='0468221157', Ho='Phan Thanh Nhân', Ten='Tâm', NgaySinh='11/10/2004'
+[16-Jul-2025 19:56:28 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=204, ID_Dot=74, Ten='Phan Thanh Nhân Tâm', MSSV='0468221157', Lop='CÐN QTM 22B', NgaySinh='2004-10-11'
+[16-Jul-2025 19:56:28 Asia/Ho_Chi_Minh] Row 32: MSSV='0468221160', Ho='Trịnh Nhật', Ten='Thiên', NgaySinh='21/08/2004'
+[16-Jul-2025 19:56:28 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=205, ID_Dot=74, Ten='Trịnh Nhật Thiên', MSSV='0468221160', Lop='CÐN QTM 22B', NgaySinh='2004-08-21'
+[16-Jul-2025 19:56:28 Asia/Ho_Chi_Minh] Row 33: MSSV='0468221163', Ho='Huỳnh', Ten='Thôn', NgaySinh='11/12/2004'
+[16-Jul-2025 19:56:28 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=206, ID_Dot=74, Ten='Huỳnh Thôn', MSSV='0468221163', Lop='CÐN QTM 22B', NgaySinh='2004-12-11'
+[16-Jul-2025 19:56:28 Asia/Ho_Chi_Minh] Row 34: MSSV='0468221166', Ho='Lý Quỳnh', Ten='Thy', NgaySinh='18/12/2004'
+[16-Jul-2025 19:56:28 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=207, ID_Dot=74, Ten='Lý Quỳnh Thy', MSSV='0468221166', Lop='CÐN QTM 22B', NgaySinh='2004-12-18'
+[16-Jul-2025 19:56:28 Asia/Ho_Chi_Minh] Row 35: MSSV='0468221167', Ho='Nguyễn Mạnh', Ten='Tiến', NgaySinh='08/01/2004'
+[16-Jul-2025 19:56:28 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=208, ID_Dot=74, Ten='Nguyễn Mạnh Tiến', MSSV='0468221167', Lop='CÐN QTM 22B', NgaySinh='2004-01-08'
+[16-Jul-2025 19:56:28 Asia/Ho_Chi_Minh] Row 36: MSSV='0468221171', Ho='Nguyễn Viết', Ten='Trường', NgaySinh='10/02/2004'
+[16-Jul-2025 19:56:28 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=209, ID_Dot=74, Ten='Nguyễn Viết Trường', MSSV='0468221171', Lop='CÐN QTM 22B', NgaySinh='2004-02-10'
+[16-Jul-2025 19:56:28 Asia/Ho_Chi_Minh] Row 37: MSSV='0468221172', Ho='Lê Ngọc', Ten='Tuấn', NgaySinh='10/01/2003'
+[16-Jul-2025 19:56:28 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=210, ID_Dot=74, Ten='Lê Ngọc Tuấn', MSSV='0468221172', Lop='CÐN QTM 22B', NgaySinh='2003-01-10'
+[16-Jul-2025 19:56:28 Asia/Ho_Chi_Minh] Row 38: MSSV='0468221173', Ho='Lê Quốc', Ten='Vinh', NgaySinh='03/02/2004'
+[16-Jul-2025 19:56:29 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=211, ID_Dot=74, Ten='Lê Quốc Vinh', MSSV='0468221173', Lop='CÐN QTM 22B', NgaySinh='2004-02-03'
+[16-Jul-2025 19:59:01 Asia/Ho_Chi_Minh] Lỗi thêm GV: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'siektefuhosting_thuctapdb.TaiKhoan' doesn't exist
+[16-Jul-2025 19:59:35 Asia/Ho_Chi_Minh] Lỗi thêm GV: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'siektefuhosting_thuctapdb.TaiKhoan' doesn't exist
+[16-Jul-2025 20:00:16 Asia/Ho_Chi_Minh] Debug - Dòng 2 content: Array
+(
+    [A] => 
+    [B] => 
+    [C] => Lớp học phần:
+    [D] => CÐ TH 21DĐ-Thực tập tốt nghiệp
+    [E] => 
+    [F] => 
+    [G] => 
+    [H] => 
+    [I] => 
+    [J] => 
+    [K] => 
+    [L] => 
+    [M] => 
+    [N] => 
+    [O] => 
+    [P] => 
+    [Q] => 
+    [R] => 
+)
+
+[16-Jul-2025 20:00:16 Asia/Ho_Chi_Minh] Debug - Found class in D2: CÐ TH 21DĐ-Thực tập tốt nghiệp
+[16-Jul-2025 20:00:16 Asia/Ho_Chi_Minh] Debug - Extracted class: CÐ TH 21DĐ
+[16-Jul-2025 20:00:16 Asia/Ho_Chi_Minh] Row 4: MSSV='', Ho='', Ten='', NgaySinh=''
+[16-Jul-2025 20:00:16 Asia/Ho_Chi_Minh] Debug - Skipping empty row 4
+[16-Jul-2025 20:00:16 Asia/Ho_Chi_Minh] Row 5: MSSV='', Ho='', Ten='', NgaySinh=''
+[16-Jul-2025 20:00:16 Asia/Ho_Chi_Minh] Debug - Skipping empty row 5
+[16-Jul-2025 20:00:16 Asia/Ho_Chi_Minh] Debug - Skipping header row 6
+[16-Jul-2025 20:00:16 Asia/Ho_Chi_Minh] Row 7: MSSV='0306211014', Ho='Lê Hoàng', Ten='Đệ', NgaySinh='17/08/2003'
+[16-Jul-2025 20:00:16 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=213, ID_Dot=83, Ten='Lê Hoàng Đệ', MSSV='0306211014', Lop='CÐ TH 21DĐ', NgaySinh='2003-08-17'
+[16-Jul-2025 20:00:16 Asia/Ho_Chi_Minh] Row 8: MSSV='0306211022', Ho='Trần Long', Ten='Giang', NgaySinh='30/07/2003'
+[16-Jul-2025 20:00:16 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=214, ID_Dot=83, Ten='Trần Long Giang', MSSV='0306211022', Lop='CÐ TH 21DĐ', NgaySinh='2003-07-30'
+[16-Jul-2025 20:00:16 Asia/Ho_Chi_Minh] Row 9: MSSV='0306211023', Ho='Lý Anh', Ten='Hào', NgaySinh='16/12/2003'
+[16-Jul-2025 20:00:16 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=215, ID_Dot=83, Ten='Lý Anh Hào', MSSV='0306211023', Lop='CÐ TH 21DĐ', NgaySinh='2003-12-16'
+[16-Jul-2025 20:00:16 Asia/Ho_Chi_Minh] Row 10: MSSV='0306211039', Ho='Vũ Hoàng', Ten='Huy', NgaySinh='16/10/2001'
+[16-Jul-2025 20:00:16 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=216, ID_Dot=83, Ten='Vũ Hoàng Huy', MSSV='0306211039', Lop='CÐ TH 21DĐ', NgaySinh='2001-10-16'
+[16-Jul-2025 20:00:16 Asia/Ho_Chi_Minh] Row 11: MSSV='0306211042', Ho='Nguyễn Hoàng', Ten='Kha', NgaySinh='15/01/2003'
+[16-Jul-2025 20:00:16 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=217, ID_Dot=83, Ten='Nguyễn Hoàng Kha', MSSV='0306211042', Lop='CÐ TH 21DĐ', NgaySinh='2003-01-15'
+[16-Jul-2025 20:00:16 Asia/Ho_Chi_Minh] Row 12: MSSV='0306211045', Ho='Trần Huỳnh Nam', Ten='Khoa', NgaySinh='20/11/2003'
+[16-Jul-2025 20:00:16 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=218, ID_Dot=83, Ten='Trần Huỳnh Nam Khoa', MSSV='0306211045', Lop='CÐ TH 21DĐ', NgaySinh='2003-11-20'
+[16-Jul-2025 20:00:16 Asia/Ho_Chi_Minh] Row 13: MSSV='0306211068', Ho='Đặng Hoàn', Ten='Phương', NgaySinh='11/05/2003'
+[16-Jul-2025 20:00:16 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=219, ID_Dot=83, Ten='Đặng Hoàn Phương', MSSV='0306211068', Lop='CÐ TH 21DĐ', NgaySinh='2003-05-11'
+[16-Jul-2025 20:00:16 Asia/Ho_Chi_Minh] Row 14: MSSV='0306211069', Ho='Nguyễn Tuấn', Ten='Phương', NgaySinh='15/01/2003'
+[16-Jul-2025 20:00:16 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=220, ID_Dot=83, Ten='Nguyễn Tuấn Phương', MSSV='0306211069', Lop='CÐ TH 21DĐ', NgaySinh='2003-01-15'
+[16-Jul-2025 20:00:16 Asia/Ho_Chi_Minh] Row 15: MSSV='0306211091', Ho='Lê Ngọc Bá', Ten='Thông', NgaySinh='21/12/2003'
+[16-Jul-2025 20:00:16 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=221, ID_Dot=83, Ten='Lê Ngọc Bá Thông', MSSV='0306211091', Lop='CÐ TH 21DĐ', NgaySinh='2003-12-21'
+[16-Jul-2025 20:00:16 Asia/Ho_Chi_Minh] Row 16: MSSV='0306211122', Ho='Hồ Văn', Ten='Danh', NgaySinh='25/05/2003'
+[16-Jul-2025 20:00:16 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=222, ID_Dot=83, Ten='Hồ Văn Danh', MSSV='0306211122', Lop='CÐ TH 21DĐ', NgaySinh='2003-05-25'
+[16-Jul-2025 20:00:16 Asia/Ho_Chi_Minh] Row 17: MSSV='0306211124', Ho='Huỳnh Thanh', Ten='Duy', NgaySinh='02/04/2003'
+[16-Jul-2025 20:00:16 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=223, ID_Dot=83, Ten='Huỳnh Thanh Duy', MSSV='0306211124', Lop='CÐ TH 21DĐ', NgaySinh='2003-04-02'
+[16-Jul-2025 20:00:16 Asia/Ho_Chi_Minh] Row 18: MSSV='0306211127', Ho='Nguyễn Bình', Ten='Dương', NgaySinh='15/04/2003'
+[16-Jul-2025 20:00:16 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=224, ID_Dot=83, Ten='Nguyễn Bình Dương', MSSV='0306211127', Lop='CÐ TH 21DĐ', NgaySinh='2003-04-15'
+[16-Jul-2025 20:00:16 Asia/Ho_Chi_Minh] Row 19: MSSV='0306211138', Ho='Nguyễn', Ten='Huân', NgaySinh='06/07/2003'
+[16-Jul-2025 20:00:17 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=225, ID_Dot=83, Ten='Nguyễn Huân', MSSV='0306211138', Lop='CÐ TH 21DĐ', NgaySinh='2003-07-06'
+[16-Jul-2025 20:00:17 Asia/Ho_Chi_Minh] Row 20: MSSV='0306211159', Ho='Nguyễn Thanh', Ten='Kiệt', NgaySinh='15/09/2003'
+[16-Jul-2025 20:00:17 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=116, ID_Dot=83, Ten='Nguyễn Thanh Kiệt', MSSV='0306211159', Lop='CÐ TH 21DĐ', NgaySinh='2003-09-15'
+[16-Jul-2025 20:00:17 Asia/Ho_Chi_Minh] Row 21: MSSV='0306211168', Ho='Trương Công', Ten='Mới', NgaySinh='11/03/2003'
+[16-Jul-2025 20:00:17 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=226, ID_Dot=83, Ten='Trương Công Mới', MSSV='0306211168', Lop='CÐ TH 21DĐ', NgaySinh='2003-03-11'
+[16-Jul-2025 20:00:17 Asia/Ho_Chi_Minh] Row 22: MSSV='0306211181', Ho='Đặng Minh', Ten='Quân', NgaySinh='09/02/2003'
+[16-Jul-2025 20:00:17 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=227, ID_Dot=83, Ten='Đặng Minh Quân', MSSV='0306211181', Lop='CÐ TH 21DĐ', NgaySinh='2003-02-09'
+[16-Jul-2025 20:00:17 Asia/Ho_Chi_Minh] Row 23: MSSV='0306211189', Ho='Nguyễn Tấn', Ten='Tài', NgaySinh='24/11/2003'
+[16-Jul-2025 20:00:17 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=228, ID_Dot=83, Ten='Nguyễn Tấn Tài', MSSV='0306211189', Lop='CÐ TH 21DĐ', NgaySinh='2003-11-24'
+[16-Jul-2025 20:00:17 Asia/Ho_Chi_Minh] Row 24: MSSV='0306211195', Ho='Lê Quốc', Ten='Thắng', NgaySinh='17/04/2003'
+[16-Jul-2025 20:00:17 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=229, ID_Dot=83, Ten='Lê Quốc Thắng', MSSV='0306211195', Lop='CÐ TH 21DĐ', NgaySinh='2003-04-17'
+[16-Jul-2025 20:00:17 Asia/Ho_Chi_Minh] Row 25: MSSV='0306211203', Ho='Nguyễn Minh', Ten='Tới', NgaySinh='14/04/2003'
+[16-Jul-2025 20:00:17 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=230, ID_Dot=83, Ten='Nguyễn Minh Tới', MSSV='0306211203', Lop='CÐ TH 21DĐ', NgaySinh='2003-04-14'
+[16-Jul-2025 20:00:17 Asia/Ho_Chi_Minh] Row 26: MSSV='0306211214', Ho='Đặng Nghiệm', Ten='Vĩ', NgaySinh='25/10/2003'
+[16-Jul-2025 20:00:17 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=231, ID_Dot=83, Ten='Đặng Nghiệm Vĩ', MSSV='0306211214', Lop='CÐ TH 21DĐ', NgaySinh='2003-10-25'
+[16-Jul-2025 20:00:17 Asia/Ho_Chi_Minh] Row 27: MSSV='0306211215', Ho='Trương Tăng Chí', Ten='Vĩnh', NgaySinh='23/02/2003'
+[16-Jul-2025 20:00:17 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=232, ID_Dot=83, Ten='Trương Tăng Chí Vĩnh', MSSV='0306211215', Lop='CÐ TH 21DĐ', NgaySinh='2003-02-23'
+[16-Jul-2025 20:00:17 Asia/Ho_Chi_Minh] Row 28: MSSV='0306211219', Ho='Nguyễn Đình', Ten='Anh', NgaySinh='11/01/2003'
+[16-Jul-2025 20:00:17 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=233, ID_Dot=83, Ten='Nguyễn Đình Anh', MSSV='0306211219', Lop='CÐ TH 21DĐ', NgaySinh='2003-01-11'
+[16-Jul-2025 20:00:17 Asia/Ho_Chi_Minh] Row 29: MSSV='0306211223', Ho='Đặng Quốc', Ten='Bảo', NgaySinh='26/09/2003'
+[16-Jul-2025 20:00:17 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=234, ID_Dot=83, Ten='Đặng Quốc Bảo', MSSV='0306211223', Lop='CÐ TH 21DĐ', NgaySinh='2003-09-26'
+[16-Jul-2025 20:00:17 Asia/Ho_Chi_Minh] Row 30: MSSV='0306211232', Ho='Nguyễn Quang', Ten='Duy', NgaySinh='14/11/2003'
+[16-Jul-2025 20:00:17 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=235, ID_Dot=83, Ten='Nguyễn Quang Duy', MSSV='0306211232', Lop='CÐ TH 21DĐ', NgaySinh='2003-11-14'
+[16-Jul-2025 20:00:17 Asia/Ho_Chi_Minh] Row 31: MSSV='0306211234', Ho='Nguyễn Thị Cẩm', Ten='Duyên', NgaySinh='25/09/2003'
+[16-Jul-2025 20:00:17 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=236, ID_Dot=83, Ten='Nguyễn Thị Cẩm Duyên', MSSV='0306211234', Lop='CÐ TH 21DĐ', NgaySinh='2003-09-25'
+[16-Jul-2025 20:00:17 Asia/Ho_Chi_Minh] Row 32: MSSV='0306211235', Ho='Huỳnh Thái', Ten='Dương', NgaySinh='07/11/2003'
+[16-Jul-2025 20:00:17 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=237, ID_Dot=83, Ten='Huỳnh Thái Dương', MSSV='0306211235', Lop='CÐ TH 21DĐ', NgaySinh='2003-11-07'
+[16-Jul-2025 20:00:17 Asia/Ho_Chi_Minh] Row 33: MSSV='0306211251', Ho='Nguyễn Huỳnh Vũ', Ten='Hưng', NgaySinh='06/11/2003'
+[16-Jul-2025 20:00:17 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=238, ID_Dot=83, Ten='Nguyễn Huỳnh Vũ Hưng', MSSV='0306211251', Lop='CÐ TH 21DĐ', NgaySinh='2003-11-06'
+[16-Jul-2025 20:00:17 Asia/Ho_Chi_Minh] Row 34: MSSV='0306211252', Ho='Đặng Anh', Ten='Khang', NgaySinh='27/10/2002'
+[16-Jul-2025 20:00:17 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=239, ID_Dot=83, Ten='Đặng Anh Khang', MSSV='0306211252', Lop='CÐ TH 21DĐ', NgaySinh='2002-10-27'
+[16-Jul-2025 20:00:17 Asia/Ho_Chi_Minh] Row 35: MSSV='0306211257', Ho='Tô Châu Nhựt', Ten='Lâm', NgaySinh='06/10/2003'
+[16-Jul-2025 20:00:17 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=240, ID_Dot=83, Ten='Tô Châu Nhựt Lâm', MSSV='0306211257', Lop='CÐ TH 21DĐ', NgaySinh='2003-10-06'
+[16-Jul-2025 20:00:17 Asia/Ho_Chi_Minh] Row 36: MSSV='0306211259', Ho='Nguyễn Tường', Ten='Lập', NgaySinh='08/12/2003'
+[16-Jul-2025 20:00:18 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=241, ID_Dot=83, Ten='Nguyễn Tường Lập', MSSV='0306211259', Lop='CÐ TH 21DĐ', NgaySinh='2003-12-08'
+[16-Jul-2025 20:00:18 Asia/Ho_Chi_Minh] Row 37: MSSV='0306211260', Ho='Phạm Ngọc', Ten='Liêm', NgaySinh='13/10/2003'
+[16-Jul-2025 20:00:18 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=242, ID_Dot=83, Ten='Phạm Ngọc Liêm', MSSV='0306211260', Lop='CÐ TH 21DĐ', NgaySinh='2003-10-13'
+[16-Jul-2025 20:00:18 Asia/Ho_Chi_Minh] Row 38: MSSV='0306211261', Ho='Mai Nguyễn Hoàng', Ten='Lộc', NgaySinh='04/02/2003'
+[16-Jul-2025 20:00:18 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=243, ID_Dot=83, Ten='Mai Nguyễn Hoàng Lộc', MSSV='0306211261', Lop='CÐ TH 21DĐ', NgaySinh='2003-02-04'
+[16-Jul-2025 20:00:18 Asia/Ho_Chi_Minh] Row 39: MSSV='0306211267', Ho='Trần Thị Kim', Ten='Ngân', NgaySinh='01/09/2003'
+[16-Jul-2025 20:00:18 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=244, ID_Dot=83, Ten='Trần Thị Kim Ngân', MSSV='0306211267', Lop='CÐ TH 21DĐ', NgaySinh='2003-09-01'
+[16-Jul-2025 20:00:18 Asia/Ho_Chi_Minh] Row 40: MSSV='0306211272', Ho='Trần Thiện', Ten='Nhân', NgaySinh='02/02/2001'
+[16-Jul-2025 20:00:18 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=245, ID_Dot=83, Ten='Trần Thiện Nhân', MSSV='0306211272', Lop='CÐ TH 21DĐ', NgaySinh='2001-02-02'
+[16-Jul-2025 20:00:18 Asia/Ho_Chi_Minh] Row 41: MSSV='0306211273', Ho='Cao Trí', Ten='Nhất', NgaySinh='28/02/2002'
+[16-Jul-2025 20:00:18 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=246, ID_Dot=83, Ten='Cao Trí Nhất', MSSV='0306211273', Lop='CÐ TH 21DĐ', NgaySinh='2002-02-28'
+[16-Jul-2025 20:00:18 Asia/Ho_Chi_Minh] Row 42: MSSV='0306211281', Ho='Nguyễn Tấn', Ten='Phước', NgaySinh='22/10/2003'
+[16-Jul-2025 20:00:18 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=247, ID_Dot=83, Ten='Nguyễn Tấn Phước', MSSV='0306211281', Lop='CÐ TH 21DĐ', NgaySinh='2003-10-22'
+[16-Jul-2025 20:00:18 Asia/Ho_Chi_Minh] Row 43: MSSV='0306211282', Ho='Nguyễn Đại Minh', Ten='Quân', NgaySinh='05/01/2003'
+[16-Jul-2025 20:00:18 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=248, ID_Dot=83, Ten='Nguyễn Đại Minh Quân', MSSV='0306211282', Lop='CÐ TH 21DĐ', NgaySinh='2003-01-05'
+[16-Jul-2025 20:00:18 Asia/Ho_Chi_Minh] Row 44: MSSV='0306211286', Ho='Nguyễn Thanh', Ten='Sang', NgaySinh='27/02/2003'
+[16-Jul-2025 20:00:18 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=249, ID_Dot=83, Ten='Nguyễn Thanh Sang', MSSV='0306211286', Lop='CÐ TH 21DĐ', NgaySinh='2003-02-27'
+[16-Jul-2025 20:00:18 Asia/Ho_Chi_Minh] Row 45: MSSV='0306211287', Ho='Quách Văn', Ten='Sang', NgaySinh='08/11/2002'
+[16-Jul-2025 20:00:18 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=250, ID_Dot=83, Ten='Quách Văn Sang', MSSV='0306211287', Lop='CÐ TH 21DĐ', NgaySinh='2002-11-08'
+[16-Jul-2025 20:00:18 Asia/Ho_Chi_Minh] Row 46: MSSV='0306211290', Ho='Huỳnh Thiện', Ten='Tâm', NgaySinh='20/02/2003'
+[16-Jul-2025 20:00:18 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=251, ID_Dot=83, Ten='Huỳnh Thiện Tâm', MSSV='0306211290', Lop='CÐ TH 21DĐ', NgaySinh='2003-02-20'
+[16-Jul-2025 20:00:18 Asia/Ho_Chi_Minh] Row 47: MSSV='0306211292', Ho='Lê Hữu', Ten='Thành', NgaySinh='23/05/2003'
+[16-Jul-2025 20:00:18 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=252, ID_Dot=83, Ten='Lê Hữu Thành', MSSV='0306211292', Lop='CÐ TH 21DĐ', NgaySinh='2003-05-23'
+[16-Jul-2025 20:00:18 Asia/Ho_Chi_Minh] Row 48: MSSV='0306211293', Ho='Nguyễn Công', Ten='Thành', NgaySinh='22/04/2003'
+[16-Jul-2025 20:00:18 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=253, ID_Dot=83, Ten='Nguyễn Công Thành', MSSV='0306211293', Lop='CÐ TH 21DĐ', NgaySinh='2003-04-22'
+[16-Jul-2025 20:00:18 Asia/Ho_Chi_Minh] Row 49: MSSV='0306211297', Ho='Trần Thanh', Ten='Tiền', NgaySinh='24/06/2003'
+[16-Jul-2025 20:00:18 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=254, ID_Dot=83, Ten='Trần Thanh Tiền', MSSV='0306211297', Lop='CÐ TH 21DĐ', NgaySinh='2003-06-24'
+[16-Jul-2025 20:00:18 Asia/Ho_Chi_Minh] Row 50: MSSV='0306211298', Ho='Bạch Anh', Ten='Tiến', NgaySinh='17/07/2003'
+[16-Jul-2025 20:00:18 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=255, ID_Dot=83, Ten='Bạch Anh Tiến', MSSV='0306211298', Lop='CÐ TH 21DĐ', NgaySinh='2003-07-17'
+[16-Jul-2025 20:00:18 Asia/Ho_Chi_Minh] Row 51: MSSV='0306211304', Ho='Nguyễn Ngọc Bảo', Ten='Trân', NgaySinh='22/09/2003'
+[16-Jul-2025 20:00:18 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=256, ID_Dot=83, Ten='Nguyễn Ngọc Bảo Trân', MSSV='0306211304', Lop='CÐ TH 21DĐ', NgaySinh='2003-09-22'
+[16-Jul-2025 20:00:18 Asia/Ho_Chi_Minh] Row 52: MSSV='0306211311', Ho='Trần Phương Ngọc', Ten='Trúc', NgaySinh='20/04/2001'
+[16-Jul-2025 20:00:18 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=257, ID_Dot=83, Ten='Trần Phương Ngọc Trúc', MSSV='0306211311', Lop='CÐ TH 21DĐ', NgaySinh='2001-04-20'
+[16-Jul-2025 20:00:18 Asia/Ho_Chi_Minh] Row 53: MSSV='0306211312', Ho='Lương Nhật', Ten='Trường', NgaySinh='14/02/2003'
+[16-Jul-2025 20:00:19 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=258, ID_Dot=83, Ten='Lương Nhật Trường', MSSV='0306211312', Lop='CÐ TH 21DĐ', NgaySinh='2003-02-14'
+[16-Jul-2025 20:00:19 Asia/Ho_Chi_Minh] Row 54: MSSV='0306211318', Ho='Bùi Thanh', Ten='Viên', NgaySinh='27/04/2003'
+[16-Jul-2025 20:00:19 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=259, ID_Dot=83, Ten='Bùi Thanh Viên', MSSV='0306211318', Lop='CÐ TH 21DĐ', NgaySinh='2003-04-27'
+[16-Jul-2025 20:00:19 Asia/Ho_Chi_Minh] Row 55: MSSV='0306211319', Ho='Lê Chí', Ten='Vinh', NgaySinh='20/12/2003'
+[16-Jul-2025 20:00:19 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=260, ID_Dot=83, Ten='Lê Chí Vinh', MSSV='0306211319', Lop='CÐ TH 21DĐ', NgaySinh='2003-12-20'
+[16-Jul-2025 20:00:19 Asia/Ho_Chi_Minh] Row 56: MSSV='0306211327', Ho='Huỳnh Gia', Ten='Bảo', NgaySinh='24/04/2003'
+[16-Jul-2025 20:00:19 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=261, ID_Dot=83, Ten='Huỳnh Gia Bảo', MSSV='0306211327', Lop='CÐ TH 21DĐ', NgaySinh='2003-04-24'
+[16-Jul-2025 20:00:19 Asia/Ho_Chi_Minh] Row 57: MSSV='0306211335', Ho='Võ Trung', Ten='Dĩ', NgaySinh='08/11/2003'
+[16-Jul-2025 20:00:19 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=262, ID_Dot=83, Ten='Võ Trung Dĩ', MSSV='0306211335', Lop='CÐ TH 21DĐ', NgaySinh='2003-11-08'
+[16-Jul-2025 20:00:19 Asia/Ho_Chi_Minh] Row 58: MSSV='0306211381', Ho='Huỳnh Trung', Ten='Nhật', NgaySinh='28/01/2003'
+[16-Jul-2025 20:00:19 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=263, ID_Dot=83, Ten='Huỳnh Trung Nhật', MSSV='0306211381', Lop='CÐ TH 21DĐ', NgaySinh='2003-01-28'
+[16-Jul-2025 20:00:19 Asia/Ho_Chi_Minh] Row 59: MSSV='0306211402', Ho='Nguyễn Ngọc', Ten='Thạch', NgaySinh='01/04/2003'
+[16-Jul-2025 20:00:19 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=264, ID_Dot=83, Ten='Nguyễn Ngọc Thạch', MSSV='0306211402', Lop='CÐ TH 21DĐ', NgaySinh='2003-04-01'
+[16-Jul-2025 20:00:19 Asia/Ho_Chi_Minh] Row 60: MSSV='0306211404', Ho='Phạm Đức', Ten='Thịnh', NgaySinh='20/05/2003'
+[16-Jul-2025 20:00:19 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=265, ID_Dot=83, Ten='Phạm Đức Thịnh', MSSV='0306211404', Lop='CÐ TH 21DĐ', NgaySinh='2003-05-20'
+[16-Jul-2025 20:00:19 Asia/Ho_Chi_Minh] Row 61: MSSV='0306211408', Ho='Nguyễn Thanh', Ten='Thuận', NgaySinh='14/06/2003'
+[16-Jul-2025 20:00:19 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=266, ID_Dot=83, Ten='Nguyễn Thanh Thuận', MSSV='0306211408', Lop='CÐ TH 21DĐ', NgaySinh='2003-06-14'
+[16-Jul-2025 20:00:19 Asia/Ho_Chi_Minh] Row 62: MSSV='0306211410', Ho='Hoàng Anh Thanh', Ten='Tiến', NgaySinh='06/11/2001'
+[16-Jul-2025 20:00:19 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=267, ID_Dot=83, Ten='Hoàng Anh Thanh Tiến', MSSV='0306211410', Lop='CÐ TH 21DĐ', NgaySinh='2001-11-06'
+[16-Jul-2025 20:00:19 Asia/Ho_Chi_Minh] Row 63: MSSV='0306211413', Ho='Nguyễn Hoàng Kim', Ten='Toàn', NgaySinh='17/02/2002'
+[16-Jul-2025 20:00:19 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=268, ID_Dot=83, Ten='Nguyễn Hoàng Kim Toàn', MSSV='0306211413', Lop='CÐ TH 21DĐ', NgaySinh='2002-02-17'
+[16-Jul-2025 20:00:19 Asia/Ho_Chi_Minh] Row 64: MSSV='0306211416', Ho='Lê Quang', Ten='Trọng', NgaySinh='08/03/2003'
+[16-Jul-2025 20:00:19 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=269, ID_Dot=83, Ten='Lê Quang Trọng', MSSV='0306211416', Lop='CÐ TH 21DĐ', NgaySinh='2003-03-08'
+[16-Jul-2025 20:00:19 Asia/Ho_Chi_Minh] Row 65: MSSV='0306211421', Ho='Đỗ Thanh', Ten='Tùng', NgaySinh='01/05/1997'
+[16-Jul-2025 20:00:19 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=270, ID_Dot=83, Ten='Đỗ Thanh Tùng', MSSV='0306211421', Lop='CÐ TH 21DĐ', NgaySinh='1997-05-01'
+[16-Jul-2025 20:00:19 Asia/Ho_Chi_Minh] Row 66: MSSV='0306211429', Ho='Nguyễn Ngọc Như', Ten='Ý', NgaySinh='08/12/2003'
+[16-Jul-2025 20:00:19 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=271, ID_Dot=83, Ten='Nguyễn Ngọc Như Ý', MSSV='0306211429', Lop='CÐ TH 21DĐ', NgaySinh='2003-12-08'
+[16-Jul-2025 20:00:19 Asia/Ho_Chi_Minh] Row 67: MSSV='0306211439', Ho='Cao Thịnh', Ten='Duy', NgaySinh='21/11/2003'
+[16-Jul-2025 20:00:19 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=272, ID_Dot=83, Ten='Cao Thịnh Duy', MSSV='0306211439', Lop='CÐ TH 21DĐ', NgaySinh='2003-11-21'
+[16-Jul-2025 20:00:19 Asia/Ho_Chi_Minh] Row 68: MSSV='0306211449', Ho='Lê Phú', Ten='Hào', NgaySinh='04/10/2003'
+[16-Jul-2025 20:00:19 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=273, ID_Dot=83, Ten='Lê Phú Hào', MSSV='0306211449', Lop='CÐ TH 21DĐ', NgaySinh='2003-10-04'
+[16-Jul-2025 20:00:19 Asia/Ho_Chi_Minh] Row 69: MSSV='0306211450', Ho='Nguyễn Dương Việt', Ten='Hào', NgaySinh='23/08/2003'
+[16-Jul-2025 20:00:19 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=274, ID_Dot=83, Ten='Nguyễn Dương Việt Hào', MSSV='0306211450', Lop='CÐ TH 21DĐ', NgaySinh='2003-08-23'
+[16-Jul-2025 20:00:19 Asia/Ho_Chi_Minh] Row 70: MSSV='0306211461', Ho='Võ Thành', Ten='Huy', NgaySinh='14/01/2003'
+[16-Jul-2025 20:00:20 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=275, ID_Dot=83, Ten='Võ Thành Huy', MSSV='0306211461', Lop='CÐ TH 21DĐ', NgaySinh='2003-01-14'
+[16-Jul-2025 20:00:20 Asia/Ho_Chi_Minh] Row 71: MSSV='0306211470', Ho='Phạm Duy', Ten='Khánh', NgaySinh='18/09/2003'
+[16-Jul-2025 20:00:20 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=276, ID_Dot=83, Ten='Phạm Duy Khánh', MSSV='0306211470', Lop='CÐ TH 21DĐ', NgaySinh='2003-09-18'
+[16-Jul-2025 20:00:20 Asia/Ho_Chi_Minh] Row 72: MSSV='0306211472', Ho='Nguyễn Anh', Ten='Kiên', NgaySinh='06/06/2003'
+[16-Jul-2025 20:00:20 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=277, ID_Dot=83, Ten='Nguyễn Anh Kiên', MSSV='0306211472', Lop='CÐ TH 21DĐ', NgaySinh='2003-06-06'
+[16-Jul-2025 20:00:20 Asia/Ho_Chi_Minh] Row 73: MSSV='0306211479', Ho='Trần Viết', Ten='Nam', NgaySinh='26/09/2002'
+[16-Jul-2025 20:00:20 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=278, ID_Dot=83, Ten='Trần Viết Nam', MSSV='0306211479', Lop='CÐ TH 21DĐ', NgaySinh='2002-09-26'
+[16-Jul-2025 20:00:20 Asia/Ho_Chi_Minh] Row 74: MSSV='0306211481', Ho='Đào Lê Trung', Ten='Nghĩa', NgaySinh='07/10/2003'
+[16-Jul-2025 20:00:20 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=279, ID_Dot=83, Ten='Đào Lê Trung Nghĩa', MSSV='0306211481', Lop='CÐ TH 21DĐ', NgaySinh='2003-10-07'
+[16-Jul-2025 20:00:20 Asia/Ho_Chi_Minh] Row 75: MSSV='0306211499', Ho='Nguyễn Trọng', Ten='Phúc', NgaySinh='19/02/2003'
+[16-Jul-2025 20:00:20 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=280, ID_Dot=83, Ten='Nguyễn Trọng Phúc', MSSV='0306211499', Lop='CÐ TH 21DĐ', NgaySinh='2003-02-19'
+[16-Jul-2025 20:00:20 Asia/Ho_Chi_Minh] Row 76: MSSV='0306211504', Ho='Trần Anh', Ten='Quân', NgaySinh='22/06/2003'
+[16-Jul-2025 20:00:20 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=281, ID_Dot=83, Ten='Trần Anh Quân', MSSV='0306211504', Lop='CÐ TH 21DĐ', NgaySinh='2003-06-22'
+[16-Jul-2025 20:00:20 Asia/Ho_Chi_Minh] Row 77: MSSV='0306211505', Ho='Đoàn Văn', Ten='Quốc', NgaySinh='27/06/2003'
+[16-Jul-2025 20:00:20 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=282, ID_Dot=83, Ten='Đoàn Văn Quốc', MSSV='0306211505', Lop='CÐ TH 21DĐ', NgaySinh='2003-06-27'
+[16-Jul-2025 20:00:20 Asia/Ho_Chi_Minh] Row 78: MSSV='0306211524', Ho='Trần Dương Gia', Ten='Thịnh', NgaySinh='20/07/2003'
+[16-Jul-2025 20:00:20 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=283, ID_Dot=83, Ten='Trần Dương Gia Thịnh', MSSV='0306211524', Lop='CÐ TH 21DĐ', NgaySinh='2003-07-20'
+[16-Jul-2025 20:00:20 Asia/Ho_Chi_Minh] Row 79: MSSV='0306211530', Ho='Phạm Nhật', Ten='Trường', NgaySinh='17/02/2003'
+[16-Jul-2025 20:00:20 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=284, ID_Dot=83, Ten='Phạm Nhật Trường', MSSV='0306211530', Lop='CÐ TH 21DĐ', NgaySinh='2003-02-17'
+[16-Jul-2025 20:11:20 Asia/Ho_Chi_Minh] Lỗi duyệt giấy giới thiệu: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'siektefuhosting_thuctapdb.GiayGioiThieu' doesn't exist
+[16-Jul-2025 20:12:08 Asia/Ho_Chi_Minh] Lỗi duyệt giấy giới thiệu: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'siektefuhosting_thuctapdb.GiayGioiThieu' doesn't exist
+[16-Jul-2025 20:12:20 Asia/Ho_Chi_Minh] Lỗi duyệt giấy giới thiệu: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'siektefuhosting_thuctapdb.GiayGioiThieu' doesn't exist
+[16-Jul-2025 20:13:17 Asia/Ho_Chi_Minh] Lỗi duyệt giấy giới thiệu: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'siektefuhosting_thuctapdb.SinhVien' doesn't exist
+[16-Jul-2025 20:13:38 Asia/Ho_Chi_Minh] Lỗi duyệt giấy giới thiệu: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'siektefuhosting_thuctapdb.SinhVien' doesn't exist
+[16-Jul-2025 20:14:58 Asia/Ho_Chi_Minh] Print Template Debug - ID: 6, Found: YES
+[16-Jul-2025 21:00:28 Asia/Ho_Chi_Minh] Debug - Dòng 2 content: Array
+(
+    [A] => 
+    [B] => 
+    [C] => Lớp học phần:
+    [D] => CÐN SCMT 22-Thực tập tốt nghiệp
+    [E] => 
+    [F] => 
+    [G] => 
+    [H] => 
+    [I] => 
+    [J] => 
+    [K] => 
+    [L] => 
+    [M] => 
+    [N] => 
+    [O] => 
+    [P] => 
+    [Q] => 
+    [R] => 
+)
+
+[16-Jul-2025 21:00:28 Asia/Ho_Chi_Minh] Debug - Found class in D2: CÐN SCMT 22-Thực tập tốt nghiệp
+[16-Jul-2025 21:00:28 Asia/Ho_Chi_Minh] Debug - Extracted class: CÐN SCMT 22
+[16-Jul-2025 21:00:28 Asia/Ho_Chi_Minh] Row 4: MSSV='', Ho='', Ten='', NgaySinh=''
+[16-Jul-2025 21:00:28 Asia/Ho_Chi_Minh] Debug - Skipping empty row 4
+[16-Jul-2025 21:00:28 Asia/Ho_Chi_Minh] Row 5: MSSV='', Ho='', Ten='', NgaySinh=''
+[16-Jul-2025 21:00:28 Asia/Ho_Chi_Minh] Debug - Skipping empty row 5
+[16-Jul-2025 21:00:28 Asia/Ho_Chi_Minh] Debug - Skipping header row 6
+[16-Jul-2025 21:00:28 Asia/Ho_Chi_Minh] Row 7: MSSV='0469211015', Ho='Hồ Anh', Ten='Hào', NgaySinh='08/08/2003'
+[16-Jul-2025 21:00:28 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=286, ID_Dot=74, Ten='Hồ Anh Hào', MSSV='0469211015', Lop='CÐN SCMT 22', NgaySinh='2003-08-08'
+[16-Jul-2025 21:00:28 Asia/Ho_Chi_Minh] Row 8: MSSV='0469211062', Ho='Nguyễn Quang', Ten='Tân', NgaySinh='08/12/2003'
+[16-Jul-2025 21:00:28 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=287, ID_Dot=74, Ten='Nguyễn Quang Tân', MSSV='0469211062', Lop='CÐN SCMT 22', NgaySinh='2003-12-08'
+[16-Jul-2025 21:00:28 Asia/Ho_Chi_Minh] Row 9: MSSV='0469211064', Ho='Nguyễn Phúc', Ten='Thành', NgaySinh='26/06/2003'
+[16-Jul-2025 21:00:28 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=288, ID_Dot=74, Ten='Nguyễn Phúc Thành', MSSV='0469211064', Lop='CÐN SCMT 22', NgaySinh='2003-06-26'
+[16-Jul-2025 21:00:28 Asia/Ho_Chi_Minh] Row 10: MSSV='0469211088', Ho='Nguyễn Đỗ Anh', Ten='Duy', NgaySinh='27/11/2003'
+[16-Jul-2025 21:00:28 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=289, ID_Dot=74, Ten='Nguyễn Đỗ Anh Duy', MSSV='0469211088', Lop='CÐN SCMT 22', NgaySinh='2003-11-27'
+[16-Jul-2025 21:00:28 Asia/Ho_Chi_Minh] Row 11: MSSV='0469211107', Ho='Nguyễn Duy', Ten='Khang', NgaySinh='26/03/2003'
+[16-Jul-2025 21:00:28 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=290, ID_Dot=74, Ten='Nguyễn Duy Khang', MSSV='0469211107', Lop='CÐN SCMT 22', NgaySinh='2003-03-26'
+[16-Jul-2025 21:00:28 Asia/Ho_Chi_Minh] Row 12: MSSV='0469221001', Ho='Nguyễn Dương Hoàng', Ten='An', NgaySinh='21/09/2003'
+[16-Jul-2025 21:00:28 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=291, ID_Dot=74, Ten='Nguyễn Dương Hoàng An', MSSV='0469221001', Lop='CÐN SCMT 22', NgaySinh='2003-09-21'
+[16-Jul-2025 21:00:28 Asia/Ho_Chi_Minh] Row 13: MSSV='0469221004', Ho='Phan Trọng', Ten='Ân', NgaySinh='21/09/2004'
+[16-Jul-2025 21:00:28 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=292, ID_Dot=74, Ten='Phan Trọng Ân', MSSV='0469221004', Lop='CÐN SCMT 22', NgaySinh='2004-09-21'
+[16-Jul-2025 21:00:28 Asia/Ho_Chi_Minh] Row 14: MSSV='0469221006', Ho='Châu Gia', Ten='Bảo', NgaySinh='02/11/2004'
+[16-Jul-2025 21:00:29 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=293, ID_Dot=74, Ten='Châu Gia Bảo', MSSV='0469221006', Lop='CÐN SCMT 22', NgaySinh='2004-11-02'
+[16-Jul-2025 21:00:29 Asia/Ho_Chi_Minh] Row 15: MSSV='0469221007', Ho='Lê Trần Gia', Ten='Bảo', NgaySinh='05/01/2000'
+[16-Jul-2025 21:00:29 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=294, ID_Dot=74, Ten='Lê Trần Gia Bảo', MSSV='0469221007', Lop='CÐN SCMT 22', NgaySinh='2000-01-05'
+[16-Jul-2025 21:00:29 Asia/Ho_Chi_Minh] Row 16: MSSV='0469221011', Ho='Hồ Tấn', Ten='Danh', NgaySinh='13/10/2004'
+[16-Jul-2025 21:00:29 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=295, ID_Dot=74, Ten='Hồ Tấn Danh', MSSV='0469221011', Lop='CÐN SCMT 22', NgaySinh='2004-10-13'
+[16-Jul-2025 21:00:29 Asia/Ho_Chi_Minh] Row 17: MSSV='0469221012', Ho='Nguyễn Khánh', Ten='Duy', NgaySinh='07/11/2004'
+[16-Jul-2025 21:00:29 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=296, ID_Dot=74, Ten='Nguyễn Khánh Duy', MSSV='0469221012', Lop='CÐN SCMT 22', NgaySinh='2004-11-07'
+[16-Jul-2025 21:00:29 Asia/Ho_Chi_Minh] Row 18: MSSV='0469221013', Ho='Nguyễn Khắc', Ten='Duy', NgaySinh='16/09/2004'
+[16-Jul-2025 21:00:29 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=297, ID_Dot=74, Ten='Nguyễn Khắc Duy', MSSV='0469221013', Lop='CÐN SCMT 22', NgaySinh='2004-09-16'
+[16-Jul-2025 21:00:29 Asia/Ho_Chi_Minh] Row 19: MSSV='0469221016', Ho='Châu Hữu', Ten='Đạt', NgaySinh='12/01/2004'
+[16-Jul-2025 21:00:29 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=298, ID_Dot=74, Ten='Châu Hữu Đạt', MSSV='0469221016', Lop='CÐN SCMT 22', NgaySinh='2004-01-12'
+[16-Jul-2025 21:00:29 Asia/Ho_Chi_Minh] Row 20: MSSV='0469221017', Ho='Trần Tấn', Ten='Đạt', NgaySinh='03/11/2004'
+[16-Jul-2025 21:00:29 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=299, ID_Dot=74, Ten='Trần Tấn Đạt', MSSV='0469221017', Lop='CÐN SCMT 22', NgaySinh='2004-11-03'
+[16-Jul-2025 21:00:29 Asia/Ho_Chi_Minh] Row 21: MSSV='0469221018', Ho='Võ Tấn', Ten='Đạt', NgaySinh='06/06/2004'
+[16-Jul-2025 21:00:29 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=300, ID_Dot=74, Ten='Võ Tấn Đạt', MSSV='0469221018', Lop='CÐN SCMT 22', NgaySinh='2004-06-06'
+[16-Jul-2025 21:00:29 Asia/Ho_Chi_Minh] Row 22: MSSV='0469221020', Ho='Trần Ngọc', Ten='Đông', NgaySinh='16/01/2004'
+[16-Jul-2025 21:00:29 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=301, ID_Dot=74, Ten='Trần Ngọc Đông', MSSV='0469221020', Lop='CÐN SCMT 22', NgaySinh='2004-01-16'
+[16-Jul-2025 21:00:29 Asia/Ho_Chi_Minh] Row 23: MSSV='0469221022', Ho='Huỳnh Phi', Ten='Hào', NgaySinh='15/05/2004'
+[16-Jul-2025 21:00:29 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=302, ID_Dot=74, Ten='Huỳnh Phi Hào', MSSV='0469221022', Lop='CÐN SCMT 22', NgaySinh='2004-05-15'
+[16-Jul-2025 21:00:29 Asia/Ho_Chi_Minh] Row 24: MSSV='0469221024', Ho='Huỳnh Hải', Ten='Hoa', NgaySinh='29/11/2004'
+[16-Jul-2025 21:00:29 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=303, ID_Dot=74, Ten='Huỳnh Hải Hoa', MSSV='0469221024', Lop='CÐN SCMT 22', NgaySinh='2004-11-29'
+[16-Jul-2025 21:00:29 Asia/Ho_Chi_Minh] Row 25: MSSV='0469221025', Ho='Lê Thanh', Ten='Hoài', NgaySinh='19/09/2004'
+[16-Jul-2025 21:00:29 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=304, ID_Dot=74, Ten='Lê Thanh Hoài', MSSV='0469221025', Lop='CÐN SCMT 22', NgaySinh='2004-09-19'
+[16-Jul-2025 21:00:29 Asia/Ho_Chi_Minh] Row 26: MSSV='0469221027', Ho='Dương Minh', Ten='Hoàng', NgaySinh='21/10/2000'
+[16-Jul-2025 21:00:29 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=305, ID_Dot=74, Ten='Dương Minh Hoàng', MSSV='0469221027', Lop='CÐN SCMT 22', NgaySinh='2000-10-21'
+[16-Jul-2025 21:00:29 Asia/Ho_Chi_Minh] Row 27: MSSV='0469221029', Ho='Đoàn Phạm Quốc', Ten='Huy', NgaySinh='30/09/2004'
+[16-Jul-2025 21:00:29 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=306, ID_Dot=74, Ten='Đoàn Phạm Quốc Huy', MSSV='0469221029', Lop='CÐN SCMT 22', NgaySinh='2004-09-30'
+[16-Jul-2025 21:00:29 Asia/Ho_Chi_Minh] Row 28: MSSV='0469221032', Ho='Bùi Duy', Ten='Khang', NgaySinh='10/01/2004'
+[16-Jul-2025 21:00:29 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=307, ID_Dot=74, Ten='Bùi Duy Khang', MSSV='0469221032', Lop='CÐN SCMT 22', NgaySinh='2004-01-10'
+[16-Jul-2025 21:00:29 Asia/Ho_Chi_Minh] Row 29: MSSV='0469221034', Ho='Lê Hữu Nguyên', Ten='Khang', NgaySinh='28/04/2004'
+[16-Jul-2025 21:00:29 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=308, ID_Dot=74, Ten='Lê Hữu Nguyên Khang', MSSV='0469221034', Lop='CÐN SCMT 22', NgaySinh='2004-04-28'
+[16-Jul-2025 21:00:29 Asia/Ho_Chi_Minh] Row 30: MSSV='0469221035', Ho='Mai Bàng Quốc', Ten='Khang', NgaySinh='16/11/2004'
+[16-Jul-2025 21:00:30 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=309, ID_Dot=74, Ten='Mai Bàng Quốc Khang', MSSV='0469221035', Lop='CÐN SCMT 22', NgaySinh='2004-11-16'
+[16-Jul-2025 21:00:30 Asia/Ho_Chi_Minh] Row 31: MSSV='0469221036', Ho='Nguyễn Văn', Ten='Khang', NgaySinh='29/09/2004'
+[16-Jul-2025 21:00:30 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=310, ID_Dot=74, Ten='Nguyễn Văn Khang', MSSV='0469221036', Lop='CÐN SCMT 22', NgaySinh='2004-09-29'
+[16-Jul-2025 21:00:30 Asia/Ho_Chi_Minh] Row 32: MSSV='0469221037', Ho='Nguyễn Đức Duy', Ten='Khanh', NgaySinh='03/05/2004'
+[16-Jul-2025 21:00:30 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=311, ID_Dot=74, Ten='Nguyễn Đức Duy Khanh', MSSV='0469221037', Lop='CÐN SCMT 22', NgaySinh='2004-05-03'
+[16-Jul-2025 21:00:30 Asia/Ho_Chi_Minh] Row 33: MSSV='0469221039', Ho='Đỗ Đạt Đăng', Ten='Khoa', NgaySinh='04/06/2004'
+[16-Jul-2025 21:00:30 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=312, ID_Dot=74, Ten='Đỗ Đạt Đăng Khoa', MSSV='0469221039', Lop='CÐN SCMT 22', NgaySinh='2004-06-04'
+[16-Jul-2025 21:00:30 Asia/Ho_Chi_Minh] Row 34: MSSV='0469221043', Ho='Nguyễn Đình Vũ Anh', Ten='Kiệt', NgaySinh='07/11/2004'
+[16-Jul-2025 21:00:30 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=313, ID_Dot=74, Ten='Nguyễn Đình Vũ Anh Kiệt', MSSV='0469221043', Lop='CÐN SCMT 22', NgaySinh='2004-11-07'
+[16-Jul-2025 21:00:30 Asia/Ho_Chi_Minh] Row 35: MSSV='0469221045', Ho='Lê Bá', Ten='Kim', NgaySinh='24/05/2004'
+[16-Jul-2025 21:00:30 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=314, ID_Dot=74, Ten='Lê Bá Kim', MSSV='0469221045', Lop='CÐN SCMT 22', NgaySinh='2004-05-24'
+[16-Jul-2025 21:00:30 Asia/Ho_Chi_Minh] Row 36: MSSV='0469221046', Ho='Nguyễn Duy', Ten='Long', NgaySinh='20/11/2004'
+[16-Jul-2025 21:00:30 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=315, ID_Dot=74, Ten='Nguyễn Duy Long', MSSV='0469221046', Lop='CÐN SCMT 22', NgaySinh='2004-11-20'
+[16-Jul-2025 21:00:30 Asia/Ho_Chi_Minh] Row 37: MSSV='0469221048', Ho='Phạm Hoàng', Ten='Long', NgaySinh='13/07/2004'
+[16-Jul-2025 21:00:30 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=316, ID_Dot=74, Ten='Phạm Hoàng Long', MSSV='0469221048', Lop='CÐN SCMT 22', NgaySinh='2004-07-13'
+[16-Jul-2025 21:00:30 Asia/Ho_Chi_Minh] Row 38: MSSV='0469221050', Ho='Huỳnh Tấn', Ten='Lộc', NgaySinh='10/06/2004'
+[16-Jul-2025 21:00:30 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=317, ID_Dot=74, Ten='Huỳnh Tấn Lộc', MSSV='0469221050', Lop='CÐN SCMT 22', NgaySinh='2004-06-10'
+[16-Jul-2025 21:00:30 Asia/Ho_Chi_Minh] Row 39: MSSV='0469221052', Ho='Trần Tấn', Ten='Lợi', NgaySinh='14/12/2004'
+[16-Jul-2025 21:00:30 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=318, ID_Dot=74, Ten='Trần Tấn Lợi', MSSV='0469221052', Lop='CÐN SCMT 22', NgaySinh='2004-12-14'
+[16-Jul-2025 21:00:30 Asia/Ho_Chi_Minh] Row 40: MSSV='0469221053', Ho='Đặng Xuân', Ten='Minh', NgaySinh='28/02/2004'
+[16-Jul-2025 21:00:30 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=319, ID_Dot=74, Ten='Đặng Xuân Minh', MSSV='0469221053', Lop='CÐN SCMT 22', NgaySinh='2004-02-28'
+[16-Jul-2025 21:00:30 Asia/Ho_Chi_Minh] Row 41: MSSV='0469221057', Ho='Phạm Mạnh', Ten='Ngà', NgaySinh='23/08/2004'
+[16-Jul-2025 21:00:30 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=320, ID_Dot=74, Ten='Phạm Mạnh Ngà', MSSV='0469221057', Lop='CÐN SCMT 22', NgaySinh='2004-08-23'
+[16-Jul-2025 21:00:30 Asia/Ho_Chi_Minh] Row 42: MSSV='0469221058', Ho='Dương Minh', Ten='Nguyên', NgaySinh='22/10/2004'
+[16-Jul-2025 21:00:30 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=321, ID_Dot=74, Ten='Dương Minh Nguyên', MSSV='0469221058', Lop='CÐN SCMT 22', NgaySinh='2004-10-22'
+[16-Jul-2025 21:00:30 Asia/Ho_Chi_Minh] Row 43: MSSV='0469221059', Ho='Hứa Văn Tấn', Ten='Nguyên', NgaySinh='14/06/2004'
+[16-Jul-2025 21:00:30 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=322, ID_Dot=74, Ten='Hứa Văn Tấn Nguyên', MSSV='0469221059', Lop='CÐN SCMT 22', NgaySinh='2004-06-14'
+[16-Jul-2025 21:00:30 Asia/Ho_Chi_Minh] Row 44: MSSV='0469221060', Ho='Lê Phúc', Ten='Nguyên', NgaySinh='29/08/2002'
+[16-Jul-2025 21:00:30 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=323, ID_Dot=74, Ten='Lê Phúc Nguyên', MSSV='0469221060', Lop='CÐN SCMT 22', NgaySinh='2002-08-29'
+[16-Jul-2025 21:00:30 Asia/Ho_Chi_Minh] Row 45: MSSV='0469221061', Ho='Nguyễn Công', Ten='Nhật', NgaySinh='01/04/2004'
+[16-Jul-2025 21:00:30 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=324, ID_Dot=74, Ten='Nguyễn Công Nhật', MSSV='0469221061', Lop='CÐN SCMT 22', NgaySinh='2004-04-01'
+[16-Jul-2025 21:00:30 Asia/Ho_Chi_Minh] Row 46: MSSV='0469221063', Ho='Nguyễn Tấn', Ten='Phát', NgaySinh='12/11/2004'
+[16-Jul-2025 21:00:30 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=325, ID_Dot=74, Ten='Nguyễn Tấn Phát', MSSV='0469221063', Lop='CÐN SCMT 22', NgaySinh='2004-11-12'
+[16-Jul-2025 21:00:30 Asia/Ho_Chi_Minh] Row 47: MSSV='0469221064', Ho='Võ Tấn', Ten='Phát', NgaySinh='30/04/2004'
+[16-Jul-2025 21:00:31 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=326, ID_Dot=74, Ten='Võ Tấn Phát', MSSV='0469221064', Lop='CÐN SCMT 22', NgaySinh='2004-04-30'
+[16-Jul-2025 21:00:31 Asia/Ho_Chi_Minh] Row 48: MSSV='0469221065', Ho='Nguyễn Hoàng', Ten='Phi', NgaySinh='25/07/2004'
+[16-Jul-2025 21:00:31 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=327, ID_Dot=74, Ten='Nguyễn Hoàng Phi', MSSV='0469221065', Lop='CÐN SCMT 22', NgaySinh='2004-07-25'
+[16-Jul-2025 21:00:31 Asia/Ho_Chi_Minh] Row 49: MSSV='0469221066', Ho='Võ Hoàng', Ten='Phi', NgaySinh='22/09/2003'
+[16-Jul-2025 21:00:31 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=328, ID_Dot=74, Ten='Võ Hoàng Phi', MSSV='0469221066', Lop='CÐN SCMT 22', NgaySinh='2003-09-22'
+[16-Jul-2025 21:00:31 Asia/Ho_Chi_Minh] Row 50: MSSV='0469221067', Ho='Trần Văn', Ten='Phong', NgaySinh='12/12/2004'
+[16-Jul-2025 21:00:31 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=329, ID_Dot=74, Ten='Trần Văn Phong', MSSV='0469221067', Lop='CÐN SCMT 22', NgaySinh='2004-12-12'
+[16-Jul-2025 21:00:31 Asia/Ho_Chi_Minh] Row 51: MSSV='0469221068', Ho='Lê Đình Nguyên', Ten='Phú', NgaySinh='05/06/2004'
+[16-Jul-2025 21:00:31 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=330, ID_Dot=74, Ten='Lê Đình Nguyên Phú', MSSV='0469221068', Lop='CÐN SCMT 22', NgaySinh='2004-06-05'
+[16-Jul-2025 21:00:31 Asia/Ho_Chi_Minh] Row 52: MSSV='0469221069', Ho='Nguyễn Hoàng', Ten='Phúc', NgaySinh='30/06/2003'
+[16-Jul-2025 21:00:31 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=331, ID_Dot=74, Ten='Nguyễn Hoàng Phúc', MSSV='0469221069', Lop='CÐN SCMT 22', NgaySinh='2003-06-30'
+[16-Jul-2025 21:00:31 Asia/Ho_Chi_Minh] Row 53: MSSV='0469221071', Ho='Nguyễn Hữu', Ten='Phước', NgaySinh='02/12/2004'
+[16-Jul-2025 21:00:31 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=332, ID_Dot=74, Ten='Nguyễn Hữu Phước', MSSV='0469221071', Lop='CÐN SCMT 22', NgaySinh='2004-12-02'
+[16-Jul-2025 21:00:31 Asia/Ho_Chi_Minh] Row 54: MSSV='0469221072', Ho='Nguyễn Hữu', Ten='Phước', NgaySinh='11/04/2003'
+[16-Jul-2025 21:00:31 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=333, ID_Dot=74, Ten='Nguyễn Hữu Phước', MSSV='0469221072', Lop='CÐN SCMT 22', NgaySinh='2003-04-11'
+[16-Jul-2025 21:00:31 Asia/Ho_Chi_Minh] Row 55: MSSV='0469221073', Ho='Trần Lê', Ten='Quý', NgaySinh='22/09/2004'
+[16-Jul-2025 21:00:31 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=334, ID_Dot=74, Ten='Trần Lê Quý', MSSV='0469221073', Lop='CÐN SCMT 22', NgaySinh='2004-09-22'
+[16-Jul-2025 21:00:31 Asia/Ho_Chi_Minh] Row 56: MSSV='0469221074', Ho='Võ Văn', Ten='Sơn', NgaySinh='22/11/2004'
+[16-Jul-2025 21:00:31 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=335, ID_Dot=74, Ten='Võ Văn Sơn', MSSV='0469221074', Lop='CÐN SCMT 22', NgaySinh='2004-11-22'
+[16-Jul-2025 21:00:31 Asia/Ho_Chi_Minh] Row 57: MSSV='0469221075', Ho='Phạm Hình', Ten='Sự', NgaySinh='24/03/2003'
+[16-Jul-2025 21:00:31 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=336, ID_Dot=74, Ten='Phạm Hình Sự', MSSV='0469221075', Lop='CÐN SCMT 22', NgaySinh='2003-03-24'
+[16-Jul-2025 21:00:31 Asia/Ho_Chi_Minh] Row 58: MSSV='0469221076', Ho='Nguyễn Tấn', Ten='Tài', NgaySinh='09/04/2004'
+[16-Jul-2025 21:00:31 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=337, ID_Dot=74, Ten='Nguyễn Tấn Tài', MSSV='0469221076', Lop='CÐN SCMT 22', NgaySinh='2004-04-09'
+[16-Jul-2025 21:00:31 Asia/Ho_Chi_Minh] Row 59: MSSV='0469221078', Ho='Trần Văn', Ten='Tâm', NgaySinh='13/07/2002'
+[16-Jul-2025 21:00:31 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=338, ID_Dot=74, Ten='Trần Văn Tâm', MSSV='0469221078', Lop='CÐN SCMT 22', NgaySinh='2002-07-13'
+[16-Jul-2025 21:00:31 Asia/Ho_Chi_Minh] Row 60: MSSV='0469221083', Ho='Trần Phước', Ten='Thành', NgaySinh='17/05/2000'
+[16-Jul-2025 21:00:31 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=339, ID_Dot=74, Ten='Trần Phước Thành', MSSV='0469221083', Lop='CÐN SCMT 22', NgaySinh='2000-05-17'
+[16-Jul-2025 21:00:31 Asia/Ho_Chi_Minh] Row 61: MSSV='0469221085', Ho='Đoàn Ngọc', Ten='Thạnh', NgaySinh='08/10/2004'
+[16-Jul-2025 21:00:31 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=340, ID_Dot=74, Ten='Đoàn Ngọc Thạnh', MSSV='0469221085', Lop='CÐN SCMT 22', NgaySinh='2004-10-08'
+[16-Jul-2025 21:00:31 Asia/Ho_Chi_Minh] Row 62: MSSV='0469221086', Ho='Dương Quốc', Ten='Thắng', NgaySinh='05/01/2004'
+[16-Jul-2025 21:00:31 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=341, ID_Dot=74, Ten='Dương Quốc Thắng', MSSV='0469221086', Lop='CÐN SCMT 22', NgaySinh='2004-01-05'
+[16-Jul-2025 21:00:31 Asia/Ho_Chi_Minh] Row 63: MSSV='0469221087', Ho='Nguyễn Hữu', Ten='Thắng', NgaySinh='31/01/2004'
+[16-Jul-2025 21:00:31 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=342, ID_Dot=74, Ten='Nguyễn Hữu Thắng', MSSV='0469221087', Lop='CÐN SCMT 22', NgaySinh='2004-01-31'
+[16-Jul-2025 21:00:31 Asia/Ho_Chi_Minh] Row 64: MSSV='0469221090', Ho='Nguyễn Ngọc', Ten='Thiện', NgaySinh='07/12/2003'
+[16-Jul-2025 21:00:32 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=343, ID_Dot=74, Ten='Nguyễn Ngọc Thiện', MSSV='0469221090', Lop='CÐN SCMT 22', NgaySinh='2003-12-07'
+[16-Jul-2025 21:00:32 Asia/Ho_Chi_Minh] Row 65: MSSV='0469221091', Ho='Võ Ngọc', Ten='Thịnh', NgaySinh='02/10/2004'
+[16-Jul-2025 21:00:32 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=344, ID_Dot=74, Ten='Võ Ngọc Thịnh', MSSV='0469221091', Lop='CÐN SCMT 22', NgaySinh='2004-10-02'
+[16-Jul-2025 21:00:32 Asia/Ho_Chi_Minh] Row 66: MSSV='0469221092', Ho='Nguyễn', Ten='Thông', NgaySinh='15/05/2004'
+[16-Jul-2025 21:00:32 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=345, ID_Dot=74, Ten='Nguyễn Thông', MSSV='0469221092', Lop='CÐN SCMT 22', NgaySinh='2004-05-15'
+[16-Jul-2025 21:00:32 Asia/Ho_Chi_Minh] Row 67: MSSV='0469221093', Ho='Đoàn Lê Minh', Ten='Triết', NgaySinh='27/07/2004'
+[16-Jul-2025 21:00:32 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=346, ID_Dot=74, Ten='Đoàn Lê Minh Triết', MSSV='0469221093', Lop='CÐN SCMT 22', NgaySinh='2004-07-27'
+[16-Jul-2025 21:00:32 Asia/Ho_Chi_Minh] Row 68: MSSV='0469221094', Ho='Đinh Minh', Ten='Trọng', NgaySinh='15/04/2004'
+[16-Jul-2025 21:00:32 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=347, ID_Dot=74, Ten='Đinh Minh Trọng', MSSV='0469221094', Lop='CÐN SCMT 22', NgaySinh='2004-04-15'
+[16-Jul-2025 21:00:32 Asia/Ho_Chi_Minh] Row 69: MSSV='0469221095', Ho='Ngô Thế', Ten='Trọng', NgaySinh='28/06/2004'
+[16-Jul-2025 21:00:32 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=348, ID_Dot=74, Ten='Ngô Thế Trọng', MSSV='0469221095', Lop='CÐN SCMT 22', NgaySinh='2004-06-28'
+[16-Jul-2025 21:00:32 Asia/Ho_Chi_Minh] Row 70: MSSV='0469221097', Ho='Lê Tuấn', Ten='Văn', NgaySinh='04/05/2003'
+[16-Jul-2025 21:00:32 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=349, ID_Dot=74, Ten='Lê Tuấn Văn', MSSV='0469221097', Lop='CÐN SCMT 22', NgaySinh='2003-05-04'
+[16-Jul-2025 21:00:32 Asia/Ho_Chi_Minh] Row 71: MSSV='0469221098', Ho='Nguyễn Khánh', Ten='Văn', NgaySinh='11/06/2004'
+[16-Jul-2025 21:00:32 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=350, ID_Dot=74, Ten='Nguyễn Khánh Văn', MSSV='0469221098', Lop='CÐN SCMT 22', NgaySinh='2004-06-11'
+[16-Jul-2025 21:00:32 Asia/Ho_Chi_Minh] Row 72: MSSV='0469221100', Ho='Lê Đắc Quốc', Ten='Việt', NgaySinh='23/07/2004'
+[16-Jul-2025 21:00:32 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=351, ID_Dot=74, Ten='Lê Đắc Quốc Việt', MSSV='0469221100', Lop='CÐN SCMT 22', NgaySinh='2004-07-23'
+[16-Jul-2025 21:00:32 Asia/Ho_Chi_Minh] Row 73: MSSV='0469221101', Ho='Nguyễn Phong', Ten='Vinh', NgaySinh='15/11/2004'
+[16-Jul-2025 21:00:32 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=352, ID_Dot=74, Ten='Nguyễn Phong Vinh', MSSV='0469221101', Lop='CÐN SCMT 22', NgaySinh='2004-11-15'
+[16-Jul-2025 21:00:32 Asia/Ho_Chi_Minh] Row 74: MSSV='0469211060', Ho='Nguyễn Huy', Ten='Tâm', NgaySinh='06/03/2003'
+[16-Jul-2025 21:00:32 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=353, ID_Dot=74, Ten='Nguyễn Huy Tâm', MSSV='0469211060', Lop='CÐN SCMT 22', NgaySinh='2003-03-06'
+[16-Jul-2025 21:00:32 Asia/Ho_Chi_Minh] Row 75: MSSV='0469211074', Ho='Lý Hán', Ten='Tường', NgaySinh='06/03/2003'
+[16-Jul-2025 21:00:32 Asia/Ho_Chi_Minh] Debug - Insert data: ID_TaiKhoan=354, ID_Dot=74, Ten='Lý Hán Tường', MSSV='0469211074', Lop='CÐN SCMT 22', NgaySinh='2003-03-06'
+[16-Jul-2025 22:20:13 Asia/Ho_Chi_Minh] Print Template Debug - ID: 9, Found: YES

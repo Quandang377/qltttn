@@ -1,6 +1,92 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
+    // Xử lý thêm, sửa, xóa công ty
+    $msg = '';
 
+// Thêm công ty
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['them_congty'])) {
+    $ten = trim($_POST['ten_cong_ty'] ?? '');
+    $sdt = trim($_POST['sdt'] ?? '');
+    $email = trim($_POST['email_cong_ty'] ?? '');
+    $masothue = trim($_POST['ma_so_thue'] ?? '');
+    $diachi = trim($_POST['dia_chi'] ?? '');
+
+    if ($ten === '' || $sdt === '' || $email === '' || $masothue === '' || $diachi === '') {
+        $msg = '<div class="alert alert-danger">Vui lòng nhập đầy đủ thông tin!</div>';
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $msg = '<div class="alert alert-danger">Email không hợp lệ!</div>';
+    } elseif (!preg_match('/^[0-9]{10,15}$/', $sdt)) {
+        $msg = '<div class="alert alert-danger">Số điện thoại không hợp lệ!</div>';
+    } else {
+        $stmt = $conn->prepare("SELECT COUNT(*) FROM congty WHERE MaSoThue = ?");
+        $stmt->execute([$masothue]);
+        if ($stmt->fetchColumn() > 0) {
+            $msg = '<div class="alert alert-danger">Mã số thuế đã tồn tại!</div>';
+        } else {
+            $stmt = $conn->prepare("INSERT INTO congty (TenCty, MaSoThue, DiaChi, Sdt, Email, TrangThai) VALUES (?, ?, ?, ?, ?, 1)");
+            if ($stmt->execute([$ten, $masothue, $diachi, $sdt, $email])) {
+                header("Location: " . $_SERVER['REQUEST_URI']);
+                exit;
+            } else {
+                $msg = '<div class="alert alert-danger">Thêm công ty thất bại!</div>';
+            }
+        }
+    }
+}
+
+// Sửa công ty
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sua_congty'])) {
+    $id = intval($_POST['id_cong_ty'] ?? 0);
+    $ten = trim($_POST['ten_cong_ty'] ?? '');
+    $sdt = trim($_POST['sdt'] ?? '');
+    $email = trim($_POST['email_cong_ty'] ?? '');
+    $masothue = trim($_POST['ma_so_thue'] ?? '');
+    $diachi = trim($_POST['dia_chi'] ?? '');
+
+    if ($ten === '' || $sdt === '' || $email === '' || $masothue === '' || $diachi === '') {
+        $msg = '<div class="alert alert-danger">Vui lòng nhập đầy đủ thông tin!</div>';
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $msg = '<div class="alert alert-danger">Email không hợp lệ!</div>';
+    } elseif (!preg_match('/^[0-9]{10,15}$/', $sdt)) {
+        $msg = '<div class="alert alert-danger">Số điện thoại không hợp lệ!</div>';
+    } else {
+        $stmt = $conn->prepare("SELECT COUNT(*) FROM congty WHERE MaSoThue = ? AND ID != ?");
+        $stmt->execute([$masothue, $id]);
+        if ($stmt->fetchColumn() > 0) {
+            $msg = '<div class="alert alert-danger">Mã số thuế đã tồn tại!</div>';
+        } else {
+            $stmt = $conn->prepare("UPDATE congty SET TenCty = ?, MaSoThue = ?, DiaChi = ?, Sdt = ?, Email = ? WHERE ID = ?");
+            if ($stmt->execute([$ten, $masothue, $diachi, $sdt, $email, $id])) {
+                header("Location: " . $_SERVER['REQUEST_URI']);
+                exit;
+            } else {
+                $msg = '<div class="alert alert-danger">Cập nhật công ty thất bại!</div>';
+            }
+        }
+    }
+}
+
+// Xóa công ty (ẩn)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_congty'])) {
+    $id = intval($_POST['id_cong_ty'] ?? 0);
+    if ($id > 0) {
+        $stmt = $conn->prepare("UPDATE congty SET TrangThai = 0 WHERE ID = ?");
+        if ($stmt->execute([$id])) {
+            header("Location: " . $_SERVER['REQUEST_URI']);
+            exit;
+        } else {
+            $msg = '<div class="alert alert-danger">Xóa công ty thất bại!</div>';
+        }
+    } else {
+        $msg = '<div class="alert alert-danger">Vui lòng chọn công ty để xóa!</div>';
+    }
+}
+
+if ($msg) echo $msg;
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -307,92 +393,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
             </h1>
             
             <div class="main-card">
-                <?php
-                // Xử lý thêm, sửa, xóa công ty
-                $msg = '';
-                require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
-
-            // Thêm công ty
-            if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['them_congty'])) {
-                $ten = trim($_POST['ten_cong_ty'] ?? '');
-                $sdt = trim($_POST['sdt'] ?? '');
-                $email = trim($_POST['email_cong_ty'] ?? '');
-                $masothue = trim($_POST['ma_so_thue'] ?? '');
-                $diachi = trim($_POST['dia_chi'] ?? '');
-
-                if ($ten === '' || $sdt === '' || $email === '' || $masothue === '' || $diachi === '') {
-                    $msg = '<div class="alert alert-danger">Vui lòng nhập đầy đủ thông tin!</div>';
-                } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                    $msg = '<div class="alert alert-danger">Email không hợp lệ!</div>';
-                } elseif (!preg_match('/^[0-9]{10,15}$/', $sdt)) {
-                    $msg = '<div class="alert alert-danger">Số điện thoại không hợp lệ!</div>';
-                } else {
-                    $stmt = $conn->prepare("SELECT COUNT(*) FROM congty WHERE MaSoThue = ?");
-                    $stmt->execute([$masothue]);
-                    if ($stmt->fetchColumn() > 0) {
-                        $msg = '<div class="alert alert-danger">Mã số thuế đã tồn tại!</div>';
-                    } else {
-                        $stmt = $conn->prepare("INSERT INTO congty (TenCty, MaSoThue, DiaChi, Sdt, Email, TrangThai) VALUES (?, ?, ?, ?, ?, 1)");
-                        if ($stmt->execute([$ten, $masothue, $diachi, $sdt, $email])) {
-                            header("Location: " . $_SERVER['REQUEST_URI']);
-                            exit;
-                        } else {
-                            $msg = '<div class="alert alert-danger">Thêm công ty thất bại!</div>';
-                        }
-                    }
-                }
-            }
-
-            // Sửa công ty
-            if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sua_congty'])) {
-                $id = intval($_POST['id_cong_ty'] ?? 0);
-                $ten = trim($_POST['ten_cong_ty'] ?? '');
-                $sdt = trim($_POST['sdt'] ?? '');
-                $email = trim($_POST['email_cong_ty'] ?? '');
-                $masothue = trim($_POST['ma_so_thue'] ?? '');
-                $diachi = trim($_POST['dia_chi'] ?? '');
-
-                if ($ten === '' || $sdt === '' || $email === '' || $masothue === '' || $diachi === '') {
-                    $msg = '<div class="alert alert-danger">Vui lòng nhập đầy đủ thông tin!</div>';
-                } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                    $msg = '<div class="alert alert-danger">Email không hợp lệ!</div>';
-                } elseif (!preg_match('/^[0-9]{10,15}$/', $sdt)) {
-                    $msg = '<div class="alert alert-danger">Số điện thoại không hợp lệ!</div>';
-                } else {
-                    $stmt = $conn->prepare("SELECT COUNT(*) FROM congty WHERE MaSoThue = ? AND ID != ?");
-                    $stmt->execute([$masothue, $id]);
-                    if ($stmt->fetchColumn() > 0) {
-                        $msg = '<div class="alert alert-danger">Mã số thuế đã tồn tại!</div>';
-                    } else {
-                        $stmt = $conn->prepare("UPDATE congty SET TenCty = ?, MaSoThue = ?, DiaChi = ?, Sdt = ?, Email = ? WHERE ID = ?");
-                        if ($stmt->execute([$ten, $masothue, $diachi, $sdt, $email, $id])) {
-                            header("Location: " . $_SERVER['REQUEST_URI']);
-                            exit;
-                        } else {
-                            $msg = '<div class="alert alert-danger">Cập nhật công ty thất bại!</div>';
-                        }
-                    }
-                }
-            }
-
-            // Xóa công ty (ẩn)
-            if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_congty'])) {
-                $id = intval($_POST['id_cong_ty'] ?? 0);
-                if ($id > 0) {
-                    $stmt = $conn->prepare("UPDATE congty SET TrangThai = 0 WHERE ID = ?");
-                    if ($stmt->execute([$id])) {
-                        header("Location: " . $_SERVER['REQUEST_URI']);
-                        exit;
-                    } else {
-                        $msg = '<div class="alert alert-danger">Xóa công ty thất bại!</div>';
-                    }
-                } else {
-                    $msg = '<div class="alert alert-danger">Vui lòng chọn công ty để xóa!</div>';
-                }
-            }
-
-            if ($msg) echo $msg;
-            ?>
+                
             
             <div class="form-section">
                 <h4><i class="fa fa-plus-circle"></i> Thông tin công ty</h4>

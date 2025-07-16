@@ -1,26 +1,31 @@
-<?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
+<?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/../../error.log');
+ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 $ID_TaiKhoan = $_SESSION['user_id'];
 
-$stmt = $conn->prepare("SELECT VaiTro FROM TaiKhoan WHERE ID_TaiKhoan = ?");
+$stmt = $conn->prepare("SELECT VaiTro FROM taikhoan WHERE ID_TaiKhoan = ?");
 $stmt->execute([$ID_TaiKhoan]);
 $vaiTro = $stmt->fetchColumn();
 
 $stmt = $conn->prepare("
     SELECT ks.*, 
-        COALESCE(gv.Ten, sv.Ten, cb.Ten, ad.Ten, tk.TaiKhoan) AS TenNguoiTao
-    FROM KhaoSat ks
-    JOIN TaiKhoan tk ON ks.NguoiTao = tk.ID_TaiKhoan
-    LEFT JOIN GiaoVien gv ON gv.ID_TaiKhoan = tk.ID_TaiKhoan
-    LEFT JOIN CanBoKhoa cb ON cb.ID_TaiKhoan = tk.ID_TaiKhoan
-    LEFT JOIN Admin ad ON ad.ID_TaiKhoan = tk.ID_TaiKhoan
-    LEFT JOIN SinhVien sv ON sv.ID_TaiKhoan = tk.ID_TaiKhoan
+        COALESCE(gv.Ten, sv.Ten, cb.Ten, ad.Ten, tk.taikhoan) AS TenNguoiTao
+    FROM khaosat ks
+    JOIN taikhoan tk ON ks.NguoiTao = tk.ID_TaiKhoan
+    LEFT JOIN giaovien gv ON gv.ID_TaiKhoan = tk.ID_TaiKhoan
+    LEFT JOIN canbokhoa cb ON cb.ID_TaiKhoan = tk.ID_TaiKhoan
+    LEFT JOIN admin ad ON ad.ID_TaiKhoan = tk.ID_TaiKhoan
+    LEFT JOIN sinhvien sv ON sv.ID_TaiKhoan = tk.ID_TaiKhoan
     WHERE ks.TrangThai >= 1
     AND (
         (
             ks.NguoiNhan IN ('Tất cả', ?)
             AND EXISTS (
-                SELECT 1 FROM SinhVien sv2
+                SELECT 1 FROM sinhvien sv2
                 WHERE sv2.ID_TaiKhoan = ?
                 AND sv2.ID_Dot = ks.ID_Dot
             )
@@ -28,7 +33,7 @@ $stmt = $conn->prepare("
         OR (
             ks.NguoiNhan = 'Sinh viên thuộc hướng dẫn'
             AND EXISTS (
-                SELECT 1 FROM SinhVien sv2
+                SELECT 1 FROM sinhvien sv2
                 WHERE sv2.ID_TaiKhoan = ?
                 AND sv2.ID_GVHD = ks.NguoiTao
                 AND sv2.ID_Dot = ks.ID_Dot
@@ -36,7 +41,7 @@ $stmt = $conn->prepare("
         )
     )
     AND ks.ID NOT IN (
-        SELECT ID_KhaoSat FROM PhanHoiKhaoSat WHERE ID_TaiKhoan = ?
+        SELECT ID_KhaoSat FROM phanhoikhaosat WHERE ID_TaiKhoan = ?
     )
     ORDER BY ks.ThoiGianTao DESC
 ");
@@ -49,7 +54,7 @@ $dsID = array_column($dsKhaoSat, 'ID');
 $dsCauHoiTheoKhaoSat = [];
 if (!empty($dsID)) {
     $placeholders = implode(',', array_fill(0, count($dsID), '?'));
-    $sqlCauHoi = "SELECT * FROM CauHoiKhaoSat WHERE ID_KhaoSat IN ($placeholders)";
+    $sqlCauHoi = "SELECT * FROM cauhoikhaosat WHERE ID_KhaoSat IN ($placeholders)";
     $stmtCauHoi = $conn->prepare($sqlCauHoi);
     $stmtCauHoi->execute($dsID);
     $tatCaCauHoi = $stmtCauHoi->fetchAll(PDO::FETCH_ASSOC);
@@ -73,7 +78,7 @@ if (
         $conn->beginTransaction();
 
         $stmtPhanHoi = $conn->prepare("
-            INSERT INTO PhanHoiKhaoSat (ID_KhaoSat, ID_TaiKhoan, ThoiGianTraLoi, TrangThai)
+            INSERT INTO phanhoikhaosat (ID_KhaoSat, ID_TaiKhoan, ThoiGianTraLoi, TrangThai)
             VALUES (?, ?, NOW(), 1)
         ");
         $stmtPhanHoi->execute([$idKhaoSat, $idTaiKhoan]);
@@ -81,7 +86,7 @@ if (
         $idPhanHoi = $conn->lastInsertId();
 
         $stmtTraLoi = $conn->prepare("
-            INSERT INTO CauTraLoi (ID_PhanHoi, ID_CauHoi, TraLoi, TrangThai)
+            INSERT INTO cautraloi (ID_PhanHoi, ID_CauHoi, TraLoi, TrangThai)
             VALUES (?, ?, ?, 1)
         ");
 
@@ -159,9 +164,10 @@ if (
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <div id="wrapper">
-        <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_SinhVien.php"; ?>
 
         <div id="page-wrapper">
+        <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_Sinhvien.php"; ?>
+
             <div class="container-fluid">
                 <div class="row">
                     <div class="col-lg-12">

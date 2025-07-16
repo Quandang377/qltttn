@@ -1,4 +1,7 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/vendor/autoload.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
@@ -19,11 +22,11 @@ $stmt = $conn->prepare("
     SELECT d.ID, d.TenDot, d.BacDaoTao, d.Nam, d.NguoiMoDot, d.NguoiQuanLy, d.ThoiGianBatDau, d.ThoiGianKetThuc, d.TrangThai,
         COALESCE(cb1.Ten, ad1.Ten) AS TenNguoiMoDot,
         COALESCE(cb2.Ten, ad2.Ten) AS TenNguoiQuanLy
-    FROM DOTTHUCTAP d
-    LEFT JOIN CanBoKhoa cb1 ON d.NguoiMoDot = cb1.ID_TaiKhoan
-    LEFT JOIN Admin ad1 ON d.NguoiMoDot = ad1.ID_TaiKhoan
-    LEFT JOIN CanBoKhoa cb2 ON d.NguoiQuanLy = cb2.ID_TaiKhoan
-    LEFT JOIN Admin ad2 ON d.NguoiQuanLy = ad2.ID_TaiKhoan
+    FROM dotthuctap d
+    LEFT JOIN canbokhoa cb1 ON d.NguoiMoDot = cb1.ID_taikhoan
+    LEFT JOIN admin ad1 ON d.NguoiMoDot = ad1.ID_taikhoan
+    LEFT JOIN canbokhoa cb2 ON d.NguoiQuanLy = cb2.ID_taikhoan
+    LEFT JOIN admin ad2 ON d.NguoiQuanLy = ad2.ID_taikhoan
     WHERE d.ID = :id
 ");
 $stmt->execute(['id' => $id]);
@@ -36,7 +39,7 @@ if (!$dot) {
 
 $stmt = $conn->prepare("SELECT COUNT(*) FROM sinhvien WHERE ID_Dot = :id");
 $stmt->execute(['id' => $id]);
-$tongSinhVien = $stmt->fetchColumn();
+$tongsinhvien = $stmt->fetchColumn();
 
 // Tổng số giáo viên trong đợt (dựa vào dot_giaovien)
 $stmt = $conn->prepare("SELECT COUNT(*) FROM dot_giaovien WHERE ID_Dot = :id");
@@ -45,16 +48,16 @@ $tongGVHD = $stmt->fetchColumn();
 
 // Lấy giáo viên thuộc đợt từ bảng dot_giaovien
 $stmt = $conn->prepare("
-        SELECT GV.ID_TaiKhoan, GV.Ten, COUNT(SV.ID_TaiKhoan) AS SoLuong
+        SELECT GV.ID_taikhoan, GV.Ten, COUNT(SV.ID_taikhoan) AS SoLuong
         FROM dot_giaovien DG
-        INNER JOIN giaovien GV ON DG.ID_GVHD = GV.ID_TaiKhoan
-        LEFT JOIN sinhvien SV ON GV.ID_TaiKhoan = SV.ID_GVHD AND SV.ID_Dot = DG.ID_Dot
+        INNER JOIN giaovien GV ON DG.ID_GVHD = GV.ID_taikhoan
+        LEFT JOIN sinhvien SV ON GV.ID_taikhoan = SV.ID_GVHD AND SV.ID_Dot = DG.ID_Dot
         WHERE DG.ID_Dot = :id
-        GROUP BY GV.ID_TaiKhoan, GV.Ten
+        GROUP BY GV.ID_taikhoan, GV.Ten
         ORDER BY SoLuong DESC
     ");
 $stmt->execute(['id' => $id]);
-$dsGiaoVien = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$dsgiaovien = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Nếu xuất Excel
 if (isset($_GET['export_excel']) && $_GET['export_excel'] == 1) {
@@ -65,7 +68,7 @@ if (isset($_GET['export_excel']) && $_GET['export_excel'] == 1) {
     SELECT 
         SV.MSSV, SV.Ten AS TenSV, SV.NgaySinh, SV.Lop, GV.Ten AS TenGVHD
     FROM sinhvien SV
-    LEFT JOIN giaovien GV ON SV.ID_GVHD = GV.ID_TaiKhoan
+    LEFT JOIN giaovien GV ON SV.ID_GVHD = GV.ID_taikhoan
     WHERE SV.ID_Dot = :id
     ORDER BY SUBSTRING_INDEX(SV.Ten, ' ', -1) ASC
     ");
@@ -121,7 +124,7 @@ if (isset($_GET['export_excel']) && $_GET['export_excel'] == 1) {
 
     // ===== Dữ liệu GVHD =====
     $stt = 1;
-    foreach ($dsGiaoVien as $gv) {
+    foreach ($dsgiaovien as $gv) {
         $sheet->setCellValue("A$row", $stt++);
         $sheet->setCellValue("B$row", $gv['Ten']);
         $sheet->setCellValue("C$row", $gv['SoLuong']);
@@ -198,7 +201,7 @@ $stmt = $conn->prepare("
                 THEN 1 ELSE 0 
             END) AS ChuaHoanThanh
     FROM sinhvien sv
-    LEFT JOIN diem_tongket dt ON sv.ID_TaiKhoan = dt.ID_SV AND dt.ID_Dot = sv.ID_Dot
+    LEFT JOIN diem_tongket dt ON sv.ID_taikhoan = dt.ID_SV AND dt.ID_Dot = sv.ID_Dot
     WHERE sv.ID_Dot = :id
 ");
 $stmt->execute(['id' => $id]);
@@ -258,7 +261,7 @@ $soLuongKhongDat = $stmt1->fetchColumn();
 $stmtGGT = $conn->prepare("
     SELECT sv.Ten, sv.MSSV, sv.Lop
     FROM giaygioithieu g
-    JOIN sinhvien sv ON g.IdSinhVien = sv.ID_TaiKhoan
+    JOIN sinhvien sv ON g.Idsinhvien = sv.ID_taikhoan
     WHERE g.TrangThai = 2 AND sv.ID_Dot = :id_dot
 ");
 $stmtGGT->execute(['id_dot' => $dot['ID']]);
@@ -294,7 +297,7 @@ if (isset($_GET['export_excel']) && $_GET['export_excel'] == 2) {
             3 => 'Hoàn tất phân công',
             default => 'Đã kết thúc'
         },
-        "Tổng sinh viên:" => $tongSinhVien,
+        "Tổng sinh viên:" => $tongsinhvien,
         "Tổng GVHD:" => $tongGVHD,
         "Sinh viên đã hoàn thành:" => $tkTrangThai['DaHoanThanh'],
         "Sinh viên chưa hoàn thành:" => $tkTrangThai['ChuaHoanThanh'],
@@ -389,7 +392,7 @@ if (isset($_GET['export_excel']) && $_GET['export_excel'] == 2) {
     $row++;
 
     $stt = 1;
-    foreach ($dsGiaoVien as $gv) {
+    foreach ($dsgiaovien as $gv) {
         $sheet->setCellValue("A$row", $stt++);
         $sheet->setCellValue("B$row", $gv['Ten']);
         $sheet->setCellValue("C$row", $gv['SoLuong']);
@@ -429,7 +432,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1 && isset($_GET['id_gv'])) {
     $idGV = (int) $_GET['id_gv'];
     $idDot = (int) ($_GET['id'] ?? 0);
     $stmt = $conn->prepare("
-        SELECT ID_TaiKhoan, MSSV, Ten, Lop, ID_GVHD
+        SELECT ID_taikhoan, MSSV, Ten, Lop, ID_GVHD
         FROM sinhvien
         WHERE ID_GVHD = :id_gv AND ID_Dot = :id_dot
         ORDER BY Lop, Ten
@@ -445,7 +448,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1 && isset($_GET['id_gv'])) {
 $stmt = $conn->prepare("
     SELECT COUNT(*) FROM dot_giaovien DG
     LEFT JOIN sinhvien SV ON DG.ID_GVHD = SV.ID_GVHD AND SV.ID_Dot = DG.ID_Dot
-    WHERE DG.ID_Dot = :id AND SV.ID_TaiKhoan IS NULL
+    WHERE DG.ID_Dot = :id AND SV.ID_taikhoan IS NULL
 ");
 $stmt->execute(['id' => $id]);
 $soGVChuaCoSV = $stmt->fetchColumn();
@@ -465,16 +468,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_POST['action'] === 'preview_phanc
     }
 
     // Lấy danh sách GV trong đợt
-    $stmt = $conn->prepare("SELECT GV.ID_TaiKhoan as id, GV.Ten 
+    $stmt = $conn->prepare("SELECT GV.ID_taikhoan as id, GV.Ten 
                             FROM dot_giaovien DG 
-                            JOIN GiaoVien GV ON DG.ID_GVHD = GV.ID_TaiKhoan 
+                            JOIN giaovien GV ON DG.ID_GVHD = GV.ID_taikhoan 
                             WHERE DG.ID_Dot = :id 
                             ORDER BY GV.Ten");
     $stmt->execute(['id' => $id]);
-    $giaoViens = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $giaoviens = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Lấy tổng số SV CHƯA phân công (đã sửa để kiểm tra cả NULL và chuỗi rỗng)
-    $stmt = $conn->prepare("SELECT COUNT(*) FROM SinhVien WHERE ID_Dot = :id AND (ID_GVHD IS NULL OR ID_GVHD = '')");
+    $stmt = $conn->prepare("SELECT COUNT(*) FROM sinhvien WHERE ID_Dot = :id AND (ID_GVHD IS NULL OR ID_GVHD = '')");
     $stmt->execute(['id' => $id]);
     $svChuaPhan = (int) $stmt->fetchColumn();
 
@@ -482,8 +485,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_POST['action'] === 'preview_phanc
     $phanCong = [];
     $soGVChuaCoSV = 0;
 
-    foreach ($giaoViens as $gv) {
-        $stmt = $conn->prepare("SELECT COUNT(*) FROM SinhVien 
+    foreach ($giaoviens as $gv) {
+        $stmt = $conn->prepare("SELECT COUNT(*) FROM sinhvien 
                                 WHERE ID_Dot = :id AND ID_GVHD = :gv");
         $stmt->execute(['id' => $id, 'gv' => $gv['id']]);
         $soLuong = (int) $stmt->fetchColumn();
@@ -499,14 +502,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_POST['action'] === 'preview_phanc
     }
 
     // Tính tổng sinh viên
-    $tongSinhVien = array_sum(array_column($phanCong, 'soLuong')) + $svChuaPhan;
+    $tongsinhvien = array_sum(array_column($phanCong, 'soLuong')) + $svChuaPhan;
 
     echo json_encode([
         'success' => true,
         'phancong' => $phanCong,
         'sv_con_lai' => $svChuaPhan,
         'so_gv_chua_cosv' => $soGVChuaCoSV,
-        'tong_sinhvien' => $tongSinhVien
+        'tong_sinhvien' => $tongsinhvien
     ], JSON_UNESCAPED_UNICODE);
 
     exit;
@@ -526,23 +529,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     // Lấy toàn bộ giáo viên trong đợt
     $stmt = $conn->prepare("SELECT ID_GVHD FROM dot_giaovien WHERE ID_Dot = :id ORDER BY ID_GVHD");
     $stmt->execute(['id' => $id]);
-    $giaoViens = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    $giaoviens = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
     // Lấy toàn bộ sinh viên trong đợt
-    $stmt = $conn->prepare("SELECT ID_TaiKhoan FROM SinhVien WHERE ID_Dot = :id");
+    $stmt = $conn->prepare("SELECT ID_taikhoan FROM sinhvien WHERE ID_Dot = :id");
     $stmt->execute(['id' => $id]);
-    $sinhViens = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    $sinhviens = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
-    if (count($giaoViens) == 0 || count($sinhViens) == 0) {
+    if (count($giaoviens) == 0 || count($sinhviens) == 0) {
         echo "Không có giáo viên hoặc sinh viên trong đợt!";
         exit;
     }
 
     // Phân công đều
-    $gvCount = count($giaoViens);
-    foreach ($sinhViens as $i => $svId) {
-        $gvId = $giaoViens[$i % $gvCount];
-        $update = $conn->prepare("UPDATE SinhVien SET ID_GVHD = :gvId WHERE ID_TaiKhoan = :svId");
+    $gvCount = count($giaoviens);
+    foreach ($sinhviens as $i => $svId) {
+        $gvId = $giaoviens[$i % $gvCount];
+        $update = $conn->prepare("UPDATE sinhvien SET ID_GVHD = :gvId WHERE ID_taikhoan = :svId");
         $update->execute(['gvId' => $gvId, 'svId' => $svId]);
     }
 
@@ -558,29 +561,29 @@ if (isset($_POST['action']) && $_POST['action'] === 'phancong_lai') {
     }
 
     // Xóa phân công cũ
-    $stmt = $conn->prepare("UPDATE SinhVien SET ID_GVHD = NULL WHERE ID_Dot = :id");
+    $stmt = $conn->prepare("UPDATE sinhvien SET ID_GVHD = NULL WHERE ID_Dot = :id");
     $stmt->execute(['id' => $id]);
 
     // Lấy toàn bộ giáo viên trong đợt
     $stmt = $conn->prepare("SELECT ID_GVHD FROM dot_giaovien WHERE ID_Dot = :id ORDER BY ID_GVHD");
     $stmt->execute(['id' => $id]);
-    $giaoViens = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    $giaoviens = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
     // Lấy toàn bộ sinh viên trong đợt
-    $stmt = $conn->prepare("SELECT ID_TaiKhoan FROM SinhVien WHERE ID_Dot = :id");
+    $stmt = $conn->prepare("SELECT ID_taikhoan FROM sinhvien WHERE ID_Dot = :id");
     $stmt->execute(['id' => $id]);
-    $sinhViens = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    $sinhviens = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
-    if (count($giaoViens) == 0 || count($sinhViens) == 0) {
+    if (count($giaoviens) == 0 || count($sinhviens) == 0) {
         echo "Không có giáo viên hoặc sinh viên!";
         exit;
     }
 
     // Phân công đều lại
-    $gvCount = count($giaoViens);
-    foreach ($sinhViens as $i => $svId) {
-        $gvId = $giaoViens[$i % $gvCount];
-        $update = $conn->prepare("UPDATE SinhVien SET ID_GVHD = :gvId WHERE ID_TaiKhoan = :svId");
+    $gvCount = count($giaoviens);
+    foreach ($sinhviens as $i => $svId) {
+        $gvId = $giaoviens[$i % $gvCount];
+        $update = $conn->prepare("UPDATE sinhvien SET ID_GVHD = :gvId WHERE ID_taikhoan = :svId");
         $update->execute(['gvId' => $gvId, 'svId' => $svId]);
     }
 
@@ -602,37 +605,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_POST['action'] === 'auto_phancong
     $conn->beginTransaction();
     try {
         // 1. Lấy tổng số sinh viên trong đợt
-        $stmt = $conn->prepare("SELECT COUNT(*) FROM SinhVien WHERE ID_Dot = :id");
+        $stmt = $conn->prepare("SELECT COUNT(*) FROM sinhvien WHERE ID_Dot = :id");
         $stmt->execute(['id' => $idDot]);
-        $tongSinhVien = $stmt->fetchColumn();
+        $tongsinhvien = $stmt->fetchColumn();
 
         // 2. Tính tổng phân công mới
         $tongPhanCongMoi = array_sum($phanCong);
 
-        if ($tongPhanCongMoi > $tongSinhVien) {
-            throw new Exception("Tổng phân công ($tongPhanCongMoi) vượt quá số sinh viên ($tongSinhVien)");
+        if ($tongPhanCongMoi > $tongsinhvien) {
+            throw new Exception("Tổng phân công ($tongPhanCongMoi) vượt quá số sinh viên ($tongsinhvien)");
         }
 
         // 3. Reset toàn bộ phân công cũ
-        $stmt = $conn->prepare("UPDATE SinhVien SET ID_GVHD = NULL WHERE ID_Dot = :id");
+        $stmt = $conn->prepare("UPDATE sinhvien SET ID_GVHD = NULL WHERE ID_Dot = :id");
         $stmt->execute(['id' => $idDot]);
 
         // 4. Phân công mới
-        $stmt = $conn->prepare("SELECT ID_TaiKhoan FROM SinhVien 
+        $stmt = $conn->prepare("SELECT ID_taikhoan FROM sinhvien 
                                WHERE ID_Dot = :id 
-                               ORDER BY ID_TaiKhoan");
+                               ORDER BY ID_taikhoan");
         $stmt->execute(['id' => $idDot]);
-        $sinhViens = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        $sinhviens = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
         $index = 0;
         $daPhanCong = 0;
 
         foreach ($phanCong as $idGV => $soLuong) {
             $count = 0;
-            while ($count < $soLuong && $index < count($sinhViens)) {
-                $svId = $sinhViens[$index++];
-                $stmt = $conn->prepare("UPDATE SinhVien SET ID_GVHD = :gv 
-                                      WHERE ID_TaiKhoan = :sv");
+            while ($count < $soLuong && $index < count($sinhviens)) {
+                $svId = $sinhviens[$index++];
+                $stmt = $conn->prepare("UPDATE sinhvien SET ID_GVHD = :gv 
+                                      WHERE ID_taikhoan = :sv");
                 $stmt->execute(['gv' => $idGV, 'sv' => $svId]);
                 $count++;
                 $daPhanCong++;
@@ -661,24 +664,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_POST['action'] === 'preview_phanc
     }
 
     // Lấy danh sách GV trong đợt
-    $stmt = $conn->prepare("SELECT GV.ID_TaiKhoan as id, GV.Ten 
+    $stmt = $conn->prepare("SELECT GV.ID_taikhoan as id, GV.Ten 
                             FROM dot_giaovien DG 
-                            JOIN GiaoVien GV ON DG.ID_GVHD = GV.ID_TaiKhoan 
+                            JOIN giaovien GV ON DG.ID_GVHD = GV.ID_taikhoan 
                             WHERE DG.ID_Dot = :id 
                             ORDER BY GV.Ten");
     $stmt->execute(['id' => $id]);
-    $giaoViens = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $giaoviens = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Tính tổng số sinh viên trong đợt
-    $stmt = $conn->prepare("SELECT COUNT(*) FROM SinhVien WHERE ID_Dot = :id");
+    $stmt = $conn->prepare("SELECT COUNT(*) FROM sinhvien WHERE ID_Dot = :id");
     $stmt->execute(['id' => $id]);
-    $tongSinhVien = (int) $stmt->fetchColumn();
+    $tongsinhvien = (int) $stmt->fetchColumn();
 
     // Đếm số lượng SV của từng GV
     $phanCong = [];
     $soGVChuaCoSV = 0;
-    foreach ($giaoViens as $gv) {
-        $stmt = $conn->prepare("SELECT COUNT(*) FROM SinhVien 
+    foreach ($giaoviens as $gv) {
+        $stmt = $conn->prepare("SELECT COUNT(*) FROM sinhvien 
                                 WHERE ID_Dot = :id AND ID_GVHD = :gv");
         $stmt->execute(['id' => $id, 'gv' => $gv['id']]);
         $soLuong = (int) $stmt->fetchColumn();
@@ -696,9 +699,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_POST['action'] === 'preview_phanc
     echo json_encode([
         'success' => true,
         'phancong' => $phanCong, // vẫn giữ nguyên soLuong cũ
-        'sv_con_lai' => $tongSinhVien,
+        'sv_con_lai' => $tongsinhvien,
         'so_gv_chua_cosv' => $soGVChuaCoSV,
-        'tong_sinhvien' => $tongSinhVien
+        'tong_sinhvien' => $tongsinhvien
     ], JSON_UNESCAPED_UNICODE);
 
     exit;
@@ -722,7 +725,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $stmt = $conn->prepare("
         SELECT COUNT(*) FROM dot_giaovien DG
         LEFT JOIN sinhvien SV ON DG.ID_GVHD = SV.ID_GVHD AND SV.ID_Dot = DG.ID_Dot
-        WHERE DG.ID_Dot = :id AND SV.ID_TaiKhoan IS NULL
+        WHERE DG.ID_Dot = :id AND SV.ID_taikhoan IS NULL
     ");
     $stmt->execute(['id' => $id]);
     $soGVChuaCoSV = $stmt->fetchColumn();
@@ -738,7 +741,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         exit;
     }
 
-    $stmt = $conn->prepare("UPDATE DOTTHUCTAP SET TrangThai = 3 WHERE ID = :id");
+    $stmt = $conn->prepare("UPDATE dotthuctap SET TrangThai = 3 WHERE ID = :id");
     $stmt->execute(['id' => $id]);
 
     require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/vendor/autoload.php';
@@ -746,16 +749,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
     // Lấy danh sách giáo viên và email
     $stmt = $conn->prepare("
-        SELECT GV.Ten, TK.TaiKhoan AS Email
+        SELECT GV.Ten, TK.taikhoan AS Email
         FROM dot_giaovien DG
-        JOIN giaovien GV ON DG.ID_GVHD = GV.ID_TaiKhoan
-        JOIN taikhoan TK ON GV.ID_TaiKhoan = TK.ID_TaiKhoan
+        JOIN giaovien GV ON DG.ID_GVHD = GV.ID_taikhoan
+        JOIN taikhoan TK ON GV.ID_taikhoan = TK.ID_taikhoan
         WHERE DG.ID_Dot = :id
     ");
     $stmt->execute(['id' => $id]);
-    $giaoVienList = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $giaovienList = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    foreach ($giaoVienList as $gv) {
+    foreach ($giaovienList as $gv) {
         $mail = new PHPMailer(true);
         try {
             // Cấu hình SMTP
@@ -801,7 +804,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $idDot = (int) $_POST['id_dot'];
     $gvCoSan = $_POST['gvCoSan'] ?? [];
     $tenGVmoi = trim($_POST['tenGVmoi'] ?? '');
-    $taiKhoanGVmoi = trim($_POST['taiKhoanGVmoi'] ?? '');
+    $taikhoanGVmoi = trim($_POST['taikhoanGVmoi'] ?? '');
     $matKhauGVmoi = $_POST['matKhauGVmoi'] ?? '';
     $added = 0;
 
@@ -811,7 +814,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         // Thêm các giáo viên đã có
         foreach ($gvCoSan as $idGV) {
             $idGV = (int) $idGV;
-            $stmt = $conn->prepare("SELECT 1 FROM giaovien WHERE ID_TaiKhoan = ?");
+            $stmt = $conn->prepare("SELECT 1 FROM giaovien WHERE ID_taikhoan = ?");
             $stmt->execute([$idGV]);
             if (!$stmt->fetch()) {
                 throw new PDOException("Giáo viên ID $idGV không tồn tại");
@@ -823,22 +826,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         }
 
         // Thêm giáo viên mới nếu có
-        if ($tenGVmoi && $taiKhoanGVmoi && $matKhauGVmoi) {
+        if ($tenGVmoi && $taikhoanGVmoi && $matKhauGVmoi) {
             // Kiểm tra tài khoản tồn tại
-            $stmt = $conn->prepare("SELECT COUNT(*) FROM TaiKhoan WHERE TaiKhoan = ?");
-            $stmt->execute([$taiKhoanGVmoi]);
+            $stmt = $conn->prepare("SELECT COUNT(*) FROM taikhoan WHERE taikhoan = ?");
+            $stmt->execute([$taikhoanGVmoi]);
             if ($stmt->fetchColumn() > 0) {
                 throw new PDOException("Tài khoản giáo viên đã tồn tại");
             }
 
             // Thêm tài khoản
             $matKhauMaHoa = password_hash($matKhauGVmoi, PASSWORD_BCRYPT);
-            $stmt = $conn->prepare("INSERT INTO TaiKhoan (TaiKhoan, MatKhau, VaiTro, TrangThai) VALUES (?, ?, 'Giáo viên', 1)");
-            $stmt->execute([$taiKhoanGVmoi, $matKhauMaHoa]);
+            $stmt = $conn->prepare("INSERT INTO taikhoan (taikhoan, MatKhau, VaiTro, TrangThai) VALUES (?, ?, 'Giáo viên', 1)");
+            $stmt->execute([$taikhoanGVmoi, $matKhauMaHoa]);
             $idGVmoi = $conn->lastInsertId();
 
             // Thêm giáo viên
-            $stmt = $conn->prepare("INSERT INTO GiaoVien (ID_TaiKhoan, Ten, TrangThai) VALUES (?, ?, 1)");
+            $stmt = $conn->prepare("INSERT INTO giaovien (ID_taikhoan, Ten, TrangThai) VALUES (?, ?, 1)");
             $stmt->execute([$idGVmoi, $tenGVmoi]);
 
             // Thêm vào đợt
@@ -880,7 +883,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'info' && isset($_GET['id'])) {
     $stmt = $conn->prepare("
         SELECT COUNT(*) FROM dot_giaovien DG
         LEFT JOIN sinhvien SV ON DG.ID_GVHD = SV.ID_GVHD AND SV.ID_Dot = DG.ID_Dot
-        WHERE DG.ID_Dot = :id AND SV.ID_TaiKhoan IS NULL
+        WHERE DG.ID_Dot = :id AND SV.ID_taikhoan IS NULL
     ");
     $stmt->execute(['id' => $id]);
     $soGVChuaCoSV = $stmt->fetchColumn();
@@ -926,18 +929,18 @@ if (isset($_GET['ajax_tab']) && $_GET['ajax_tab'] == 'gv') {
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($dsGiaoVien as $idx => $gv): ?>
+                        <?php foreach ($dsgiaovien as $idx => $gv): ?>
                             <tr>
                                 <td><?= $idx + 1 ?></td>
-                                <td data-id="<?= $gv['ID_TaiKhoan'] ?>"><?= htmlspecialchars($gv['Ten']) ?></td>
+                                <td data-id="<?= $gv['ID_taikhoan'] ?>"><?= htmlspecialchars($gv['Ten']) ?></td>
                                 <td style="text-align: center;"><?= $gv['SoLuong'] ?></td>
                                 <td style="text-align: right;">
                                     <button type="button" class="btn btn-info btn-xs"
-                                        onclick="xemSinhVienGV(<?= $gv['ID_TaiKhoan'] ?>, '<?= htmlspecialchars(addslashes($gv['Ten'])) ?>')">
+                                        onclick="xemsinhvienGV(<?= $gv['ID_taikhoan'] ?>, '<?= htmlspecialchars(addslashes($gv['Ten'])) ?>')">
                                         Xem sinh viên
                                     </button>
                                     <button type="button" class="btn btn-danger btn-xs btn-xoa-gv-dot"
-                                        data-id="<?= $gv['ID_TaiKhoan'] ?>" <?= $gv['SoLuong'] > 0 ? 'disabled title="Không thể xóa: Giáo viên đã có sinh viên!"' : 'title="Xóa giáo viên khỏi đợt"' ?>>
+                                        data-id="<?= $gv['ID_taikhoan'] ?>" <?= $gv['SoLuong'] > 0 ? 'disabled title="Không thể xóa: Giáo viên đã có sinh viên!"' : 'title="Xóa giáo viên khỏi đợt"' ?>>
                                         <i class="fa fa-trash"></i>
                                     </button>
                                 </td>
@@ -955,20 +958,20 @@ if (isset($_GET['ajax_tab']) && $_GET['ajax_tab'] == 'gv') {
 // AJAX: Trả về nội dung tab sinh viên
 if (isset($_GET['ajax_tab']) && $_GET['ajax_tab'] == 'sv') {
     // Lấy toàn bộ sinh viên của đợt
-    $stmt = $conn->prepare("SELECT ID_TaiKhoan, MSSV, Ten, Lop, ID_GVHD FROM sinhvien WHERE ID_Dot = :id ORDER BY ID_GVHD");
+    $stmt = $conn->prepare("SELECT ID_taikhoan, MSSV, Ten, Lop, ID_GVHD FROM sinhvien WHERE ID_Dot = :id ORDER BY ID_GVHD");
     $stmt->execute(['id' => $id]);
-    $dsSinhVienAll = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $dssinhvienAll = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Lấy danh sách giáo viên trong đợt từ bảng trung gian dot_giaovien
     $stmt = $conn->prepare("
-        SELECT GV.ID_TaiKhoan, GV.Ten
+        SELECT GV.ID_taikhoan, GV.Ten
         FROM dot_giaovien DG
-        INNER JOIN giaovien GV ON DG.ID_GVHD = GV.ID_TaiKhoan
+        INNER JOIN giaovien GV ON DG.ID_GVHD = GV.ID_taikhoan
         WHERE DG.ID_Dot = :id
         ORDER BY GV.Ten
     ");
     $stmt->execute(['id' => $id]);
-    $giaoVienTrongDot = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $giaovienTrongDot = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
     ?>
@@ -994,18 +997,18 @@ if (isset($_GET['ajax_tab']) && $_GET['ajax_tab'] == 'sv') {
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($dsSinhVienAll as $idx => $sv): ?>
+                    <?php foreach ($dssinhvienAll as $idx => $sv): ?>
                         <tr>
                             <td><?= $idx + 1 ?></td>
                             <td><?= htmlspecialchars($sv['MSSV']) ?></td>
                             <td><?= htmlspecialchars($sv['Ten']) ?></td>
-                            <td><?= htmlspecialchars($sv['Lop']) ?></td>
+                            <td><?= htmlspecialchars($sv['Lop']?? '') ?></td>
                             <td data-id="<?= $sv['ID_GVHD'] ?>">
-                                <select class="form-control select-gvhd" data-mssv="<?= $sv['ID_TaiKhoan'] ?>"
+                                <select class="form-control select-gvhd" data-mssv="<?= $sv['ID_taikhoan'] ?>"
                                     <?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?>>
                                     <option value="">-- Chưa có --</option>
-                                    <?php foreach ($giaoVienTrongDot as $gv): ?>
-                                        <option value="<?= $gv['ID_TaiKhoan'] ?>" <?= ($sv['ID_GVHD'] == $gv['ID_TaiKhoan']) ? 'selected' : '' ?>>
+                                    <?php foreach ($giaovienTrongDot as $gv): ?>
+                                        <option value="<?= $gv['ID_taikhoan'] ?>" <?= ($sv['ID_GVHD'] == $gv['ID_taikhoan']) ? 'selected' : '' ?>>
                                             <?= htmlspecialchars($gv['Ten']) ?>
                                         </option>
                                     <?php endforeach; ?>
@@ -1027,22 +1030,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $idDot = (int) $_POST['id_dot'];
 
     // Lấy ID_GVHD cũ
-    $stmt = $conn->prepare("SELECT ID_GVHD FROM SinhVien WHERE ID_TaiKhoan = :id_sv AND ID_Dot = :id_dot");
+    $stmt = $conn->prepare("SELECT ID_GVHD FROM sinhvien WHERE ID_taikhoan = :id_sv AND ID_Dot = :id_dot");
     $stmt->execute(['id_sv' => $id_sv, 'id_dot' => $idDot]);
     $gvhdCu = $stmt->fetchColumn();
 
     // Cập nhật
     if ($gvhdMoi === "" || $gvhdMoi === null) {
-        $stmt = $conn->prepare("UPDATE SinhVien SET ID_GVHD = NULL WHERE ID_TaiKhoan = :id_sv AND ID_Dot = :id_dot");
+        $stmt = $conn->prepare("UPDATE sinhvien SET ID_GVHD = NULL WHERE ID_taikhoan = :id_sv AND ID_Dot = :id_dot");
         $stmt->execute(['id_sv' => $id_sv, 'id_dot' => $idDot]);
     } else {
         $gvhdMoi = (int) $gvhdMoi;
-        $stmt = $conn->prepare("UPDATE SinhVien SET ID_GVHD = :gvhdMoi WHERE ID_TaiKhoan = :id_sv AND ID_Dot = :id_dot");
+        $stmt = $conn->prepare("UPDATE sinhvien SET ID_GVHD = :gvhdMoi WHERE ID_taikhoan = :id_sv AND ID_Dot = :id_dot");
         $stmt->execute(['gvhdMoi' => $gvhdMoi, 'id_sv' => $id_sv, 'id_dot' => $idDot]);
     }
 
     // Đếm lại số lượng sinh viên của GV cũ và mới
-    $stmt = $conn->prepare("SELECT COUNT(*) FROM SinhVien WHERE ID_GVHD = :id_gv AND ID_Dot = :id_dot");
+    $stmt = $conn->prepare("SELECT COUNT(*) FROM sinhvien WHERE ID_GVHD = :id_gv AND ID_Dot = :id_dot");
     $stmt->execute(['id_gv' => $gvhdCu, 'id_dot' => $idDot]);
     $soLuongCu = $stmt->fetchColumn();
 
@@ -1063,14 +1066,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 }
 
 $stmt = $conn->prepare("
-        SELECT GV.ID_TaiKhoan, GV.Ten
+        SELECT GV.ID_taikhoan, GV.Ten
         FROM dot_giaovien DG
-        INNER JOIN giaovien GV ON DG.ID_GVHD = GV.ID_TaiKhoan
+        INNER JOIN giaovien GV ON DG.ID_GVHD = GV.ID_taikhoan
         WHERE DG.ID_Dot = :id
         ORDER BY GV.Ten
     ");
 $stmt->execute(['id' => $id]);
-$allGiaoVien = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$allgiaovien = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
 // xóa giáo viên khỏi đợt
@@ -1208,7 +1211,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                 </p>
                             </div>
                             <div class="col-sm-4 col-xs-12">
-                                <p><b>Tổng sinh viên:</b> <?= $tongSinhVien ?></p>
+                                <p><b>Tổng sinh viên:</b> <?= $tongsinhvien ?></p>
                             <div id="infoBox">
                                 <p><b>Tổng GVHD:</b> <span id="infoTongGVHD"><?= $tongGVHD ?></span></p>
                                 <p><b>Sinh viên chưa có GVHD:</b> <span id="infoSVDaCoGVHD"><?= $soSVDaCoGVHD ?></span>
@@ -1232,7 +1235,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                             <?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?>>
                             <?= $phanCongMode == 'phancong_lai' ? 'Phân công lại' : 'Phân công tự động' ?>
                         </button>
-                        <button type="button" class="btn btn-success nut" id="btnHoanTat" <?= ($tongSinhVien < 1 || $tongGVHD < 1) || $dot['TrangThai'] != 1 ? 'disabled' : '' ?>
+                        <button type="button" class="btn btn-success nut" id="btnHoanTat" <?= ($tongsinhvien < 1 || $tongGVHD < 1) || $dot['TrangThai'] != 1 ? 'disabled' : '' ?>
                             title="Hoàn tất phân công, cho phép đăng ký phiếu giới thiệu, gửi mail cho các giáo viên">
                             Hoàn tất phân công
                         </button>
@@ -1241,13 +1244,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                             sửa</button>
                         <button
                             onclick="if(confirm('Bạn có chắc muốn xóa đợt này?')) window.location='admin/pages/xoadot?id=<?= $id ?>';"
-                            class="btn btn-danger btn-md nut" <?= ($tongSinhVien > 0 || $tongGVHD > 0) || $dot['TrangThai'] != 1 ? 'disabled title="Không thể xóa: Đợt đã có sinh viên hoặc giáo viên."' : '' ?>>Xóa
+                            class="btn btn-danger btn-md nut" <?= ($tongsinhvien > 0 || $tongGVHD > 0) || $dot['TrangThai'] != 1 ? 'disabled title="Không thể xóa: Đợt đã có sinh viên hoặc giáo viên."' : '' ?>>Xóa
                             đợt</button>
 
                     </div>
                 </div>
 
-                <ul class="nav nav-tabs" id="tabDotThucTap">
+                <ul class="nav nav-tabs" id="tabdotthuctap">
                     <li class="active"><a href="#tab-gv" data-toggle="tab" data-tab="gv">Giáo viên hướng dẫn</a>
                     </li>
                     <li><a href="#tab-sv" data-toggle="tab" data-tab="sv">Sinh viên</a></li>
@@ -1283,8 +1286,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 btn.html(mode === 'phancong_lai' ? 'Phân công lại' : 'Phân công tự động');
             }, 'json');
         }
-        var allGiaoVien = <?= json_encode($allGiaoVien) ?>;
-        function xemSinhVienGV(idGV, tenGV) {
+        var allgiaovien = <?= json_encode($allgiaovien) ?>;
+        function xemsinhvienGV(idGV, tenGV) {
             $.get(window.location.pathname, {
                 ajax: 1,
                 id: <?= json_encode($id) ?>,
@@ -1301,10 +1304,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                 <th>Chuyển GVHD</th>
                             </tr></thead><tbody>`;
                     res.ds.forEach(function (sv, idx) {
-                        let select = `<select class="form-control select-gvhd-modal" data-mssv="${sv.ID_TaiKhoan}" <?= $dot['TrangThai'] <= 0 ? 'disabled' : '' ?>>`;
+                        let select = `<select class="form-control select-gvhd-modal" data-mssv="${sv.ID_taikhoan}" <?= $dot['TrangThai'] <= 0 ? 'disabled' : '' ?>>`;
                         select += `<option value="">-- Phân công sau --</option>`;
-                        allGiaoVien.forEach(function (gv) {
-                            select += `<option value="${gv.ID_TaiKhoan}" ${sv.ID_GVHD == gv.ID_TaiKhoan ? 'selected' : ''}>${gv.Ten}</option>`;
+                        allgiaovien.forEach(function (gv) {
+                            select += `<option value="${gv.ID_taikhoan}" ${sv.ID_GVHD == gv.ID_taikhoan ? 'selected' : ''}>${gv.Ten}</option>`;
                         });
                         select += `</select>`;
                         html += `<tr>
@@ -1410,15 +1413,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                     return;
                                 }
 
-                                const tongSinhVien = res.tong_sinhvien;
+                                const tongsinhvien = res.tong_sinhvien;
                                 const tongDaGan = res.phancong.reduce((sum, p) => sum + p.soLuong, 0);
-                                const conLai = tongSinhVien - tongDaGan;
+                                const conLai = tongsinhvien - tongDaGan;
 
                                 $('#svConLaiCount').text(conLai);
                                 $('#gvChuaCoSVCount').text(res.phancong.filter(gv => gv.soLuong === 0).length);
 
                                 // Gắn tổng SV của đợt (để dùng khi submit)
-                                $('#formPhanCongCustom').append(`<input type="hidden" id="tongSinhVienTrongDot" value="${tongSinhVien}">`);
+                                $('#formPhanCongCustom').append(`<input type="hidden" id="tongsinhvienTrongDot" value="${tongsinhvien}">`);
 
                                 let html = res.phancong.map((item, i) => `
             <tr>
@@ -1463,7 +1466,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                         if (val === 0) gvChuaCoSV++;
                                     });
 
-                                    const conLai = tongSinhVien - tong;
+                                    const conLai = tongsinhvien - tong;
 
                                     if (conLai >= 0) {
                                         $('#svConLaiCount').text(conLai);
@@ -1527,14 +1530,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                     return;
                                 }
 
-                                const tongSinhVien = res.tong_sinhvien;
+                                const tongsinhvien = res.tong_sinhvien;
                                 const tongDaGan = res.phancong.reduce((sum, p) => sum + p.soLuong, 0);
-                                const svConLai = tongSinhVien - tongDaGan;
+                                const svConLai = tongsinhvien - tongDaGan;
 
                                 // Chia đều sinh viên
                                 const soGV = res.phancong.length;
-                                const moiMoi = Math.floor((tongSinhVien - res.phancong.reduce((sum, p) => sum + p.soLuong, 0)) / soGV);
-                                const du = (tongSinhVien - res.phancong.reduce((sum, p) => sum + p.soLuong, 0)) % soGV;
+                                const moiMoi = Math.floor((tongsinhvien - res.phancong.reduce((sum, p) => sum + p.soLuong, 0)) / soGV);
+                                const du = (tongsinhvien - res.phancong.reduce((sum, p) => sum + p.soLuong, 0)) % soGV;
 
                                 const phanCongData = JSON.parse(JSON.stringify(res.phancong));
                                 phanCongData.forEach((gv, i) => {
@@ -1543,15 +1546,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
                                 // ✅ Tính lại sau chia (không dùng từ DB nữa)
                                 const tongSauChia = phanCongData.reduce((sum, gv) => sum + gv.soLuong, 0);
-                                const svConLaiSauChia = tongSinhVien - tongSauChia;
+                                const svConLaiSauChia = tongsinhvien - tongSauChia;
                                 const gvChuaCoSVPreview = phanCongData.filter(gv => gv.soLuong === 0).length;
 
                                 // ✅ Hiển thị đúng preview
                                 $('#svConLaiCount').text(svConLaiSauChia);
                                 $('#gvChuaCoSVCount').text(gvChuaCoSVPreview);
 
-                                $('#formPhanCongCustom #tongSinhVienTrongDot').remove();
-                                $('#formPhanCongCustom').append(`<input type="hidden" id="tongSinhVienTrongDot" value="${tongSinhVien}">`);
+                                $('#formPhanCongCustom #tongsinhvienTrongDot').remove();
+                                $('#formPhanCongCustom').append(`<input type="hidden" id="tongsinhvienTrongDot" value="${tongsinhvien}">`);
 
                                 // Tạo bảng
                                 const html = phanCongData.map((item, i) => `
@@ -1598,7 +1601,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                         if (val === 0) gvChuaCoSV++;
                                     });
 
-                                    const conLai = tongSinhVien - tong;
+                                    const conLai = tongsinhvien - tong;
 
                                     if (conLai >= 0) {
                                         $('#svConLaiCount').text(conLai);
@@ -1647,10 +1650,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 });
 
                 // Lấy tổng số sinh viên trong đợt
-                const tongSinhVien = parseInt($('#tongSinhVienTrongDot').val()) || 0;
+                const tongsinhvien = parseInt($('#tongsinhvienTrongDot').val()) || 0;
 
                 // Kiểm tra cơ bản
-                if (tongPhanCongMoi > tongSinhVien) {
+                if (tongPhanCongMoi > tongsinhvien) {
                     Swal.fire('Lỗi', 'Tổng phân công không thể vượt quá tổng số sinh viên', 'error');
                     return;
                 }
@@ -1786,18 +1789,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 var idDot = <?= json_encode($id) ?>;
                 var gvCoSan = $('#chonGVCoSan').val() || [];
                 var tenGVmoi = $('#tenGVmoi').val().trim();
-                var taiKhoanGVmoi = $('#taiKhoanGVmoi').val().trim();
+                var taikhoanGVmoi = $('#taikhoanGVmoi').val().trim();
                 var matKhauGVmoi = $('#matKhauGVmoi').val();
 
-                if (gvCoSan.length === 0 && (!tenGVmoi || !taiKhoanGVmoi || !matKhauGVmoi)) {
+                if (gvCoSan.length === 0 && (!tenGVmoi || !taikhoanGVmoi || !matKhauGVmoi)) {
                     Swal.fire('Vui lòng chọn giáo viên hoặc nhập thông tin giáo viên mới!', '', 'warning');
                     return;
                 }
 
                 // Kiểm tra tài khoản phải là email nếu nhập giáo viên mới
-                if (tenGVmoi && taiKhoanGVmoi && matKhauGVmoi) {
+                if (tenGVmoi && taikhoanGVmoi && matKhauGVmoi) {
                     var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                    if (!emailPattern.test(taiKhoanGVmoi)) {
+                    if (!emailPattern.test(taikhoanGVmoi)) {
                         Swal.fire('Tài khoản phải là một địa chỉ email hợp lệ!', '', 'warning');
                         return;
                     }
@@ -1811,7 +1814,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                         id_dot: idDot,
                         gvCoSan: gvCoSan,
                         tenGVmoi: tenGVmoi,
-                        taiKhoanGVmoi: taiKhoanGVmoi,
+                        taikhoanGVmoi: taikhoanGVmoi,
                         matKhauGVmoi: matKhauGVmoi
                     },
                     success: function (res) {
@@ -1932,21 +1935,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                 <?php
                                 // Lấy danh sách giáo viên chưa có trong đợt này
                                 $stmt = $conn->prepare("
-                                        SELECT GV.ID_TaiKhoan, GV.Ten
-                                        FROM GiaoVien GV
+                                        SELECT GV.ID_taikhoan, GV.Ten
+                                        FROM giaovien GV
                                         WHERE GV.TrangThai = 1
-                                        AND GV.ID_TaiKhoan NOT IN (
+                                        AND GV.ID_taikhoan NOT IN (
                                             SELECT ID_GVHD FROM dot_giaovien WHERE ID_Dot = :id_dot
                                         )
                                         ORDER BY GV.Ten
                                     ");
                                 $stmt->execute(['id_dot' => $id]);
-                                $giaoVienChuaCoTrongDot = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                                if (count($giaoVienChuaCoTrongDot) === 0): ?>
+                                $giaovienChuaCoTrongDot = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                                if (count($giaovienChuaCoTrongDot) === 0): ?>
                                     <option disabled>Đã hết giáo viên để thêm</option>
                                 <?php else:
-                                    foreach ($giaoVienChuaCoTrongDot as $gv): ?>
-                                        <option value="<?= $gv['ID_TaiKhoan'] ?>"><?= htmlspecialchars($gv['Ten']) ?>
+                                    foreach ($giaovienChuaCoTrongDot as $gv): ?>
+                                        <option value="<?= $gv['ID_taikhoan'] ?>"><?= htmlspecialchars($gv['Ten']) ?>
                                         </option>
                                     <?php endforeach;
                                 endif; ?>
@@ -1966,7 +1969,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                             </div>
                             <div class="form-group">
                                 <label>Tài khoản (email)</label>
-                                <input type="text" class="form-control" id="taiKhoanGVmoi" name="taiKhoanGVmoi"
+                                <input type="text" class="form-control" id="taikhoanGVmoi" name="taikhoanGVmoi"
                                     placeholder="Nhập email">
                             </div>
                             <div class="form-group">

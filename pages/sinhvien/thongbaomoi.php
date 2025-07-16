@@ -1,21 +1,25 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/../../error.log');
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 $idTaiKhoan = $_SESSION['user']['ID_TaiKhoan'] ?? null;
 
-$stmt = $conn->prepare("SELECT ID_Dot FROM SinhVien WHERE ID_TaiKhoan = ?");
+$stmt = $conn->prepare("SELECT ID_Dot FROM sinhvien WHERE ID_TaiKhoan = ?");
 $stmt->execute([$idTaiKhoan]);
 $idDot = $stmt->fetchColumn();
 
 $stmt = $conn->prepare("
     SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.ID_TAIKHOAN, tb.NGAYDANG, tb.TRANGTHAI, tb.ID_Dot, dt.TenDot
-    FROM THONGBAO tb
-    LEFT JOIN DotThucTap dt ON tb.ID_Dot = dt.ID
+    FROM thongbao tb
+    LEFT JOIN dotthuctap dt ON tb.ID_Dot = dt.ID
     WHERE tb.TRANGTHAI = 1 
         AND tb.ID_Dot = ? 
         AND NOT EXISTS (
-            SELECT 1 FROM ThongBao_Xem xem 
-            WHERE xem.ID_TaiKhoan = ? AND xem.ID_ThongBao = tb.ID
+            SELECT 1 FROM thongbao_xem xem 
+            WHERE xem.ID_TaiKhoan = ? AND xem.ID_thongbao = tb.ID
         )
     ORDER BY tb.NGAYDANG DESC
 ");
@@ -33,7 +37,7 @@ $thongbao_moi = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 <body>
     <div id="wrapper">
-        <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_SinhVien.php"; ?>
+        <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_Sinhvien.php"; ?>
         <div id="page-wrapper">
             <div class="container-fluid">
                 <div class="row">
@@ -132,7 +136,7 @@ function renderNotifications() {
     fetch('pages/sinhvien/ajax_danhdau_thongbao.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: 'idThongBao=' + encodeURIComponent(id)
+      body: 'idthongbao=' + encodeURIComponent(id)
     }).then(() => {
       window.location.href = 'pages/sinhvien/chitietthongbao.php?id=' + id;
     });

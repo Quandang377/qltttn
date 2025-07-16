@@ -1,4 +1,8 @@
-<?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
+<?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
@@ -11,13 +15,13 @@ if (!empty($_GET['dot_filter'])) {
 }
 $stmt = $conn->prepare("
     SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.NGAYDANG, tb.ID_Dot,
-        COALESCE(ad.Ten, cbk.Ten, tk.TaiKhoan) AS NguoiTao,
+        COALESCE(ad.Ten, cbk.Ten, tk.taikhoan) AS NguoiTao,
         dt.TenDot
-    FROM THONGBAO tb
-    LEFT JOIN admin ad ON tb.ID_TaiKhoan = ad.ID_TaiKhoan
-    LEFT JOIN canbokhoa cbk ON tb.ID_TaiKhoan = cbk.ID_TaiKhoan
-    LEFT JOIN TaiKhoan tk ON tb.ID_TaiKhoan = tk.ID_TaiKhoan
-    LEFT JOIN DotThucTap dt ON tb.ID_Dot = dt.ID
+    FROM thongbao tb
+    LEFT JOIN admin ad ON tb.ID_taikhoan = ad.ID_taikhoan
+    LEFT JOIN canbokhoa cbk ON tb.ID_taikhoan = cbk.ID_taikhoan
+    LEFT JOIN taikhoan tk ON tb.ID_taikhoan = tk.ID_taikhoan
+    LEFT JOIN dotthuctap dt ON tb.ID_Dot = dt.ID
     WHERE tb.TRANGTHAI=1 $whereDot
     ORDER BY tb.NGAYDANG $order
 ");
@@ -26,16 +30,16 @@ $thongbaos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['xoa_thongbao_id'])) {
-  $idThongBao = $_POST['xoa_thongbao_id'];
+  $idthongbao = $_POST['xoa_thongbao_id'];
 
-  $stmt = $conn->prepare("UPDATE ThongBao SET TrangThai = 0 WHERE ID = ?");
-  $stmt->execute([$idThongBao]);
+  $stmt = $conn->prepare("UPDATE thongbao SET TrangThai = 0 WHERE ID = ?");
+  $stmt->execute([$idthongbao]);
 
   $_SESSION['success'] = "Xoá thông báo thành công.";
   header("Location: " . $_SERVER['REQUEST_URI']);
   exit;
 }
-$stmt = $conn->prepare("SELECT ID, TenDot FROM DotThucTap WHERE TrangThai >= 0 ORDER BY ID DESC");
+$stmt = $conn->prepare("SELECT ID, TenDot FROM dotthuctap WHERE TrangThai >= 0 ORDER BY ID DESC");
 $stmt->execute();
 $dsDot = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>

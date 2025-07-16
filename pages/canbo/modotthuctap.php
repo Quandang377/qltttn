@@ -1,12 +1,15 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 $idTaiKhoan = $_SESSION['user']['ID_TaiKhoan'] ?? null;
 
 $role = $_SESSION['user_role'];
 ($role == "Cán bộ Khoa/Bộ môn") ?
-    $stmt = $conn->prepare("SELECT Ten FROM CanBoKhoa WHERE ID_TaiKhoan = ?") :
-    $stmt = $conn->prepare("SELECT Ten FROM Admin WHERE ID_TaiKhoan = ?");
+    $stmt = $conn->prepare("SELECT Ten FROM canbokhoa WHERE ID_TaiKhoan = ?") :
+    $stmt = $conn->prepare("SELECT Ten FROM admin WHERE ID_TaiKhoan = ?");
 
 $stmt->execute([$idTaiKhoan]);
 $hoTen = $stmt->fetchColumn();
@@ -18,9 +21,9 @@ $idTaiKhoan = $_SESSION['user']['ID_TaiKhoan'] ?? null;
         d.ID, d.TenDot, d.Nam, d.BacDaoTao, d.NguoiQuanLy,
         COALESCE(cb.Ten, ad.Ten) AS TenNguoiQuanLy,
         d.ThoiGianBatDau, d.ThoiGianKetThuc, d.NguoiMoDot, d.TrangThai
-    FROM DOTTHUCTAP d
-    LEFT JOIN CanBoKhoa cb ON d.NguoiQuanLy = cb.ID_TaiKhoan
-    LEFT JOIN Admin ad ON d.NguoiQuanLy = ad.ID_TaiKhoan
+    FROM dotthuctap d
+    LEFT JOIN canbokhoa cb ON d.NguoiQuanLy = cb.ID_TaiKhoan
+    LEFT JOIN admin ad ON d.NguoiQuanLy = ad.ID_TaiKhoan
     WHERE d.TrangThai != -1 AND d.NguoiQuanLy = ?
     ORDER BY d.ThoiGianBatDau DESC
 ");
@@ -29,13 +32,13 @@ return $stmt->fetchAll();
 }
 function countSimilar($conn, $tendot)
 {
-    $stmt = $conn->prepare("SELECT COUNT(*) FROM DOTTHUCTAP WHERE TENDOT LIKE :tendot");
+    $stmt = $conn->prepare("SELECT COUNT(*) FROM dotthuctap WHERE TENDOT LIKE :tendot");
     $stmt->execute(['tendot' => $tendot . '%']);
     return $stmt->fetchColumn();
 }
 function saveInternship($conn, $tendot, $BacDaoTao, $namHoc, $thoigianbatdau, $thoigianketthuc, $nguoiquanly, $nguoitao)
 {
-    $stmt = $conn->prepare("INSERT INTO DOTTHUCTAP (
+    $stmt = $conn->prepare("INSERT INTO dotthuctap (
         TENDOT, NAM,BACDAOTAO , NGUOIQUANLY, THOIGIANBATDAU, THOIGIANKETTHUC, NGUOIMODOT, TRANGTHAI
     ) VALUES (:tendot, :nam, :BacDaoTao, :nguoiquanly, :thoigianbatdau, :thoigianketthuc, :nguoimodot, 1)");
 

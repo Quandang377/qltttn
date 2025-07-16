@@ -1,16 +1,20 @@
-<?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
+<?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 $idTaiKhoan = $_SESSION['user_id'] ?? null;
 $today = date('Y-m-d');
 
 // Cập nhật trạng thái kết thúc
-$updateStmt = $conn->prepare("UPDATE DOTTHUCTAP 
+$updateStmt = $conn->prepare("UPDATE dotthuctap 
     SET TRANGTHAI = 0 
     WHERE THOIGIANKETTHUC <= :today AND TRANGTHAI != -1");
 $updateStmt->execute(['today' => $today]);
 
 // Cập nhật trạng thái đã bắt đầu
-$updateStmt2 = $conn->prepare("UPDATE DOTTHUCTAP 
+$updateStmt2 = $conn->prepare("UPDATE dotthuctap 
     SET TRANGTHAI = 2 
     WHERE THOIGIANBATDAU <= :today AND TRANGTHAI > 0");
 $updateStmt2->execute(['today' => $today]);
@@ -18,13 +22,13 @@ $updateStmt2->execute(['today' => $today]);
 $now = date('Y-m-d H:i:s');
 
 // Cập nhật trạng thái khảo sát: 2 = Đã hết hạn
-$updateKhaoSatStmt = $conn->prepare("UPDATE KhaoSat 
+$updatekhaosatStmt = $conn->prepare("UPDATE khaosat 
     SET TrangThai = 2 
     WHERE ThoiHan <= :now AND TrangThai != 2 AND TrangThai != 0");
-$updateKhaoSatStmt->execute(['now' => $now]);
+$updatekhaosatStmt->execute(['now' => $now]);
 
 // Lấy danh sách ID đợt do chính cán bộ này quản lý
-$stmt = $conn->prepare("SELECT ID FROM DotThucTap WHERE NguoiQuanLy = ?");
+$stmt = $conn->prepare("SELECT ID FROM dotthuctap WHERE NguoiQuanLy = ?");
 $stmt->execute([$idTaiKhoan]);
 $dsDot = $stmt->fetchAll(PDO::FETCH_COLUMN);
 // Lấy thông báo thuộc các đợt này
@@ -33,8 +37,8 @@ if (!empty($dsDot)) {
   $placeholders = implode(',', array_fill(0, count($dsDot), '?'));
   $stmt = $conn->prepare("
         SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.NGAYDANG, tb.ID_Dot, dt.TenDot
-        FROM THONGBAO tb
-        LEFT JOIN DotThucTap dt ON tb.ID_Dot = dt.ID
+        FROM thongbao tb
+        LEFT JOIN dotthuctap dt ON tb.ID_Dot = dt.ID
         WHERE tb.ID_Dot IN ($placeholders) AND tb.TRANGTHAI=1
         ORDER BY tb.NGAYDANG DESC
         LIMIT 50

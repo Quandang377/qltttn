@@ -1,26 +1,30 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/../../error.log');
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/middleware/check_role.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
-$idTaiKhoan = $_SESSION['user']['ID_TaiKhoan'] ?? null;
+$idtaikhoan = $_SESSION['user_id'] ?? null;
 
 // Lấy thông tin sinh viên, đợt, giáo viên hướng dẫn, email giáo viên
 $stmt = $conn->prepare("
     SELECT 
         sv.Ten, 
-        tksv.TaiKhoan AS Email, 
+        tksv.taikhoan AS Email, 
         sv.Lop, 
         dt.TenDot, dt.TrangThai,dt.ThoiGianBatDau, dt.ThoiGianKetThuc,
         gv.Ten AS TenGV, 
-        tkgv.TaiKhoan AS EmailGV
-    FROM SinhVien sv
-    LEFT JOIN TaiKhoan tksv ON sv.ID_TaiKhoan = tksv.ID_TaiKhoan
-    LEFT JOIN DotThucTap dt ON sv.ID_Dot = dt.ID
-    LEFT JOIN GiaoVien gv ON sv.ID_GVHD = gv.ID_TaiKhoan
-    LEFT JOIN TaiKhoan tkgv ON gv.ID_TaiKhoan = tkgv.ID_TaiKhoan
-    WHERE sv.ID_TaiKhoan = ?
+        tkgv.taikhoan AS EmailGV
+    FROM sinhvien sv
+    LEFT JOIN taikhoan tksv ON sv.ID_taikhoan = tksv.ID_taikhoan
+    LEFT JOIN dotthuctap dt ON sv.ID_Dot = dt.ID
+    LEFT JOIN giaovien gv ON sv.ID_GVHD = gv.ID_taikhoan
+    LEFT JOIN taikhoan tkgv ON gv.ID_taikhoan = tkgv.ID_taikhoan
+    WHERE sv.ID_taikhoan = ?
 ");
-$stmt->execute([$idTaiKhoan]);
+$stmt->execute([$idtaikhoan]);
 $info = $stmt->fetch(PDO::FETCH_ASSOC);
 
 $HienTrangThaiDot = '';
@@ -282,7 +286,7 @@ elseif ($trangThaiDot == 0)
 
 <body>
     <div id="wrapper">
-        <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_SinhVien.php"; ?>
+        <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_Sinhvien.php"; ?>
         <div id="page-wrapper">
             <div id="pages-heading"><H1>Thông tin cá nhân</H1> </div>
             <div class="container-fluid">

@@ -1,4 +1,7 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
@@ -10,7 +13,7 @@ $id = intval($_GET['id']);
 $idTaiKhoan = $_SESSION['user_id'] ?? null;
 
 // Lấy danh sách đợt mà cán bộ này quản lý
-$stmt = $conn->prepare("SELECT ID FROM DotThucTap WHERE NguoiQuanLy = ?");
+$stmt = $conn->prepare("SELECT ID FROM dotthuctap WHERE NguoiQuanLy = ?");
 $stmt->execute([$idTaiKhoan]);
 $dsDot = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
@@ -24,8 +27,8 @@ $placeholders = implode(',', array_fill(0, count($dsDot), '?'));
 // Lấy chi tiết thông báo
 $stmt = $conn->prepare("
     SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.ID_TAIKHOAN, tb.NGAYDANG, tb.TRANGTHAI, tb.ID_Dot, dt.TenDot
-    FROM THONGBAO tb
-    LEFT JOIN DotThucTap dt ON tb.ID_Dot = dt.ID
+    FROM thongbao tb
+    LEFT JOIN dotthuctap dt ON tb.ID_Dot = dt.ID
     WHERE tb.ID = ? AND tb.ID_Dot IN ($placeholders)
 ");
 $stmt->execute(array_merge([$id], $dsDot));
@@ -60,8 +63,8 @@ function renderMediaEmbed($content)
 // Lấy các thông báo khác cùng đợt quản lý
 $stmt_khac = $conn->prepare("
     SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.ID_TAIKHOAN, tb.NGAYDANG, tb.TRANGTHAI, tb.ID_Dot, dt.TenDot
-    FROM THONGBAO tb
-    LEFT JOIN DotThucTap dt ON tb.ID_Dot = dt.ID
+    FROM thongbao tb
+    LEFT JOIN dotthuctap dt ON tb.ID_Dot = dt.ID
     WHERE tb.ID != ? AND tb.ID_Dot IN ($placeholders) AND tb.TRANGTHAI = 1
     ORDER BY tb.NGAYDANG DESC
     LIMIT 50

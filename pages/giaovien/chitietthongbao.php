@@ -1,4 +1,9 @@
-<?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
+<?php 
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/../../error.log');
+require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
@@ -10,8 +15,8 @@ $id = intval($_GET['id']);
 $idTaiKhoan = $_SESSION['user_id'] ?? null;
 
 $stmt = $conn->prepare("SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.ID_TAIKHOAN, tb.NGAYDANG, tb.TRANGTHAI, tb.ID_Dot, dt.TenDot
-    FROM THONGBAO tb
-    LEFT JOIN DotThucTap dt ON tb.ID_Dot = dt.ID
+    FROM thongbao tb
+    LEFT JOIN dotthuctap dt ON tb.ID_Dot = dt.ID
     WHERE tb.ID = ? ");
 $stmt->execute([$id]);
 $thongbao = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -60,8 +65,8 @@ if (!empty($dsDot)) {
 
     $sql = "
         SELECT tb.ID, tb.TIEUDE, tb.NOIDUNG, tb.NGAYDANG, tb.ID_Dot, dt.TenDot
-        FROM THONGBAO tb
-        LEFT JOIN DotThucTap dt ON tb.ID_Dot = dt.ID
+        FROM thongbao tb
+        LEFT JOIN dotthuctap dt ON tb.ID_Dot = dt.ID
         WHERE tb.ID != ? 
             AND tb.TRANGTHAI = 1 
             AND tb.ID_Dot IN ($placeholders)
@@ -88,7 +93,7 @@ if (!empty($dsDot)) {
 
 <body>
   <div id="wrapper">
-    <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_GiaoVien.php"; ?>
+    <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_Giaovien.php"; ?>
 
     <div id="page-wrapper">
       <div class="container-fluid">

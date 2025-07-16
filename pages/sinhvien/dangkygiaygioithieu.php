@@ -1,4 +1,8 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/../../error.log');
 // Bắt đầu session an toàn
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
@@ -107,7 +111,6 @@ $stmt = $conn->prepare("
     SELECT g.ID, g.TenCty, g.MaSoThue, g.DiaChi, g.Sdt, g.Email, g.LinhVuc, g.TrangThai,
            d.TenDot, d.ThoiGianBatDau, d.ThoiGianKetThuc
     FROM giaygioithieu g
-    LEFT JOIN dotthuctap d ON g.id_dot = d.ID
     LEFT JOIN dotthuctap d ON g.id_dot = d.ID
     WHERE g.IdSinhVien = ?
     ORDER BY g.ID DESC

@@ -1,9 +1,15 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 // Kiểm tra quyền truy cập
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 
-if (!isset($_SESSION['user']['ID_TaiKhoan'])) {
+if (!isset($_SESSION['user_id'])) {
     header('Location: /datn/login.php');
     exit();
 }

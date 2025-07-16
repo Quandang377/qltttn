@@ -1,4 +1,7 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/template/config.php';
 $vaiTro = $_GET['vaiTro'] ?? 'Tất cả';
@@ -9,11 +12,11 @@ $sql = "SELECT
             tk.VaiTro, 
             tk.TrangThai,
             COALESCE(sv.Ten, gv.Ten, cbk.Ten,ad.Ten) AS HoTen
-        FROM TaiKhoan tk 
-        LEFT JOIN SinhVien sv ON sv.ID_TaiKhoan = tk.ID_TaiKhoan
-        LEFT JOIN GiaoVien gv ON gv.ID_TaiKhoan = tk.ID_TaiKhoan
-        LEFT JOIN CanBoKhoa cbk ON cbk.ID_TaiKhoan = tk.ID_TaiKhoan
-        LEFT JOIN Admin ad ON ad.ID_TaiKhoan = tk.ID_TaiKhoan";
+        FROM taikhoan tk 
+        LEFT JOIN sinhvien sv ON sv.ID_TaiKhoan = tk.ID_TaiKhoan
+        LEFT JOIN giaovien gv ON gv.ID_TaiKhoan = tk.ID_TaiKhoan
+        LEFT JOIN canbokhoa cbk ON cbk.ID_TaiKhoan = tk.ID_TaiKhoan
+        LEFT JOIN admin ad ON ad.ID_TaiKhoan = tk.ID_TaiKhoan";
 $params = [];
 if ($vaiTro != 'Tất cả') {
     $sql .= " WHERE tk.VaiTro = ?";

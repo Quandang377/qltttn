@@ -1,4 +1,7 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/vendor/autoload.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
@@ -6,25 +9,25 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
-$ID_TaiKhoan = $_SESSION['user_id'];
+$ID_taikhoan = $_SESSION['user_id'];
 
 
 // Lấy danh sách phản hồi của sinh viên
 $stmt = $conn->prepare("
-    SELECT tk.ID_TaiKhoan, tk.VaiTro, sv.MSSV, sv.Ten, sv.Lop, ph.ID AS ID_PhanHoi
+    SELECT tk.ID_taikhoan, tk.VaiTro, sv.MSSV, sv.Ten, sv.Lop, ph.ID AS ID_PhanHoi
     FROM phanhoikhaosat ph
-    JOIN taikhoan tk ON ph.ID_TaiKhoan = tk.ID_TaiKhoan
-    LEFT JOIN sinhvien sv ON sv.ID_TaiKhoan = tk.ID_TaiKhoan
-    WHERE ph.ID_KhaoSat = ? AND tk.VaiTro = 'Sinh viên'
+    JOIN taikhoan tk ON ph.ID_taikhoan = tk.ID_taikhoan
+    LEFT JOIN sinhvien sv ON sv.ID_taikhoan = tk.ID_taikhoan
+    WHERE ph.ID_khaosat = ? AND tk.VaiTro = 'Sinh viên'
     ORDER BY sv.MSSV ASC
 ");
 $dsPhanHoi = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 if (isset($_GET['export_excel'])) {
-    $id_KhaoSat = intval($_GET['export_excel']);
+    $id_khaosat = intval($_GET['export_excel']);
     // Lấy câu hỏi
-    $stmt = $conn->prepare("SELECT * FROM cauhoikhaosat WHERE ID_KhaoSat = ? AND TrangThai = 1");
-    $stmt->execute([$id_KhaoSat]);
+    $stmt = $conn->prepare("SELECT * FROM cauhoikhaosat WHERE ID_khaosat = ? AND TrangThai = 1");
+    $stmt->execute([$id_khaosat]);
     $cauHoi = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Tạo file Excel
@@ -46,14 +49,14 @@ if (isset($_GET['export_excel'])) {
     ]);
     // ==== PHẢN HỒI SINH VIÊN ====
     $stmt = $conn->prepare("
-    SELECT tk.ID_TaiKhoan, sv.MSSV, sv.Ten, sv.Lop, ph.ID AS ID_PhanHoi, ph.ThoiGianTraLoi
+    SELECT tk.ID_taikhoan, sv.MSSV, sv.Ten, sv.Lop, ph.ID AS ID_PhanHoi, ph.ThoiGianTraLoi
     FROM phanhoikhaosat ph
-    JOIN taikhoan tk ON ph.ID_TaiKhoan = tk.ID_TaiKhoan
-    JOIN sinhvien sv ON tk.ID_TaiKhoan = sv.ID_TaiKhoan
-    WHERE ph.ID_KhaoSat = ? AND tk.VaiTro = 'Sinh viên'
+    JOIN taikhoan tk ON ph.ID_taikhoan = tk.ID_taikhoan
+    JOIN sinhvien sv ON tk.ID_taikhoan = sv.ID_taikhoan
+    WHERE ph.ID_khaosat = ? AND tk.VaiTro = 'Sinh viên'
     ORDER BY ph.ThoiGianTraLoi ASC
 ");
-    $stmt->execute([$id_KhaoSat]);
+    $stmt->execute([$id_khaosat]);
     $dsPhanHoiSV = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     $rowNum = 2;
@@ -93,14 +96,14 @@ if (isset($_GET['export_excel'])) {
         'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
     ]);
     $stmt = $conn->prepare("
-    SELECT tk.ID_TaiKhoan, tk.TaiKhoan AS Email, gv.Ten, ph.ID AS ID_PhanHoi, ph.ThoiGianTraLoi
+    SELECT tk.ID_taikhoan, tk.taikhoan AS Email, gv.Ten, ph.ID AS ID_PhanHoi, ph.ThoiGianTraLoi
     FROM phanhoikhaosat ph
-    JOIN taikhoan tk ON ph.ID_TaiKhoan = tk.ID_TaiKhoan
-    JOIN giaovien gv ON tk.ID_TaiKhoan = gv.ID_TaiKhoan
-    WHERE ph.ID_KhaoSat = ? AND tk.VaiTro = 'Giáo viên'
+    JOIN taikhoan tk ON ph.ID_taikhoan = tk.ID_taikhoan
+    JOIN giaovien gv ON tk.ID_taikhoan = gv.ID_taikhoan
+    WHERE ph.ID_khaosat = ? AND tk.VaiTro = 'Giáo viên'
     ORDER BY ph.ThoiGianTraLoi ASC
 ");
-    $stmt->execute([$id_KhaoSat]);
+    $stmt->execute([$id_khaosat]);
     $dsPhanHoiGV = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     $startRowGV = $rowNum - 1; // Ghi lại dòng bắt đầu của giáo viên
@@ -138,7 +141,7 @@ if (isset($_GET['export_excel'])) {
     }
     ob_clean();
     // Xuất file
-    $filename = 'phanhoi_khaosat_' . $id_KhaoSat . '.xlsx';
+    $filename = 'phanhoi_khaosat_' . $id_khaosat . '.xlsx';
     header("Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     header("Content-Disposition: attachment;filename=\"$filename\"");
     header("Cache-Control: max-age=0");
@@ -148,7 +151,7 @@ if (isset($_GET['export_excel'])) {
     exit;
 }
 // Lấy danh sách đợt thực tập
-$stmt = $conn->prepare("SELECT ID, TenDot FROM DotThucTap WHERE TrangThai >= 0 ORDER BY ID DESC");
+$stmt = $conn->prepare("SELECT ID, TenDot FROM dotthuctap WHERE TrangThai >= 0 ORDER BY ID DESC");
 $stmt->execute();
 $dsDot = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -162,21 +165,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $dapanList = $_POST['dapan'] ?? [];
     $thoihan = $_POST['thoihan']??[];
 
-    $nguoiTao = $ID_TaiKhoan;
+    $nguoiTao = $ID_taikhoan;
     $idDot = $_POST['id_dot'] ?? null;
 
     try {
         $conn->beginTransaction();
 
         // 1. Tạo khảo sát trước
-        $stmt = $conn->prepare("INSERT INTO KhaoSat (TieuDe, MoTa, NguoiNhan, NguoiTao, ThoiGianTao, ThoiHan, TrangThai, ID_Dot) 
+        $stmt = $conn->prepare("INSERT INTO khaosat (TieuDe, MoTa, NguoiNhan, NguoiTao, ThoiGianTao, ThoiHan, TrangThai, ID_Dot) 
     VALUES (?, ?, ?, ?, Now(), ?, 1, ?)");
         $stmt->execute([$tieude, $mota, $nguoiNhan, $nguoiTao, $thoihan, $idDot]);
 
-        $idKhaoSat = $conn->lastInsertId();
+        $idkhaosat = $conn->lastInsertId();
 
         // 2. Thêm câu hỏi (có loại và đáp án)
-        $stmtCauHoi = $conn->prepare("INSERT INTO CauHoiKhaoSat (ID_KhaoSat, NoiDung, Loai, DapAn, TrangThai) VALUES (?, ?, ?, ?, 1)");
+        $stmtCauHoi = $conn->prepare("INSERT INTO cauhoikhaosat (ID_khaosat, NoiDung, Loai, DapAn, TrangThai) VALUES (?, ?, ?, ?, 1)");
         foreach ($cauHoiList as $i => $cauhoi) {
             $noiDung = trim($cauhoi);
             $loai = $loaiList[$i] ?? 'text';
@@ -190,7 +193,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 $dapan = null;
             }
             if ($noiDung !== '') {
-                $stmtCauHoi->execute([$idKhaoSat, $noiDung, $loai, $dapan]);
+                $stmtCauHoi->execute([$idkhaosat, $noiDung, $loai, $dapan]);
             }
         }
 
@@ -205,9 +208,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 // AJAX: Xóa khảo sát
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'xoa') {
-    $idKhaoSat = $_POST['id'] ?? 0;
-    $stmt = $conn->prepare("UPDATE KhaoSat SET TrangThai = 0 WHERE ID = ?");
-    $stmt->execute([$idKhaoSat]);
+    $idkhaosat = $_POST['id'] ?? 0;
+    $stmt = $conn->prepare("UPDATE khaosat SET TrangThai = 0 WHERE ID = ?");
+    $stmt->execute([$idkhaosat]);
     echo json_encode(['status' => 'OK']);
     exit;
 }
@@ -215,19 +218,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 // AJAX: Lấy danh sách khảo sát
 if (isset($_GET['ajax'])) {
     $whereDot = "";
-    $params = [$ID_TaiKhoan];
+    $params = [$ID_taikhoan];
     if (!empty($_GET['dot_filter'])) {
         $whereDot = " AND ks.ID_Dot = ? ";
         $params[] = $_GET['dot_filter'];
     }
     $stmt = $conn->prepare("SELECT ks.ID, ks.TieuDe, ks.ThoiGianTao,ks.NguoiNhan,ks.ThoiHan,
-        (SELECT COUNT(*) FROM PhanHoiKhaoSat WHERE ID_KhaoSat = ks.ID) AS SoLuongPhanHoi,
+        (SELECT COUNT(*) FROM phanhoikhaosat WHERE ID_khaosat = ks.ID) AS SoLuongPhanHoi,
         ks.ID_Dot
-        FROM KhaoSat ks
+        FROM khaosat ks
         WHERE ks.NguoiTao = ? and ks.TrangThai >=1 $whereDot
         ORDER BY ks.ThoiGianTao DESC");
     $stmt->execute($params);
-    $dsKhaoSatTao = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $dskhaosatTao = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     ?>
     <table class="table" id="bangkhaosat">
@@ -245,7 +248,7 @@ if (isset($_GET['ajax'])) {
             </tr>
         </thead>
         <tbody>
-            <?php foreach ($dsKhaoSatTao as $index => $ks): ?>
+            <?php foreach ($dskhaosatTao as $index => $ks): ?>
                 <tr>
                     <td>
                         <?= $index + 1 ?>
@@ -282,11 +285,11 @@ if (isset($_GET['ajax'])) {
                             <i class="glyphicon glyphicon-download-alt"></i> Xem
                         </a></td>
                     <td>
-                        <button type="button" class="btn btn-danger btn-sm" onclick="xoaKhaoSat(<?= $ks['ID'] ?>)">Xoá</button>
+                        <button type="button" class="btn btn-danger btn-sm" onclick="xoakhaosat(<?= $ks['ID'] ?>)">Xoá</button>
                     </td>
                 </tr>
             <?php endforeach; ?>
-            <?php if (empty($dsKhaoSatTao)): ?>
+            <?php if (empty($dskhaosatTao)): ?>
                 <tr>
                     <td colspan="6" class="text-center text-muted">Chưa có khảo sát nào được tạo.</td>
                 </tr>
@@ -306,7 +309,7 @@ if (isset($_GET['ajax'])) {
     <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php"; ?>
     <style>
         /* ======= Bảng khảo sát ======= */
-        #bangKhaoSat {
+        #bangkhaosat {
             width: 100%;
             border-collapse: separate;
             border-spacing: 0 8px;
@@ -317,7 +320,7 @@ if (isset($_GET['ajax'])) {
             font-family: 'Segoe UI', sans-serif;
         }
 
-        #bangKhaoSat th {
+        #bangkhaosat th {
             background-color: #4CAF50;
             color: white;
             font-weight: bold;
@@ -325,7 +328,7 @@ if (isset($_GET['ajax'])) {
             text-align: center;
         }
 
-        #bangKhaoSat td {
+        #bangkhaosat td {
             padding: 12px;
             text-align: center;
             vertical-align: middle;
@@ -334,15 +337,15 @@ if (isset($_GET['ajax'])) {
             cursor: default;
         }
 
-        #bangKhaoSat tr:hover td {
+        #bangkhaosat tr:hover td {
             background-color: #f1f1f1;
         }
 
-        #bangKhaoSat .btn-danger {
+        #bangkhaosat .btn-danger {
             transition: background-color 0.3s;
         }
 
-        #bangKhaoSat .btn-danger:hover {
+        #bangkhaosat .btn-danger:hover {
             background-color: #c0392b;
         }
 
@@ -411,7 +414,7 @@ if (isset($_GET['ajax'])) {
         }
 
         /* Căn giữa nội dung chưa có khảo sát */
-        #bangKhaoSat .text-muted {
+        #bangkhaosat .text-muted {
             font-style: italic;
             color: #7f8c8d !important;
         }
@@ -656,7 +659,7 @@ if (isset($_GET['ajax'])) {
                     <h1>Tạo khảo sát</h1>
                 </div>
                 <div class="form-container">
-                    <form id="formKhaoSat" method="post">
+                    <form id="formkhaosat" method="post">
                         <div class="row">
                             <div class="col-md-4">
                                 <div class="form-group">
@@ -777,7 +780,8 @@ if (isset($_GET['ajax'])) {
                                 <h4>Danh sách các khảo sát đã tạo</h4>
                             </div>
                             <div class="panel-body">
-                                <div id="bangKhaoSat"></div>
+                                <div id="bangkhaosat-wrapper"></div>
+
                             </div>
                         </div>
                     </div>
@@ -804,13 +808,13 @@ if (isset($_GET['ajax'])) {
                 input.min = minDatetime;
             });
             // Tạo khảo sát
-            $('#formKhaoSat').on('submit', function (e) {
+            $('#formkhaosat').on('submit', function (e) {
                 e.preventDefault();
                 $.post('/datn/admin/pages/khaosat', $(this).serialize() + '&action=tao', function (res) {
                     if (res.status === 'OK') {
                         Swal.fire('Tạo thành công!', '', 'success');
-                        loadBangKhaoSat();
-                        $('#formKhaoSat')[0].reset();
+                        loadBangkhaosat();
+                        $('#formkhaosat')[0].reset();
                     } else {
                         Swal.fire('Lỗi', res.message || 'Không thể tạo khảo sát', 'error');
                     }
@@ -819,31 +823,31 @@ if (isset($_GET['ajax'])) {
 
             // Lọc khảo sát theo đợt
             $('#dot_filter').on('change', function () {
-                loadBangKhaoSat();
+                loadBangkhaosat();
             });
 
             // Hàm load bảng khảo sát
-            function loadBangKhaoSat() {
+            function loadBangkhaosat() {
                 $.get('/datn/admin/pages/khaosat', {
                     ajax: 1,
                     dot_filter: $('#dot_filter').val()
                 }, function (html) {
-                    $('#bangKhaoSat').html(html);
-                    // Khởi tạo lại DataTable sau khi bảng đã được render
-                    if ($('#bangkhaosat').length) {
-                        $('#bangkhaosat').DataTable({
-                            info: false,
-                            destroy: true, // Thêm dòng này để tránh lỗi khi khởi tạo lại
-                            language: {
-                                url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json'
-                            }
-                        });
-                    }
+                    $('#bangkhaosat-wrapper').html(html);
+                        if ($('#bangkhaosat').length) {
+                            $('#bangkhaosat').DataTable({
+                                info: false,
+                                destroy: true,
+                                language: {
+                                    url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json'
+                                }
+                            });
+                        }
+
                 });
             }
 
             // Xóa khảo sát
-            function xoaKhaoSat(id) {
+            function xoakhaosat(id) {
                 Swal.fire({
                     title: 'Xác nhận xóa?',
                     icon: 'warning',
@@ -852,7 +856,7 @@ if (isset($_GET['ajax'])) {
                     if (result.isConfirmed) {
                         $.post('/datn/admin/pages/khaosat', { action: 'xoa', id: id }, function (res) {
                             if (res.status === 'OK') {
-                                loadBangKhaoSat();
+                                loadBangkhaosat();
                             } else {
                                 Swal.fire('Lỗi', res.message || 'Không thể xóa', 'error');
                             }
@@ -863,7 +867,7 @@ if (isset($_GET['ajax'])) {
 
             // Khi trang load
             $(function () {
-                loadBangKhaoSat();
+                loadBangkhaosat();
             });
 
             document.addEventListener("DOMContentLoaded", function () {

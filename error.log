@@ -1,0 +1,246 @@
+[16-Jul-2025 21:42:58 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42000]: Syntax error or access violation: 1066 Not unique table/alias: 'd' in /home/siektefuhosting/public_html/datn/pages/sinhvien/dangkygiaygioithieu.php:119
+Stack trace:
+#0 /home/siektefuhosting/public_html/datn/pages/sinhvien/dangkygiaygioithieu.php(119): PDOStatement->execute()
+#1 /home/siektefuhosting/public_html/datn/index.php(134): require_once('/home/siektefuh...')
+#2 {main}
+  thrown in /home/siektefuhosting/public_html/datn/pages/sinhvien/dangkygiaygioithieu.php on line 119
+[16-Jul-2025 21:45:51 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'siektefuhosting_thuctapdb.TaiKhoan' doesn't exist in /home/siektefuhosting/public_html/datn/pages/sinhvien/khaosat.php:11
+Stack trace:
+#0 /home/siektefuhosting/public_html/datn/pages/sinhvien/khaosat.php(11): PDOStatement->execute()
+#1 /home/siektefuhosting/public_html/datn/index.php(134): require_once('/home/siektefuh...')
+#2 {main}
+  thrown in /home/siektefuhosting/public_html/datn/pages/sinhvien/khaosat.php on line 11
+[16-Jul-2025 21:47:32 Asia/Ho_Chi_Minh] PHP Warning:  require_once(/home/siektefuhosting/public_html/datn/template/slidebar_SinhVien.php): Failed to open stream: No such file or directory in /home/siektefuhosting/public_html/datn/pages/sinhvien/khaosat.php on line 167
+[16-Jul-2025 21:47:32 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught Error: Failed opening required '/home/siektefuhosting/public_html/datn/template/slidebar_SinhVien.php' (include_path='.:/opt/alt/php82/usr/share/pear:/opt/alt/php82/usr/share/php:/usr/share/pear:/usr/share/php') in /home/siektefuhosting/public_html/datn/pages/sinhvien/khaosat.php:167
+Stack trace:
+#0 /home/siektefuhosting/public_html/datn/index.php(134): require_once()
+#1 {main}
+  thrown in /home/siektefuhosting/public_html/datn/pages/sinhvien/khaosat.php on line 167
+[16-Jul-2025 21:48:05 Asia/Ho_Chi_Minh] PHP Warning:  require_once(/home/siektefuhosting/public_html/datn/template/slidebar_SinhVien): Failed to open stream: No such file or directory in /home/siektefuhosting/public_html/datn/pages/sinhvien/khaosat.php on line 167
+[16-Jul-2025 21:48:05 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught Error: Failed opening required '/home/siektefuhosting/public_html/datn/template/slidebar_SinhVien' (include_path='.:/opt/alt/php82/usr/share/pear:/opt/alt/php82/usr/share/php:/usr/share/pear:/usr/share/php') in /home/siektefuhosting/public_html/datn/pages/sinhvien/khaosat.php:167
+Stack trace:
+#0 /home/siektefuhosting/public_html/datn/index.php(134): require_once()
+#1 {main}
+  thrown in /home/siektefuhosting/public_html/datn/pages/sinhvien/khaosat.php on line 167
+[16-Jul-2025 21:48:33 Asia/Ho_Chi_Minh] PHP Warning:  require_once(/home/siektefuhosting/public_html/datn/template/slidebar_SinhVien.php): Failed to open stream: No such file or directory in /home/siektefuhosting/public_html/datn/pages/sinhvien/khaosat.php on line 169
+[16-Jul-2025 21:48:33 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught Error: Failed opening required '/home/siektefuhosting/public_html/datn/template/slidebar_SinhVien.php' (include_path='.:/opt/alt/php82/usr/share/pear:/opt/alt/php82/usr/share/php:/usr/share/pear:/usr/share/php') in /home/siektefuhosting/public_html/datn/pages/sinhvien/khaosat.php:169
+Stack trace:
+#0 /home/siektefuhosting/public_html/datn/index.php(134): require_once()
+#1 {main}
+  thrown in /home/siektefuhosting/public_html/datn/pages/sinhvien/khaosat.php on line 169
+[16-Jul-2025 21:50:39 Asia/Ho_Chi_Minh] PHP Warning:  require_once(/home/siektefuhosting/public_html/datn/template/slidebar_SinhVien.php): Failed to open stream: No such file or directory in /home/siektefuhosting/public_html/datn/pages/sinhvien/timkiem.php on line 1028
+[16-Jul-2025 21:50:39 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught Error: Failed opening required '/home/siektefuhosting/public_html/datn/template/slidebar_SinhVien.php' (include_path='.:/opt/alt/php82/usr/share/pear:/opt/alt/php82/usr/share/php:/usr/share/pear:/usr/share/php') in /home/siektefuhosting/public_html/datn/pages/sinhvien/timkiem.php:1028
+Stack trace:
+#0 /home/siektefuhosting/public_html/datn/index.php(134): require_once()
+#1 {main}
+  thrown in /home/siektefuhosting/public_html/datn/pages/sinhvien/timkiem.php on line 1028
+[16-Jul-2025 21:53:07 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'siektefuhosting_thuctapdb.SinhVien' doesn't exist in /home/siektefuhosting/public_html/datn/pages/sinhvien/thongbaomoi.php:11
+Stack trace:
+#0 /home/siektefuhosting/public_html/datn/pages/sinhvien/thongbaomoi.php(11): PDOStatement->execute()
+#1 /home/siektefuhosting/public_html/datn/index.php(134): require_once('/home/siektefuh...')
+#2 {main}
+  thrown in /home/siektefuhosting/public_html/datn/pages/sinhvien/thongbaomoi.php on line 11
+[16-Jul-2025 21:53:30 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'siektefuhosting_thuctapdb.THONGBAO' doesn't exist in /home/siektefuhosting/public_html/datn/pages/sinhvien/thongbaomoi.php:26
+Stack trace:
+#0 /home/siektefuhosting/public_html/datn/pages/sinhvien/thongbaomoi.php(26): PDOStatement->execute()
+#1 /home/siektefuhosting/public_html/datn/index.php(134): require_once('/home/siektefuh...')
+#2 {main}
+  thrown in /home/siektefuhosting/public_html/datn/pages/sinhvien/thongbaomoi.php on line 26
+[16-Jul-2025 21:54:10 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'siektefuhosting_thuctapdb.DotThucTap' doesn't exist in /home/siektefuhosting/public_html/datn/pages/sinhvien/thongbaomoi.php:26
+Stack trace:
+#0 /home/siektefuhosting/public_html/datn/pages/sinhvien/thongbaomoi.php(26): PDOStatement->execute()
+#1 /home/siektefuhosting/public_html/datn/index.php(134): require_once('/home/siektefuh...')
+#2 {main}
+  thrown in /home/siektefuhosting/public_html/datn/pages/sinhvien/thongbaomoi.php on line 26
+[16-Jul-2025 21:54:25 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'siektefuhosting_thuctapdb.thongbao_Xem' doesn't exist in /home/siektefuhosting/public_html/datn/pages/sinhvien/thongbaomoi.php:26
+Stack trace:
+#0 /home/siektefuhosting/public_html/datn/pages/sinhvien/thongbaomoi.php(26): PDOStatement->execute()
+#1 /home/siektefuhosting/public_html/datn/index.php(134): require_once('/home/siektefuh...')
+#2 {main}
+  thrown in /home/siektefuhosting/public_html/datn/pages/sinhvien/thongbaomoi.php on line 26
+[16-Jul-2025 21:55:01 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'siektefuhosting_thuctapdb.SinhVien' doesn't exist in /home/siektefuhosting/public_html/datn/pages/sinhvien/chitietthongbao.php:42
+Stack trace:
+#0 /home/siektefuhosting/public_html/datn/pages/sinhvien/chitietthongbao.php(42): PDOStatement->execute()
+#1 /home/siektefuhosting/public_html/datn/index.php(134): require_once('/home/siektefuh...')
+#2 {main}
+  thrown in /home/siektefuhosting/public_html/datn/pages/sinhvien/chitietthongbao.php on line 42
+[16-Jul-2025 21:55:25 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'siektefuhosting_thuctapdb.SinhVien' doesn't exist in /home/siektefuhosting/public_html/datn/pages/sinhvien/chitietthongbao.php:42
+Stack trace:
+#0 /home/siektefuhosting/public_html/datn/pages/sinhvien/chitietthongbao.php(42): PDOStatement->execute()
+#1 /home/siektefuhosting/public_html/datn/index.php(134): require_once('/home/siektefuh...')
+#2 {main}
+  thrown in /home/siektefuhosting/public_html/datn/pages/sinhvien/chitietthongbao.php on line 42
+[16-Jul-2025 21:55:28 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'siektefuhosting_thuctapdb.ThongBao_Xem' doesn't exist in /home/siektefuhosting/public_html/datn/pages/sinhvien/chitietthongbao.php:50
+Stack trace:
+#0 /home/siektefuhosting/public_html/datn/pages/sinhvien/chitietthongbao.php(50): PDOStatement->execute()
+#1 /home/siektefuhosting/public_html/datn/index.php(134): require_once('/home/siektefuh...')
+#2 {main}
+  thrown in /home/siektefuhosting/public_html/datn/pages/sinhvien/chitietthongbao.php on line 50
+[16-Jul-2025 21:55:57 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'siektefuhosting_thuctapdb.THONGBAO' doesn't exist in /home/siektefuhosting/public_html/datn/pages/sinhvien/chitietthongbao.php:61
+Stack trace:
+#0 /home/siektefuhosting/public_html/datn/pages/sinhvien/chitietthongbao.php(61): PDOStatement->execute()
+#1 /home/siektefuhosting/public_html/datn/index.php(134): require_once('/home/siektefuh...')
+#2 {main}
+  thrown in /home/siektefuhosting/public_html/datn/pages/sinhvien/chitietthongbao.php on line 61
+[16-Jul-2025 21:56:20 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'siektefuhosting_thuctapdb.DotThucTap' doesn't exist in /home/siektefuhosting/public_html/datn/pages/sinhvien/chitietthongbao.php:61
+Stack trace:
+#0 /home/siektefuhosting/public_html/datn/pages/sinhvien/chitietthongbao.php(61): PDOStatement->execute()
+#1 /home/siektefuhosting/public_html/datn/index.php(134): require_once('/home/siektefuh...')
+#2 {main}
+  thrown in /home/siektefuhosting/public_html/datn/pages/sinhvien/chitietthongbao.php on line 61
+[16-Jul-2025 21:56:36 Asia/Ho_Chi_Minh] PHP Warning:  require_once(/home/siektefuhosting/public_html/datn/template/slidebar_SinhVien.php): Failed to open stream: No such file or directory in /home/siektefuhosting/public_html/datn/pages/sinhvien/chitietthongbao.php on line 114
+[16-Jul-2025 21:56:36 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught Error: Failed opening required '/home/siektefuhosting/public_html/datn/template/slidebar_SinhVien.php' (include_path='.:/opt/alt/php82/usr/share/pear:/opt/alt/php82/usr/share/php:/usr/share/pear:/usr/share/php') in /home/siektefuhosting/public_html/datn/pages/sinhvien/chitietthongbao.php:114
+Stack trace:
+#0 /home/siektefuhosting/public_html/datn/index.php(134): require_once()
+#1 {main}
+  thrown in /home/siektefuhosting/public_html/datn/pages/sinhvien/chitietthongbao.php on line 114
+[16-Jul-2025 21:58:55 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'siektefuhosting_thuctapdb.SinhVien' doesn't exist in /home/siektefuhosting/public_html/datn/pages/sinhvien/thongtincanhan.php:27
+Stack trace:
+#0 /home/siektefuhosting/public_html/datn/pages/sinhvien/thongtincanhan.php(27): PDOStatement->execute()
+#1 /home/siektefuhosting/public_html/datn/index.php(134): require_once('/home/siektefuh...')
+#2 {main}
+  thrown in /home/siektefuhosting/public_html/datn/pages/sinhvien/thongtincanhan.php on line 27
+[16-Jul-2025 21:59:27 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'siektefuhosting_thuctapdb.TaiKhoan' doesn't exist in /home/siektefuhosting/public_html/datn/pages/sinhvien/thongtincanhan.php:27
+Stack trace:
+#0 /home/siektefuhosting/public_html/datn/pages/sinhvien/thongtincanhan.php(27): PDOStatement->execute()
+#1 /home/siektefuhosting/public_html/datn/index.php(134): require_once('/home/siektefuh...')
+#2 {main}
+  thrown in /home/siektefuhosting/public_html/datn/pages/sinhvien/thongtincanhan.php on line 27
+[16-Jul-2025 21:59:52 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'siektefuhosting_thuctapdb.DotThucTap' doesn't exist in /home/siektefuhosting/public_html/datn/pages/sinhvien/thongtincanhan.php:27
+Stack trace:
+#0 /home/siektefuhosting/public_html/datn/pages/sinhvien/thongtincanhan.php(27): PDOStatement->execute()
+#1 /home/siektefuhosting/public_html/datn/index.php(134): require_once('/home/siektefuh...')
+#2 {main}
+  thrown in /home/siektefuhosting/public_html/datn/pages/sinhvien/thongtincanhan.php on line 27
+[16-Jul-2025 22:02:35 Asia/Ho_Chi_Minh] PHP Warning:  require_once(/home/siektefuhosting/public_html/datn/template/slidebar_GiaoVien.php): Failed to open stream: No such file or directory in /home/siektefuhosting/public_html/datn/pages/giaovien/chitietthongbao.php on line 96
+[16-Jul-2025 22:02:35 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught Error: Failed opening required '/home/siektefuhosting/public_html/datn/template/slidebar_GiaoVien.php' (include_path='.:/opt/alt/php82/usr/share/pear:/opt/alt/php82/usr/share/php:/usr/share/pear:/usr/share/php') in /home/siektefuhosting/public_html/datn/pages/giaovien/chitietthongbao.php:96
+Stack trace:
+#0 /home/siektefuhosting/public_html/datn/index.php(134): require_once()
+#1 {main}
+  thrown in /home/siektefuhosting/public_html/datn/pages/giaovien/chitietthongbao.php on line 96
+[16-Jul-2025 22:03:56 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'siektefuhosting_thuctapdb.thongbao_Xem' doesn't exist in /home/siektefuhosting/public_html/datn/pages/giaovien/thongbaomoi.php:33
+Stack trace:
+#0 /home/siektefuhosting/public_html/datn/pages/giaovien/thongbaomoi.php(33): PDOStatement->execute()
+#1 /home/siektefuhosting/public_html/datn/index.php(134): require_once('/home/siektefuh...')
+#2 {main}
+  thrown in /home/siektefuhosting/public_html/datn/pages/giaovien/thongbaomoi.php on line 33
+[16-Jul-2025 22:04:12 Asia/Ho_Chi_Minh] PHP Warning:  require_once(/home/siektefuhosting/public_html/datn/template/slidebar_GiaoVien.php): Failed to open stream: No such file or directory in /home/siektefuhosting/public_html/datn/pages/giaovien/thongbaomoi.php on line 120
+[16-Jul-2025 22:04:12 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught Error: Failed opening required '/home/siektefuhosting/public_html/datn/template/slidebar_GiaoVien.php' (include_path='.:/opt/alt/php82/usr/share/pear:/opt/alt/php82/usr/share/php:/usr/share/pear:/usr/share/php') in /home/siektefuhosting/public_html/datn/pages/giaovien/thongbaomoi.php:120
+Stack trace:
+#0 /home/siektefuhosting/public_html/datn/index.php(134): require_once()
+#1 {main}
+  thrown in /home/siektefuhosting/public_html/datn/pages/giaovien/thongbaomoi.php on line 120
+[16-Jul-2025 22:05:24 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'siektefuhosting_thuctapdb.GiaoVien' doesn't exist in /home/siektefuhosting/public_html/datn/pages/giaovien/thongtincanhan.php:22
+Stack trace:
+#0 /home/siektefuhosting/public_html/datn/pages/giaovien/thongtincanhan.php(22): PDOStatement->execute()
+#1 /home/siektefuhosting/public_html/datn/index.php(134): require_once('/home/siektefuh...')
+#2 {main}
+  thrown in /home/siektefuhosting/public_html/datn/pages/giaovien/thongtincanhan.php on line 22
+[16-Jul-2025 22:05:40 Asia/Ho_Chi_Minh] PHP Warning:  require_once(/home/siektefuhosting/public_html/datn/template/slidebar_giaovien.php): Failed to open stream: No such file or directory in /home/siektefuhosting/public_html/datn/pages/giaovien/thongtincanhan.php on line 281
+[16-Jul-2025 22:05:40 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught Error: Failed opening required '/home/siektefuhosting/public_html/datn/template/slidebar_giaovien.php' (include_path='.:/opt/alt/php82/usr/share/pear:/opt/alt/php82/usr/share/php:/usr/share/pear:/usr/share/php') in /home/siektefuhosting/public_html/datn/pages/giaovien/thongtincanhan.php:281
+Stack trace:
+#0 /home/siektefuhosting/public_html/datn/index.php(134): require_once()
+#1 {main}
+  thrown in /home/siektefuhosting/public_html/datn/pages/giaovien/thongtincanhan.php on line 281
+[16-Jul-2025 22:08:21 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'siektefuhosting_thuctapdb.DotThucTap' doesn't exist in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php:148
+Stack trace:
+#0 /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php(148): PDOStatement->execute()
+#1 /home/siektefuhosting/public_html/datn/index.php(134): require_once('/home/siektefuh...')
+#2 {main}
+  thrown in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php on line 148
+[16-Jul-2025 22:08:35 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'siektefuhosting_thuctapdb.DotThucTap' doesn't exist in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php:148
+Stack trace:
+#0 /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php(148): PDOStatement->execute()
+#1 /home/siektefuhosting/public_html/datn/index.php(134): require_once('/home/siektefuh...')
+#2 {main}
+  thrown in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php on line 148
+[16-Jul-2025 22:08:38 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'siektefuhosting_thuctapdb.CanBoKhoa' doesn't exist in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php:239
+Stack trace:
+#0 /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php(239): PDOStatement->execute()
+#1 /home/siektefuhosting/public_html/datn/index.php(134): require_once('/home/siektefuh...')
+#2 {main}
+  thrown in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php on line 239
+[16-Jul-2025 22:08:52 Asia/Ho_Chi_Minh] PHP Warning:  Undefined array key "ID_khaosat" in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php on line 253
+[16-Jul-2025 22:08:52 Asia/Ho_Chi_Minh] PHP Warning:  require_once(/home/siektefuhosting/public_html/datn/template/slidebar_giaovien.php): Failed to open stream: No such file or directory in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php on line 804
+[16-Jul-2025 22:08:52 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught Error: Failed opening required '/home/siektefuhosting/public_html/datn/template/slidebar_giaovien.php' (include_path='.:/opt/alt/php82/usr/share/pear:/opt/alt/php82/usr/share/php:/usr/share/pear:/usr/share/php') in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php:804
+Stack trace:
+#0 /home/siektefuhosting/public_html/datn/index.php(134): require_once()
+#1 {main}
+  thrown in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php on line 804
+[16-Jul-2025 22:09:03 Asia/Ho_Chi_Minh] PHP Warning:  Undefined array key "ID_khaosat" in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php on line 253
+[16-Jul-2025 22:09:03 Asia/Ho_Chi_Minh] PHP Deprecated:  strtotime(): Passing null to parameter #1 ($datetime) of type string is deprecated in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php on line 972
+[16-Jul-2025 22:09:03 Asia/Ho_Chi_Minh] PHP Warning:  Undefined array key "ID_khaosat" in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php on line 253
+[16-Jul-2025 22:09:54 Asia/Ho_Chi_Minh] PHP Warning:  Undefined array key "ID_khaosat" in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php on line 253
+[16-Jul-2025 22:09:54 Asia/Ho_Chi_Minh] PHP Deprecated:  strtotime(): Passing null to parameter #1 ($datetime) of type string is deprecated in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php on line 972
+[16-Jul-2025 22:09:54 Asia/Ho_Chi_Minh] PHP Warning:  Undefined array key "ID_khaosat" in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php on line 253
+[16-Jul-2025 22:10:00 Asia/Ho_Chi_Minh] PHP Warning:  Undefined array key "id_khaosat" in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php on line 253
+[16-Jul-2025 22:10:00 Asia/Ho_Chi_Minh] PHP Deprecated:  strtotime(): Passing null to parameter #1 ($datetime) of type string is deprecated in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php on line 972
+[16-Jul-2025 22:10:01 Asia/Ho_Chi_Minh] PHP Warning:  Undefined array key "id_khaosat" in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php on line 253
+[16-Jul-2025 22:10:47 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'siektefuhosting_thuctapdb.DotThucTap' doesn't exist in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php:148
+Stack trace:
+#0 /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php(148): PDOStatement->execute()
+#1 /home/siektefuhosting/public_html/datn/index.php(134): require_once('/home/siektefuh...')
+#2 {main}
+  thrown in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php on line 148
+[16-Jul-2025 22:11:02 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'siektefuhosting_thuctapdb.DotThucTap' doesn't exist in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php:148
+Stack trace:
+#0 /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php(148): PDOStatement->execute()
+#1 /home/siektefuhosting/public_html/datn/index.php(134): require_once('/home/siektefuh...')
+#2 {main}
+  thrown in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php on line 148
+[16-Jul-2025 22:11:06 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'siektefuhosting_thuctapdb.TaiKhoan' doesn't exist in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php:200
+Stack trace:
+#0 /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php(200): PDOStatement->execute()
+#1 /home/siektefuhosting/public_html/datn/index.php(134): require_once('/home/siektefuh...')
+#2 {main}
+  thrown in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php on line 200
+[16-Jul-2025 22:11:27 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'siektefuhosting_thuctapdb.KhaoSat' doesn't exist in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php:239
+Stack trace:
+#0 /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php(239): PDOStatement->execute()
+#1 /home/siektefuhosting/public_html/datn/index.php(134): require_once('/home/siektefuh...')
+#2 {main}
+  thrown in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php on line 239
+[16-Jul-2025 22:11:40 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'siektefuhosting_thuctapdb.GiaoVien' doesn't exist in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php:239
+Stack trace:
+#0 /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php(239): PDOStatement->execute()
+#1 /home/siektefuhosting/public_html/datn/index.php(134): require_once('/home/siektefuh...')
+#2 {main}
+  thrown in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php on line 239
+[16-Jul-2025 22:11:55 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'siektefuhosting_thuctapdb.CanBoKhoa' doesn't exist in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php:239
+Stack trace:
+#0 /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php(239): PDOStatement->execute()
+#1 /home/siektefuhosting/public_html/datn/index.php(134): require_once('/home/siektefuh...')
+#2 {main}
+  thrown in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php on line 239
+[16-Jul-2025 22:12:09 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'siektefuhosting_thuctapdb.SinhVien' doesn't exist in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php:239
+Stack trace:
+#0 /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php(239): PDOStatement->execute()
+#1 /home/siektefuhosting/public_html/datn/index.php(134): require_once('/home/siektefuh...')
+#2 {main}
+  thrown in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php on line 239
+[16-Jul-2025 22:12:23 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'siektefuhosting_thuctapdb.Admin' doesn't exist in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php:239
+Stack trace:
+#0 /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php(239): PDOStatement->execute()
+#1 /home/siektefuhosting/public_html/datn/index.php(134): require_once('/home/siektefuh...')
+#2 {main}
+  thrown in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php on line 239
+[16-Jul-2025 22:12:33 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'siektefuhosting_thuctapdb.PhanHoiKhaoSat' doesn't exist in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php:239
+Stack trace:
+#0 /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php(239): PDOStatement->execute()
+#1 /home/siektefuhosting/public_html/datn/index.php(134): require_once('/home/siektefuh...')
+#2 {main}
+  thrown in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php on line 239
+[16-Jul-2025 22:12:49 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'siektefuhosting_thuctapdb.CauHoiKhaoSat' doesn't exist in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php:249
+Stack trace:
+#0 /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php(249): PDOStatement->execute()
+#1 /home/siektefuhosting/public_html/datn/index.php(134): require_once('/home/siektefuh...')
+#2 {main}
+  thrown in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php on line 249
+[16-Jul-2025 22:13:04 Asia/Ho_Chi_Minh] PHP Warning:  require_once(/home/siektefuhosting/public_html/datn/template/slidebar_GiaoVien.php): Failed to open stream: No such file or directory in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php on line 804
+[16-Jul-2025 22:13:04 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught Error: Failed opening required '/home/siektefuhosting/public_html/datn/template/slidebar_GiaoVien.php' (include_path='.:/opt/alt/php82/usr/share/pear:/opt/alt/php82/usr/share/php:/usr/share/pear:/usr/share/php') in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php:804
+Stack trace:
+#0 /home/siektefuhosting/public_html/datn/index.php(134): require_once()
+#1 {main}
+  thrown in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php on line 804
+[16-Jul-2025 22:13:14 Asia/Ho_Chi_Minh] PHP Deprecated:  strtotime(): Passing null to parameter #1 ($datetime) of type string is deprecated in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php on line 972
+[16-Jul-2025 22:13:36 Asia/Ho_Chi_Minh] PHP Deprecated:  strtotime(): Passing null to parameter #1 ($datetime) of type string is deprecated in /home/siektefuhosting/public_html/datn/pages/giaovien/khaosat.php on line 972

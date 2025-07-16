@@ -1,4 +1,7 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
@@ -6,9 +9,9 @@ if (isset($_GET['msg']) && $_GET['msg'] === 'mo_khoa_ok'): ?>
     <div id="noti" class="alert alert-success text-center">Mở khóa thành công.</div>
 <?php endif;
 
-$stmt = $conn->prepare("SELECT ID, TenDot FROM DotThucTap WHERE TrangThai =1 ORDER BY ThoiGianBatDau desc");
+$stmt = $conn->prepare("SELECT ID, TenDot FROM dotthuctap WHERE TrangThai =1 ORDER BY ThoiGianBatDau desc");
 $stmt->execute();
-$dsDotThucTap = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$dsdotthuctap = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -74,7 +77,7 @@ $dsDotThucTap = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 </select>
                             </div>
 
-                            <div class="form-group col-sm-3" id="dotThucTapContainer" style="display: none;">
+                            <div class="form-group col-sm-3" id="dotthuctapContainer" style="display: none;">
                                 <select name="selectDot" id="selectDot" class="form-control">
                                     <option value="">Tất cả đợt</option>
                                     <?php
@@ -185,7 +188,7 @@ $dsDotThucTap = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $('#modalTitle').text('Thêm thành viên');
             $('#che_do').val('them');
             $('#id_tai_khoan').val('');
-            $('#dotThucTapGroup').show();
+            $('#dotthuctapGroup').show();
             $('#matkhau').prop('required', true);
             $('#matkhau').prop('placeholder', '');
 
@@ -219,7 +222,7 @@ $dsDotThucTap = $stmt->fetchAll(PDO::FETCH_ASSOC);
             if (data.VaiTro === 'Sinh viên') {
                 $('#mssv').val(data.MSSV);
                 $('#lop').val(data.Lop);
-                $('#dotThucTapGroup').hide();
+                $('#dotthuctapGroup').hide();
             } else {
                 $('#sinhvien_fields').hide();
             }
@@ -304,10 +307,10 @@ $dsDotThucTap = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <label>Lớp</label>
                             <input type="text" class="form-control" id="lop" name="lop">
                         </div>
-                        <div class="form-group" id="dotThucTapGroup">
+                        <div class="form-group" id="dotthuctapGroup">
                             <label>Chọn đợt thực tập</label>
                             <select class="form-control" name="dot" id="dot">
-                                <?php foreach ($dsDotThucTap as $dot): ?>
+                                <?php foreach ($dsdotthuctap as $dot): ?>
                                     <option value="<?= $dot['ID'] ?>"><?= htmlspecialchars($dot['TenDot']) ?></option>
                                 <?php endforeach; ?>
                             </select>

@@ -1,4 +1,7 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/vendor/autoload.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
@@ -93,7 +96,7 @@ if (isset($_GET['export_excel'])) {
         'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
     ]);
     $stmt = $conn->prepare("
-    SELECT tk.ID_TaiKhoan, tk.TaiKhoan AS Email, gv.Ten, ph.ID AS ID_PhanHoi, ph.ThoiGianTraLoi
+    SELECT tk.ID_TaiKhoan, tk.taikhoan AS Email, gv.Ten, ph.ID AS ID_PhanHoi, ph.ThoiGianTraLoi
     FROM phanhoikhaosat ph
     JOIN taikhoan tk ON ph.ID_TaiKhoan = tk.ID_TaiKhoan
     JOIN giaovien gv ON tk.ID_TaiKhoan = gv.ID_TaiKhoan
@@ -150,7 +153,7 @@ if (isset($_GET['export_excel'])) {
 // Lấy danh sách đợt thực tập
 $stmt = $conn->prepare("
     SELECT ID, TenDot 
-    FROM DotThucTap 
+    FROM dotthuctap 
     WHERE TrangThai >= 0 AND NguoiQuanLy = :id
     ORDER BY ID DESC
 ");
@@ -173,13 +176,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $conn->beginTransaction();
 
         // 1. Tạo khảo sát trước
-        $stmt = $conn->prepare("INSERT INTO KhaoSat (TieuDe, MoTa, NguoiNhan, NguoiTao, ThoiGianTao,Thoihan, TrangThai, ID_Dot) 
+        $stmt = $conn->prepare("INSERT INTO khaosat (TieuDe, MoTa, NguoiNhan, NguoiTao, ThoiGianTao,Thoihan, TrangThai, ID_Dot) 
             VALUES (?, ?, ?, ?, NOW(),?, 1, ?)");
         $stmt->execute([$tieude, $mota, $nguoiNhan, $nguoiTao, $thoiHan, $idDot]);
         $idKhaoSat = $conn->lastInsertId();
 
         // 2. Thêm câu hỏi (có loại và đáp án)
-        $stmtCauHoi = $conn->prepare("INSERT INTO CauHoiKhaoSat (ID_KhaoSat, NoiDung, Loai, DapAn, TrangThai) VALUES (?, ?, ?, ?, 1)");
+        $stmtCauHoi = $conn->prepare("INSERT INTO cauhoikhaosat (ID_KhaoSat, NoiDung, Loai, DapAn, TrangThai) VALUES (?, ?, ?, ?, 1)");
         foreach ($cauHoiList as $i => $cauhoi) {
             $noiDung = trim($cauhoi);
             $loai = $loaiList[$i] ?? 'text';
@@ -209,7 +212,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 // AJAX: Xóa khảo sát
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'xoa') {
     $idKhaoSat = $_POST['id'] ?? 0;
-    $stmt = $conn->prepare("UPDATE KhaoSat SET TrangThai = 0 WHERE ID = ?");
+    $stmt = $conn->prepare("UPDATE khaosat SET TrangThai = 0 WHERE ID = ?");
     $stmt->execute([$idKhaoSat]);
     echo json_encode(['status' => 'OK']);
     exit;
@@ -224,9 +227,9 @@ if (isset($_GET['ajax'])) {
         $params[] = $_GET['dot_filter'];
     }
     $stmt = $conn->prepare("SELECT ks.ID, ks.TieuDe, ks.ThoiGianTao,ks.NguoiNhan, ks.ThoiHan,
-        (SELECT COUNT(*) FROM PhanHoiKhaoSat WHERE ID_KhaoSat = ks.ID) AS SoLuongPhanHoi,
+        (SELECT COUNT(*) FROM phanhoikhaosat WHERE ID_KhaoSat = ks.ID) AS SoLuongPhanHoi,
         ks.ID_Dot
-        FROM KhaoSat ks
+        FROM khaosat ks
         WHERE ks.NguoiTao = ? and ks.TrangThai >= 1 $whereDot
         ORDER BY ks.ThoiGianTao DESC");
     $stmt->execute($params);

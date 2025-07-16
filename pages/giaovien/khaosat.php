@@ -1,4 +1,8 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/../../error.log');
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/vendor/autoload.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
@@ -106,7 +110,7 @@ if (
         $conn->beginTransaction();
 
         $stmtPhanHoi = $conn->prepare("
-                        INSERT INTO PhanHoiKhaoSat (ID_KhaoSat, ID_TaiKhoan, ThoiGianTraLoi, TrangThai)
+                        INSERT INTO phanhoikhaosat (ID_KhaoSat, ID_TaiKhoan, ThoiGianTraLoi, TrangThai)
                         VALUES (?, ?, NOW(), 1)
                     ");
         $stmtPhanHoi->execute([$idKhaoSat, $idTaiKhoan]);
@@ -114,7 +118,7 @@ if (
         $idPhanHoi = $conn->lastInsertId();
 
         $stmtTraLoi = $conn->prepare("
-                        INSERT INTO CauTraLoi (ID_PhanHoi, ID_CauHoi, TraLoi, TrangThai)
+                        INSERT INTO cautraloi (ID_PhanHoi, ID_CauHoi, TraLoi, TrangThai)
                         VALUES (?, ?, ?, 1)
                     ");
 
@@ -140,7 +144,7 @@ if (
     exit;
 }
 // Lấy danh sách đợt thực tập
-$stmt = $conn->prepare("SELECT ID, TenDot FROM DotThucTap WHERE TrangThai >= 0 ORDER BY ID DESC");
+$stmt = $conn->prepare("SELECT ID, TenDot FROM dotthuctap WHERE TrangThai >= 0 ORDER BY ID DESC");
 $stmt->execute();
 $dsDot = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -160,13 +164,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $conn->beginTransaction();
 
         // 1. Tạo khảo sát trước
-        $stmt = $conn->prepare("INSERT INTO KhaoSat (TieuDe, MoTa, NguoiNhan, NguoiTao, ThoiGianTao, ThoiHan , TrangThai, ID_Dot) 
+        $stmt = $conn->prepare("INSERT INTO khaosat (TieuDe, MoTa, NguoiNhan, NguoiTao, ThoiGianTao, ThoiHan , TrangThai, ID_Dot) 
             VALUES (?, ?, ?, ?, NOW(),?, 1, ?)");
         $stmt->execute([$tieude, $mota, $nguoiNhan, $nguoiTao, $thoiHan, $idDot]);
         $idKhaoSat = $conn->lastInsertId();
 
         // 2. Thêm câu hỏi (có loại và đáp án)
-        $stmtCauHoi = $conn->prepare("INSERT INTO CauHoiKhaoSat (ID_KhaoSat, NoiDung, Loai, DapAn, TrangThai) VALUES (?, ?, ?, ?, 1)");
+        $stmtCauHoi = $conn->prepare("INSERT INTO cauhoikhaosat (ID_KhaoSat, NoiDung, Loai, DapAn, TrangThai) VALUES (?, ?, ?, ?, 1)");
         foreach ($cauHoiList as $i => $cauhoi) {
             $noiDung = trim($cauhoi);
             $loai = $loaiList[$i] ?? 'text';
@@ -192,19 +196,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
     exit;
 }
-$stmt = $conn->prepare("SELECT VaiTro FROM TaiKhoan WHERE ID_TaiKhoan = ?");
+$stmt = $conn->prepare("SELECT VaiTro FROM taikhoan WHERE ID_TaiKhoan = ?");
 $stmt->execute([$ID_TaiKhoan]);
 $vaiTro = $stmt->fetchColumn();
 
 $stmt = $conn->prepare("
     SELECT ks.*, 
-        COALESCE(gv.Ten, sv.Ten, cb.Ten, ad.Ten, tk.TaiKhoan) AS TenNguoiTao
-    FROM KhaoSat ks
-    JOIN TaiKhoan tk ON ks.NguoiTao = tk.ID_TaiKhoan
-    LEFT JOIN GiaoVien gv ON gv.ID_TaiKhoan = tk.ID_TaiKhoan
-    LEFT JOIN CanBoKhoa cb ON cb.ID_TaiKhoan = tk.ID_TaiKhoan
-    LEFT JOIN SinhVien sv ON sv.ID_TaiKhoan = tk.ID_TaiKhoan
-    LEFT JOIN Admin ad ON ad.ID_TaiKhoan = tk.ID_TaiKhoan
+        COALESCE(gv.Ten, sv.Ten, cb.Ten, ad.Ten, tk.taikhoan) AS TenNguoiTao
+    FROM khaosat ks
+    JOIN taikhoan tk ON ks.NguoiTao = tk.ID_TaiKhoan
+    LEFT JOIN giaovien gv ON gv.ID_TaiKhoan = tk.ID_TaiKhoan
+    LEFT JOIN canbokhoa cb ON cb.ID_TaiKhoan = tk.ID_TaiKhoan
+    LEFT JOIN sinhvien sv ON sv.ID_TaiKhoan = tk.ID_TaiKhoan
+    LEFT JOIN admin ad ON ad.ID_TaiKhoan = tk.ID_TaiKhoan
     WHERE ks.TrangThai >= 1
     AND (
         (
@@ -226,7 +230,7 @@ $stmt = $conn->prepare("
     )
     AND ks.ID NOT IN (
         SELECT ID_KhaoSat 
-        FROM PhanHoiKhaoSat 
+        FROM phanhoikhaosat 
         WHERE ID_TaiKhoan = ?
     )
     ORDER BY ks.ThoiGianTao DESC
@@ -240,7 +244,7 @@ $dsID = array_column($dsKhaoSat, 'ID');
 $dsCauHoiTheoKhaoSat = [];
 if (!empty($dsID)) {
     $placeholders = implode(',', array_fill(0, count($dsID), '?'));
-    $sqlCauHoi = "SELECT * FROM CauHoiKhaoSat WHERE ID_KhaoSat IN ($placeholders)";
+    $sqlCauHoi = "SELECT * FROM cauhoikhaosat WHERE ID_KhaoSat IN ($placeholders)";
     $stmtCauHoi = $conn->prepare($sqlCauHoi);
     $stmtCauHoi->execute($dsID);
     $tatCaCauHoi = $stmtCauHoi->fetchAll(PDO::FETCH_ASSOC);
@@ -277,13 +281,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $conn->beginTransaction();
 
         // 1. Tạo khảo sát trước
-        $stmt = $conn->prepare("INSERT INTO KhaoSat (TieuDe, MoTa, NguoiNhan, NguoiTao, ThoiGianTao, TrangThai, ID_Dot) 
+        $stmt = $conn->prepare("INSERT INTO khaosat (TieuDe, MoTa, NguoiNhan, NguoiTao, ThoiGianTao, TrangThai, ID_Dot) 
             VALUES (?, ?, ?, ?, NOW(), 1, ?)");
         $stmt->execute([$tieude, $mota, $nguoiNhan, $nguoiTao, $idDot]);
         $idKhaoSat = $conn->lastInsertId();
 
         // 2. Thêm câu hỏi (có loại và đáp án)
-        $stmtCauHoi = $conn->prepare("INSERT INTO CauHoiKhaoSat (ID_KhaoSat, NoiDung, Loai, DapAn, TrangThai) VALUES (?, ?, ?, ?, 1)");
+        $stmtCauHoi = $conn->prepare("INSERT INTO cauhoikhaosat (ID_KhaoSat, NoiDung, Loai, DapAn, TrangThai) VALUES (?, ?, ?, ?, 1)");
         foreach ($cauHoiList as $i => $cauhoi) {
             $noiDung = trim($cauhoi);
             $loai = $loaiList[$i] ?? 'text';
@@ -313,7 +317,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 // AJAX: Xóa khảo sát
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'xoa') {
     $idKhaoSat = $_POST['id'] ?? 0;
-    $stmt = $conn->prepare("UPDATE KhaoSat SET TrangThai = 0 WHERE ID = ?");
+    $stmt = $conn->prepare("UPDATE khaosat SET TrangThai = 0 WHERE ID = ?");
     $stmt->execute([$idKhaoSat]);
     echo json_encode(['status' => 'OK']);
     exit;
@@ -328,9 +332,9 @@ if (isset($_GET['ajax'])) {
         $params[] = $_GET['dot_filter'];
     }
     $stmt = $conn->prepare("SELECT ks.ID, ks.TieuDe, ks.ThoiGianTao,ks.ThoiHan,
-        (SELECT COUNT(*) FROM PhanHoiKhaoSat WHERE ID_KhaoSat = ks.ID) AS SoLuongPhanHoi,
+        (SELECT COUNT(*) FROM phanhoikhaosat WHERE ID_KhaoSat = ks.ID) AS SoLuongPhanHoi,
         ks.ID_Dot
-        FROM KhaoSat ks
+        FROM khaosat ks
         WHERE ks.NguoiTao = ? and ks.TrangThai >= 1 $whereDot
         ORDER BY ks.ThoiGianTao DESC");
     $stmt->execute($params);
@@ -797,7 +801,7 @@ if (isset($_GET['ajax'])) {
 <body>
     <div id="wrapper">
         <?php
-        require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_GiaoVien.php";
+        require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_Giaovien.php";
         ?>
         <div id="page-wrapper">
             <div class="container-fluid">
@@ -807,8 +811,8 @@ if (isset($_GET['ajax'])) {
 
 
                 $stmt = $conn->prepare("SELECT ks.ID, ks.TieuDe, ks.ThoiGianTao,
-                    (SELECT COUNT(*) FROM PhanHoiKhaoSat WHERE ID_KhaoSat = ks.ID ) AS SoLuongPhanHoi
-                    FROM KhaoSat ks
+                    (SELECT COUNT(*) FROM phanhoikhaosat WHERE ID_KhaoSat = ks.ID ) AS SoLuongPhanHoi
+                    FROM khaosat ks
                     WHERE ks.NguoiTao = ? and ks.TrangThai=1
                     ORDER BY ks.ThoiGianTao DESC");
                 $stmt->execute([$ID_TaiKhoan]);
@@ -964,8 +968,8 @@ if (isset($_GET['ajax'])) {
                                                 <td><?= $index1 + 1 ?></td>
                                                 <td><?= htmlspecialchars($ks['TieuDe']) ?></td>
                                                 <td><?= htmlspecialchars($ks['TenNguoiTao']) ?></td>
-                                                <td><?= date("d/m/Y H:i", strtotime($ks['ThoiGianTao'])) ?></td>
-                                                <td><?= date("d/m/Y H:i", strtotime($ks['ThoiHan'])) ?></td>
+                                                <td><?= date("d/m/Y H:i", strtotime($ks['ThoiGianTao']??'')) ?></td>
+                                                <td><?= date("d/m/Y H:i", strtotime($ks['ThoiHan']??'')) ?></td>
                                                 <td>
                                                     <?php if ($ks['TrangThai'] == 1): ?>
                                                         <button class="btn btn-primary" data-toggle="modal"

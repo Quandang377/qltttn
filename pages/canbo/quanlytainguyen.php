@@ -1,4 +1,7 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
@@ -10,7 +13,7 @@ $msg = "";
 $idTaiKhoan = $_SESSION['user_id'] ?? $_SESSION['user']['ID_TaiKhoan'] ?? null;
 
 $stmt = $conn->prepare("
-    SELECT f.*, GROUP_CONCAT(dt.TenDot SEPARATOR ', ') AS DotThucTap
+    SELECT f.*, GROUP_CONCAT(dt.TenDot SEPARATOR ', ') AS dotthuctap
     FROM file f
     LEFT JOIN tainguyen_dot td ON f.ID = td.ID_File
     LEFT JOIN dotthuctap dt ON td.ID_Dot = dt.ID
@@ -234,7 +237,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <td>
                                         <?= htmlspecialchars($row['TenFile']) ?>
                                     </td>
-                                    <td><?= htmlspecialchars($row['DotThucTap']??"Tất cả") ?></td>
+                                    <td><?= htmlspecialchars($row['dotthuctap']??"Tất cả") ?></td>
                                     <td><?= htmlspecialchars($row['NgayNop']) ?></td>
 
                                     <td>
@@ -290,7 +293,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         <label>Các đợt thực tập áp dụng:</label>
                                         <select multiple class="form-control" name="ds_dot[]" id="edit-ds-dot" size="6">
                                             <?php
-                                            $stmt = $conn->query("SELECT ID, TenDot FROM DotThucTap WHERE TrangThai >= 0 ORDER BY ID DESC");
+                                            $stmt = $conn->query("SELECT ID, TenDot FROM dotthuctap WHERE TrangThai >= 0 ORDER BY ID DESC");
                                             while ($dot = $stmt->fetch(PDO::FETCH_ASSOC)):
                                                 ?>
                                                 <option value="<?= $dot['ID'] ?>"><?= htmlspecialchars($dot['TenDot']) ?>
@@ -565,7 +568,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <select multiple class="form-control" id="selectDot" size="8">
                         <option value="0">Tất cả</option>
                         <?php
-                        $stmt = $conn->query("SELECT ID, TenDot FROM DotThucTap WHERE TrangThai >= 0 ORDER BY ID DESC");
+                        $stmt = $conn->query("SELECT ID, TenDot FROM dotthuctap WHERE TrangThai >= 0 ORDER BY ID DESC");
                         while ($dot = $stmt->fetch(PDO::FETCH_ASSOC)):
                             ?>
                             <option value="<?= $dot['ID'] ?>"><?= htmlspecialchars($dot['TenDot']) ?></option>

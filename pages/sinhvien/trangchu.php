@@ -95,12 +95,7 @@ try {
     $stmt->execute([$idTaiKhoan]);
     $row_sv = $stmt->fetch(PDO::FETCH_ASSOC);
     $id_gvhd = $row_sv['ID_GVHD'] ?? null;
-    // Lấy tên sinh viên và id tài khoản giáo viên hướng dẫn
-    $stmt = $conn->prepare("SELECT Ten, ID_GVHD FROM sinhvien WHERE ID_TaiKhoan = ?");
-    $stmt->execute([$idTaiKhoan]);
-    $row_sv = $stmt->fetch(PDO::FETCH_ASSOC);
-    $id_gvhd = $row_sv['ID_GVHD'] ?? null;
-
+    
     // Kiểm tra trạng thái cho phép nộp báo cáo tổng kết của giáo viên hướng dẫn
     if ($id_gvhd) {
         $stmt = $conn->prepare("SELECT TrangThai FROM baocaotongket WHERE ID_TaiKhoan = ? AND ID_Dot = ?");
@@ -108,13 +103,7 @@ try {
         $trangthai_baocaotongket = $stmt->fetchColumn();
         $cho_phep_nop = ($trangthai_baocaotongket == 1);
     }
-    // Kiểm tra trạng thái cho phép nộp báo cáo tổng kết của giáo viên hướng dẫn
-    if ($id_gvhd) {
-        $stmt = $conn->prepare("SELECT TrangThai FROM baocaotongket WHERE ID_TaiKhoan = ? AND ID_Dot = ?");
-        $stmt->execute([$id_gvhd, $idDot]);
-        $trangthai_baocaotongket = $stmt->fetchColumn();
-        $cho_phep_nop = ($trangthai_baocaotongket == 1);
-    }
+    
 
     // Lấy thông báo
     if ($idTaiKhoan == null) {
@@ -430,10 +419,6 @@ if ($idTaiKhoan) {
     </div>
   </div>
   </div>
-
-  <?php
-  require __DIR__ . "/../../template/footer.php";
-  ?>
   <?php
   require __DIR__ . "/../../template/footer.php";
   ?>

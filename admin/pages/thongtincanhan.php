@@ -1,23 +1,26 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
-$idTaiKhoan = $_SESSION['user']['ID_TaiKhoan'] ?? null;
-$vaiTro = $_SESSION['user']['VaiTro'] ?? '';
+$idtaikhoan = $_SESSION['user_id'] ?? null;
+$vaiTro = $_SESSION['user_role'] ?? '';
 
 // Lấy thông tin người dùng
 $stmt = $conn->prepare("
     SELECT 
-        COALESCE( gv.Ten) AS Ten,
-        tk.TaiKhoan AS Email,
+        COALESCE( gv.ten) AS ten,
+        tk.taikhoan AS Email,
         tk.VaiTro
-    FROM TaiKhoan tk
-    LEFT JOIN Admin gv ON tk.ID_TaiKhoan = gv.ID_TaiKhoan
+    FROM taikhoan tk
+    LEFT JOIN admin gv ON tk.ID_TaiKhoan = gv.ID_TaiKhoan
     WHERE tk.ID_TaiKhoan = ?
 ");
-$stmt->execute([$idTaiKhoan]);
+$stmt->execute([$idtaikhoan]);
 $info = $stmt->fetch(PDO::FETCH_ASSOC);
 $stmtDot = $conn->prepare("
-    SELECT dt.ID, dt.TenDot, dt.Nam, dt.ThoiGianBatDau, dt.ThoiGianKetThuc
+    SELECT dt.ID, dt.tenDot, dt.Nam, dt.ThoiGianBatDau, dt.ThoiGianKetThuc
     FROM dotthuctap dt
     WHERE dt.TrangThai>=1
     ORDER BY dt.ThoiGianBatDau DESC
@@ -283,7 +286,7 @@ $dsDotDangThamGia = $stmtDot->fetchAll(PDO::FETCH_ASSOC);
                 <div class="col-md-4 text-center">
                     <img src="/datn/access/img/accc.PNG" class="img-circle"
                         style="width: 120px; height: 120px; object-fit: cover; border: 3px solid #eee;">
-                    <h3 style="margin-top: 10px;"><?= htmlspecialchars($info['Ten'] ?? 'Chưa cập nhật') ?></h3>
+                    <h3 style="margin-top: 10px;"><?= htmlspecialchars($info['ten'] ?? 'Chưa cập nhật') ?></h3>
                     <p class="text-muted"><?= htmlspecialchars($info['Email'] ?? '') ?></p>
 
                 </div>
@@ -295,7 +298,7 @@ $dsDotDangThamGia = $stmtDot->fetchAll(PDO::FETCH_ASSOC);
                             <div class="row" style="margin-bottom: 15px;">
                                 <div class="col-sm-6">
                                     <label>Họ và tên:</label>
-                                    <p><?= htmlspecialchars($info['Ten'] ?? '') ?></p>
+                                    <p><?= htmlspecialchars($info['ten'] ?? '') ?></p>
                                 </div>
                                 <div class="col-sm-6">
                                     <label>Vai trò:</label>
@@ -314,7 +317,7 @@ $dsDotDangThamGia = $stmtDot->fetchAll(PDO::FETCH_ASSOC);
                                         <ul class="list-unstyled">
                                             <?php foreach ($dsDotDangThamGia as $dot): ?>
                                                 <li>
-                                                    <strong><?= htmlspecialchars($dot['TenDot']) ?></strong>
+                                                    <strong><?= htmlspecialchars($dot['tenDot']) ?></strong>
                                                     <span
                                                         class="text-muted">(<?= date('d/m/Y', strtotime($dot['ThoiGianBatDau'])) ?>
                                                         - <?= date('d/m/Y', strtotime($dot['ThoiGianKetThuc'])) ?>)</span>

@@ -1,4 +1,8 @@
-<?php require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
+<?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
 $id = $_GET['id'] ?? null;
@@ -7,14 +11,14 @@ if (!$id) {
     die("Không tìm thấy ID đợt thực tập.");
 }
 
-$stmt = $conn->prepare("SELECT ID,TenDot,BacDaoTao,Nam,NguoiMoDot,NguoiQuanLy,ThoiGianBatDau,ThoiGianKetThuc,TrangThai FROM DOTTHUCTAP WHERE ID = :id");
+$stmt = $conn->prepare("SELECT ID,TenDot,BacDaoTao,Nam,NguoiMoDot,NguoiQuanLy,ThoiGianBatDau,ThoiGianKetThuc,TrangThai FROM dotthuctap WHERE ID = :id");
 $stmt->execute(['id' => $id]);
 $dot = $stmt->fetch();
 $successMessage = "";
 $notification = "";
 
 $stmt = $conn->prepare("SELECT ID, TenDot, BacDaoTao, Nam, NguoiMoDot, NguoiQuanLy, ThoiGianBatDau, ThoiGianKetThuc, TrangThai 
-                        FROM DOTTHUCTAP WHERE ID = :id");
+                        FROM dotthuctap WHERE ID = :id");
 $stmt->execute(['id' => $id]);
 $dot = $stmt->fetch();
 
@@ -37,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $thoiGianKetThuc = $_POST['ThoiGianKetThuc'] ?? '';
     $nguoiQuanLy = intval($_POST['NguoiQuanLy']);
 
-    $stmt = $conn->prepare("SELECT COUNT(*) FROM DOTTHUCTAP WHERE TenDot = :tenDot AND ID != :id");
+    $stmt = $conn->prepare("SELECT COUNT(*) FROM dotthuctap WHERE TenDot = :tenDot AND ID != :id");
     $stmt->execute(['tenDot' => $tenDot, 'id' => $id]);
     $count = $stmt->fetchColumn();
     $errors = [];
@@ -62,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $notification = implode("<br>", $errors);
         } else {
             $updateStmt = $conn->prepare("
-            UPDATE DOTTHUCTAP SET
+            UPDATE dotthuctap SET
                 TenDot = :tenDot,
                 Nam = :nam,
                 BacDaoTao = :BacDaoTao,
@@ -84,13 +88,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $successMessage = "Cập nhật thành công!";
 
-            $stmt = $conn->prepare("SELECT ID,TenDot,BacDaoTao,Nam,NguoiMoDot,NguoiQuanLy,ThoiGianBatDau,ThoiGianKetThuc,TrangThai FROM DOTTHUCTAP WHERE ID = :id");
+            $stmt = $conn->prepare("SELECT ID,TenDot,BacDaoTao,Nam,NguoiMoDot,NguoiQuanLy,ThoiGianBatDau,ThoiGianKetThuc,TrangThai FROM dotthuctap WHERE ID = :id");
             $stmt->execute(['id' => $id]);
             $dot = $stmt->fetch();
         }
     } else {
         $updateStmt = $conn->prepare("
-            UPDATE DOTTHUCTAP SET
+            UPDATE dotthuctap SET
                 NguoiQuanLy = :nguoiQuanLy
             WHERE ID = :id
         ");
@@ -102,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $successMessage = "Cập nhật thành công!";
 
-        $stmt = $conn->prepare("SELECT ID,TenDot,BacDaoTao,Nam,NguoiMoDot,NguoiQuanLy,ThoiGianBatDau,ThoiGianKetThuc,TrangThai FROM DOTTHUCTAP WHERE ID = :id");
+        $stmt = $conn->prepare("SELECT ID,TenDot,BacDaoTao,Nam,NguoiMoDot,NguoiQuanLy,ThoiGianBatDau,ThoiGianKetThuc,TrangThai FROM dotthuctap WHERE ID = :id");
         $stmt->execute(['id' => $id]);
         $dot = $stmt->fetch();
     }

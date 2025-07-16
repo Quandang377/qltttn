@@ -1,4 +1,8 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/../../error.log');
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/middleware/check_role.php";
 
@@ -1021,7 +1025,7 @@ function formatFileSize($bytes)
 
 <body>
     <div id="wrapper">
-        <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_SinhVien.php"; ?>
+        <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_Sinhvien.php"; ?>
         <div id="page-wrapper">
             <div class="container-fluid">
                 <h1 class="page-header">Kết quả tìm kiếm: <?= htmlspecialchars($tuKhoa) ?></h1>
