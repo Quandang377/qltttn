@@ -1002,7 +1002,7 @@ if (isset($_GET['ajax_tab']) && $_GET['ajax_tab'] == 'sv') {
                             <td><?= $idx + 1 ?></td>
                             <td><?= htmlspecialchars($sv['MSSV']) ?></td>
                             <td><?= htmlspecialchars($sv['Ten']) ?></td>
-                            <td><?= htmlspecialchars($sv['Lop']?? '') ?></td>
+                            <td><?= htmlspecialchars($sv['Lop'] ?? '') ?></td>
                             <td data-id="<?= $sv['ID_GVHD'] ?>">
                                 <select class="form-control select-gvhd" data-mssv="<?= $sv['ID_taikhoan'] ?>"
                                     <?= $dot['TrangThai'] != 1 ? 'disabled' : '' ?>>
@@ -1304,7 +1304,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                 <th>Chuyển GVHD</th>
                             </tr></thead><tbody>`;
                     res.ds.forEach(function (sv, idx) {
-                        let select = `<select class="form-control select-gvhd-modal" data-mssv="${sv.ID_taikhoan}" <?= $dot['TrangThai'] <= 0 ? 'disabled' : '' ?>>`;
+                        let select = `<select class="form-control select-gvhd-modal" 
+                                data-mssv="${sv.ID_taikhoan}" 
+                                data-current="${sv.ID_GVHD ?? ''}"
+                                ${<?= json_encode($dot['TrangThai']) ?> <= 0 ? 'disabled' : ''}>`;
+
                         select += `<option value="">-- Phân công sau --</option>`;
                         allgiaovien.forEach(function (gv) {
                             select += `<option value="${gv.ID_taikhoan}" ${sv.ID_GVHD == gv.ID_taikhoan ? 'selected' : ''}>${gv.Ten}</option>`;
@@ -1326,13 +1330,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 $('#modalDanhSachSV').modal('show');
             }, 'json');
         }
-        // Xử lý chuyển giáo viên hướng dẫn (cả ngoài bảng và trong modal)
+        var trangThaiDot = <?= json_encode($trangThaiDot) ?>; // truyền từ PHP
+
         $(document).on('change', '.select-gvhd, .select-gvhd-modal', function () {
             var id_sv = $(this).data('mssv');
             var id_gv = $(this).val();
             var id_dot = <?= json_encode($id) ?>;
             var select = this;
+
             if (id_gv === "") id_gv = null;
+
+            if (trangThaiDot != 1) {
+                Swal.fire({
+                    title: 'Xác nhận chuyển giáo viên?',
+                    text: 'Bạn có chắc muốn chuyển giáo viên hướng dẫn cho sinh viên này?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Chuyển',
+                    cancelButtonText: 'Hủy'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        thucHienChuyenGV(id_sv, id_gv, id_dot, select);
+                    } else {
+                        // Nếu hủy thì khôi phục lại lựa chọn ban đầu
+                        $(select).val($(select).data('current'));
+                    }
+                });
+            } else {
+                thucHienChuyenGV(id_sv, id_gv, id_dot, select);
+            }
+        });
+
+        function thucHienChuyenGV(id_sv, id_gv, id_dot, select) {
             $.ajax({
                 url: window.location.href,
                 method: 'POST',
@@ -1349,7 +1378,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                         $(select).closest('td').removeClass('success');
                     }, 1000);
 
-                    // Cập nhật số lượng sinh viên hướng dẫn ở bảng table-gv
+                    // Cập nhật số lượng sinh viên của giáo viên cũ
                     if (res.gvhdCu) {
                         var rowCu = $('#table-gv tbody tr').filter(function () {
                             return $(this).find('td').eq(1).data('id') == res.gvhdCu;
@@ -1358,6 +1387,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                             rowCu.find('td').eq(2).text(res.soLuongCu);
                         }
                     }
+
+                    // Cập nhật số lượng sinh viên của giáo viên mới
                     if (res.gvhdMoi) {
                         var rowMoi = $('#table-gv tbody tr').filter(function () {
                             return $(this).find('td').eq(1).data('id') == res.gvhdMoi;
@@ -1366,16 +1397,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                             rowMoi.find('td').eq(2).text(res.soLuongMoi);
                         }
                     }
-                    // Gọi cập nhật info ngay sau khi chuyển GVHD thành công
+
                     reloadInfoBox();
                     loadTabGV();
-                    capNhatNutPhanCong(<?= json_encode($id) ?>);
+                    capNhatNutPhanCong(id_dot);
                 },
                 error: function (xhr) {
                     alert("Cập nhật thất bại: " + xhr.responseText);
                 }
             });
-        });
+        }
         $(document).ready(function () {
             $('#btnAutoPhanCong').on('click', function () {
                 const mode = $(this).data('mode');
