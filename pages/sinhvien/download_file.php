@@ -1,6 +1,11 @@
 <?php
-require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
-require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
+// Bắt đầu session an toàn
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
+require_once __DIR__ . "/../../template/config.php";
+require_once __DIR__ . '/../../middleware/check_role.php';
 
 // Lấy thông tin user trước
 $idTaiKhoan = $_SESSION['user']['ID_TaiKhoan'] ?? null;
@@ -12,31 +17,34 @@ if (!$idTaiKhoan || $userRole !== 'Sinh viên') {
     die('Không có quyền truy cập');
 }
 
-if (!isset($_GET['file'])) {
+if (!isset($_GET['file']) || !isset($_GET['type'])) {
     http_response_code(400);
-    die('Tham số file không hợp lệ');
+    die('Tham số không hợp lệ');
 }
 
-$fileParam = $_GET['file'];
+$fileName = $_GET['file'];
+$fileType = $_GET['type'];
 
-// Lấy thông tin đợt của sinh viên
-$stmt = $conn->prepare("SELECT ID_Dot FROM SinhVien WHERE ID_TaiKhoan = ?");
-$stmt->execute([$idTaiKhoan]);
-$idDot = $stmt->fetchColumn();
-
-if (!$idDot) {
-    http_response_code(403);
-    die('Bạn chưa được phân vào đợt thực tập nào');
+// Kiểm tra loại file hợp lệ
+$allowedTypes = ['baocao', 'nhanxet', 'phieuthuctap', 'khoasat'];
+if (!in_array($fileType, $allowedTypes)) {
+    http_response_code(400);
+    die('Loại file không hợp lệ');
 }
 
-// Kiểm tra file có thuộc đợt thực tập của sinh viên không
-$stmt = $conn->prepare("
-    SELECT f.ID, f.TenFile, f.TenHienThi, f.DIR 
-    FROM file f
-    INNER JOIN tainguyen_dot td ON f.ID = td.id_file
-    WHERE f.ID = ? AND f.Loai = 'Tainguyen' AND f.TrangThai = 1 AND td.id_dot = ?
-");
-$stmt->execute([$fileParam, $idDot]);
+// Mapping loại file với loại trong database
+$typeMapping = [
+    'baocao' => 'Baocao',
+    'nhanxet' => 'nhanxet',
+    'phieuthuctap' => 'phieuthuctap',
+    'khoasat' => 'khoasat'
+];
+
+$dbType = $typeMapping[$fileType];
+
+// Kiểm tra file có thuộc về sinh viên hiện tại không
+$stmt = $conn->prepare("SELECT f.DIR FROM file f WHERE f.TenFile = ? AND f.ID_SV = ? AND f.Loai = ? AND f.TrangThai = 1");
+$stmt->execute([$fileName, $idTaiKhoan, $dbType]);
 $fileInfo = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$fileInfo) {
@@ -44,30 +52,56 @@ if (!$fileInfo) {
     die('File không tồn tại hoặc không có quyền truy cập');
 }
 
-// Sử dụng đường dẫn tuyệt đối
-$filePath = $fileInfo['DIR'];
+// Xử lý đường dẫn file
+$originalPath = $fileInfo['DIR'];
 
-// Kiểm tra file có tồn tại không
-if (!file_exists($filePath)) {
+// Chuyển đổi đường dẫn database thành đường dẫn phù hợp với hosting
+$correctedPath = null;
+
+// Nếu đường dẫn chứa "C:\xampp\htdocs\datn\file\" (localhost), chuyển thành đường dẫn tương đối
+if (strpos($originalPath, 'C:\\xampp\\htdocs\\datn\\file\\') !== false) {
+    $fileNameFromPath = basename($originalPath);
+    $correctedPath = __DIR__ . '/../../file/' . $fileNameFromPath;
+}
+// Nếu đường dẫn chứa "file\" hoặc "file/" trong bất kỳ vị trí nào
+else if (strpos($originalPath, 'file\\') !== false || strpos($originalPath, 'file/') !== false) {
+    $fileNameFromPath = basename($originalPath);
+    $correctedPath = __DIR__ . '/../../file/' . $fileNameFromPath;
+}
+// Nếu đường dẫn chỉ là đường dẫn tương đối
+else if (strpos($originalPath, 'file/') === 0) {
+    $correctedPath = __DIR__ . '/../../' . $originalPath;
+}
+// Nếu đường dẫn chỉ là tên file
+else if (strpos($originalPath, '/') === false && strpos($originalPath, '\\') === false) {
+    $correctedPath = __DIR__ . '/../../file/' . $originalPath;
+}
+// Nếu đường dẫn đã đúng định dạng tương đối
+else {
+    $correctedPath = $originalPath;
+}
+
+// Kiểm tra nhiều khả năng đường dẫn
+$possiblePaths = [
+    $correctedPath, // Đường dẫn đã chuyển đổi
+    __DIR__ . '/../../file/' . basename($originalPath), // Đường dẫn tương đối với tên file
+    __DIR__ . '/../../file/' . $fileName, // Đường dẫn với tên file gốc
+    $originalPath, // Đường dẫn gốc (fallback)
+];
+
+// Tìm đường dẫn file tồn tại
+$filePath = null;
+foreach ($possiblePaths as $path) {
+    if (file_exists($path)) {
+        $filePath = $path;
+        break;
+    }
+}
+
+// Nếu không tìm thấy file nào, báo lỗi
+if (!$filePath) {
     http_response_code(404);
-    die('File không tồn tại trên server');
-}
-
-// Xử lý tên file download
-$downloadFileName = '';
-if (isset($_GET['name']) && !empty($_GET['name'])) {
-    $downloadFileName = $_GET['name'];
-} elseif (!empty($fileInfo['TenHienThi'])) {
-    $downloadFileName = $fileInfo['TenHienThi'];
-} else {
-    $downloadFileName = $fileInfo['TenFile'];
-}
-
-// Đảm bảo extension đúng
-$originalExtension = pathinfo($fileInfo['TenFile'], PATHINFO_EXTENSION);
-$downloadExtension = pathinfo($downloadFileName, PATHINFO_EXTENSION);
-if (empty($downloadExtension) && !empty($originalExtension)) {
-    $downloadFileName .= '.' . $originalExtension;
+    die('File không tồn tại trên server. Đường dẫn gốc: ' . htmlspecialchars($originalPath));
 }
 
 $fileSize = filesize($filePath);
@@ -92,7 +126,7 @@ function getMimeType($extension) {
         'wmv' => 'video/x-ms-wmv', 'flv' => 'video/x-flv', 'webm' => 'video/webm', 'mkv' => 'video/x-matroska',
         'mp3' => 'audio/mpeg', 'wav' => 'audio/wav', 'ogg' => 'audio/ogg', 'flac' => 'audio/flac', 'aac' => 'audio/aac',
         'php' => 'text/x-php', 'sql' => 'application/sql', 'py' => 'text/x-python', 'java' => 'text/x-java-source',
-        'cpp' => 'text/x-c++src', 'c' => 'text/x-csrc', 'mdj' => 'application/octet-stream'
+        'cpp' => 'text/x-c++src', 'c' => 'text/x-csrc'
     ];
     return isset($mimeTypes[$extension]) ? $mimeTypes[$extension] : 'application/octet-stream';
 }
@@ -116,9 +150,9 @@ foreach ($inlineTypes as $type) {
 
 // Set headers
 if (isset($_GET['preview']) && $_GET['preview'] === '1' && $isInline) {
-    header('Content-Disposition: inline; filename="' . addslashes($downloadFileName) . '"; filename*=UTF-8\'\'' . rawurlencode($downloadFileName));
+    header('Content-Disposition: inline; filename="' . addslashes($fileName) . '"; filename*=UTF-8\'\'' . rawurlencode($fileName));
 } else {
-    header('Content-Disposition: attachment; filename="' . addslashes($downloadFileName) . '"; filename*=UTF-8\'\'' . rawurlencode($downloadFileName));
+    header('Content-Disposition: attachment; filename="' . addslashes($fileName) . '"; filename*=UTF-8\'\'' . rawurlencode($fileName));
 }
 
 header('Content-Type: ' . $mimeType);

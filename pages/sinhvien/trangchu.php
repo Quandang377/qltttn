@@ -1,94 +1,132 @@
 <?php
-require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
+// Bật error reporting để debug
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/../../error.log');
+
+// Bắt đầu session nếu chưa có
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Kiểm tra session user
+if (!isset($_SESSION['user'])) {
+    header("Location: " . ($_SERVER['HTTPS'] ? 'https' : 'http') . "://" . $_SERVER['HTTP_HOST'] . "/datn/login.php");
+    exit;
+}
+
+// Include files với error handling
+try {
+    require_once __DIR__ . '/../../middleware/check_role.php';
+    require_once __DIR__ . "/../../template/config.php";
+} catch (Exception $e) {
+    die("Lỗi load file: " . $e->getMessage());
+}
 
 $idTaiKhoan = $_SESSION['user']['ID_TaiKhoan'] ?? null;
 $today = date('Y-m-d');
 
-// Cập nhật trạng thái kết thúc (sử dụng tên bảng đúng)
-$updateStmt = $conn->prepare("UPDATE dotthuctap 
-    SET TrangThai = 0 
-    WHERE ThoiGianKetThuc <= :today AND TrangThai != -1");
-$updateStmt->execute(['today' => $today]);
-
-// Cập nhật trạng thái đã bắt đầu
-$updateStmt2 = $conn->prepare("UPDATE dotthuctap 
-    SET TrangThai = 2 
-    WHERE ThoiGianBatDau <= :today AND TrangThai > 0");
-$updateStmt2->execute(['today' => $today]);
-
-$now = date('Y-m-d H:i:s');
-
-// Cập nhật trạng thái khảo sát: 2 = Đã hết hạn (tên bảng và cột đúng)
-$updateKhaoSatStmt = $conn->prepare("UPDATE khaosat 
-    SET TrangThai = 2 
-    WHERE ThoiHan <= :now AND TrangThai != 2 AND TrangThai != 0");
-$updateKhaoSatStmt->execute(['now' => $now]);
-
-// Lấy thông tin đợt của sinh viên
-$stmt = $conn->prepare("SELECT sv.ID_Dot, dt.TrangThai 
-    FROM sinhvien sv 
-    LEFT JOIN dotthuctap dt ON sv.ID_Dot = dt.ID 
-    WHERE sv.ID_TaiKhoan = ?");
-$stmt->execute([$idTaiKhoan]);
-$row = $stmt->fetch(PDO::FETCH_ASSOC);
-$idDot = $row['ID_Dot'] ?? null;
-$trangThaiDot = $row['TrangThai'] ?? null;
+// Khởi tạo biến mặc định
 $baocao = null;
 $baocao_dir = null;
 $baocao_trangthai = null;
 $ten_sv = '';
 $cho_phep_nop = false;
-$errorMsg = ''; // Thêm biến này ở đầu file
-
-// Lấy tên sinh viên và id tài khoản giáo viên hướng dẫn
-$stmt = $conn->prepare("SELECT Ten, ID_GVHD FROM sinhvien WHERE ID_TaiKhoan = ?");
-$stmt->execute([$idTaiKhoan]);
-$row_sv = $stmt->fetch(PDO::FETCH_ASSOC);
-$id_gvhd = $row_sv['ID_GVHD'] ?? null;
-
-// Kiểm tra trạng thái cho phép nộp báo cáo tổng kết của giáo viên hướng dẫn
-if ($id_gvhd) {
-  $stmt = $conn->prepare("SELECT TrangThai FROM Baocaotongket WHERE ID_TaiKhoan = ?");
-  $stmt->execute([$id_gvhd]);
-  $trangthai_baocaotongket = $stmt->fetchColumn();
-  $cho_phep_nop = ($trangthai_baocaotongket == 1);
-}
-
-
-// Lấy thông báo
+$errorMsg = '';
 $thongbaos = [];
-if ($idTaiKhoan == null) {
-  $stmt = $conn->prepare("
-        SELECT tb.ID, tb.TieuDe, tb.NoiDung, tb.NgayDang, tb.ID_Dot, dt.TenDot
-        FROM thongbao tb
-        LEFT JOIN dotthuctap dt ON tb.ID_Dot = dt.ID
-        WHERE tb.TrangThai = 1
-        ORDER BY tb.NgayDang DESC
-        LIMIT 10
-    ");
-  $stmt->execute();
-  $thongbaos = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} elseif ($idDot) {
-  $stmt = $conn->prepare("
-        SELECT tb.ID, tb.TieuDe, tb.NoiDung, tb.NgayDang, tb.ID_Dot, dt.TenDot
-        FROM thongbao tb
-        LEFT JOIN dotthuctap dt ON tb.ID_Dot = dt.ID
-        WHERE tb.ID_Dot = ? AND tb.TrangThai=1
-        ORDER BY tb.NgayDang DESC
-        LIMIT 10
-    ");
-  $stmt->execute([$idDot]);
-  $thongbaos = $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
+$idDot = null;
+$trangThaiDot = null;
 
-// Lấy trạng thái đợt cuối cùng
-$stmt = $conn->prepare("SELECT dt.TrangThai 
-    FROM sinhvien sv 
-    LEFT JOIN dotthuctap dt ON sv.ID_Dot = dt.ID 
-    WHERE sv.ID_TaiKhoan = ?");
-$stmt->execute([$idTaiKhoan]);
-$trangThaiDot = $stmt->fetchColumn();
+try {
+    // Cập nhật trạng thái kết thúc (sử dụng tên bảng đúng)
+    $updateStmt = $conn->prepare("UPDATE dotthuctap 
+        SET TrangThai = 0 
+        WHERE ThoiGianKetThuc <= :today AND TrangThai != -1");
+    $updateStmt->execute(['today' => $today]);
+
+    // Cập nhật trạng thái đã bắt đầu
+    $updateStmt2 = $conn->prepare("UPDATE dotthuctap 
+        SET TrangThai = 2 
+        WHERE ThoiGianBatDau <= :today AND TrangThai > 0");
+    $updateStmt2->execute(['today' => $today]);
+
+    $now = date('Y-m-d H:i:s');
+
+    // Cập nhật trạng thái khảo sát: 2 = Đã hết hạn (tên bảng và cột đúng)
+    $updateKhaoSatStmt = $conn->prepare("UPDATE khaosat 
+        SET TrangThai = 2 
+        WHERE ThoiHan <= :now AND TrangThai != 2 AND TrangThai != 0");
+    $updateKhaoSatStmt->execute(['now' => $now]);
+
+    // Lấy thông tin đợt của sinh viên
+    $stmt = $conn->prepare("SELECT sv.ID_Dot, dt.TrangThai 
+        FROM sinhvien sv 
+        LEFT JOIN dotthuctap dt ON sv.ID_Dot = dt.ID 
+        WHERE sv.ID_TaiKhoan = ?");
+    $stmt->execute([$idTaiKhoan]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    $idDot = $row['ID_Dot'] ?? null;
+    $trangThaiDot = $row['TrangThai'] ?? null;
+
+    // Lấy tên sinh viên và id tài khoản giáo viên hướng dẫn
+    $stmt = $conn->prepare("SELECT Ten, ID_GVHD FROM sinhvien WHERE ID_TaiKhoan = ?");
+    $stmt->execute([$idTaiKhoan]);
+    $row_sv = $stmt->fetch(PDO::FETCH_ASSOC);
+    $id_gvhd = $row_sv['ID_GVHD'] ?? null;
+
+    // Kiểm tra trạng thái cho phép nộp báo cáo tổng kết của giáo viên hướng dẫn
+    if ($id_gvhd) {
+        $stmt = $conn->prepare("SELECT TrangThai FROM baocaotongket WHERE ID_TaiKhoan = ? AND ID_Dot = ?");
+        $stmt->execute([$id_gvhd, $idDot]);
+        $trangthai_baocaotongket = $stmt->fetchColumn();
+        $cho_phep_nop = ($trangthai_baocaotongket == 1);
+    }
+
+    // Lấy thông báo
+    if ($idTaiKhoan == null) {
+        $stmt = $conn->prepare("
+            SELECT tb.ID, tb.TieuDe, tb.NoiDung, tb.NgayDang, tb.ID_Dot, dt.TenDot
+            FROM thongbao tb
+            LEFT JOIN dotthuctap dt ON tb.ID_Dot = dt.ID
+            WHERE tb.TrangThai = 1
+            ORDER BY tb.NgayDang DESC
+            LIMIT 10
+        ");
+        $stmt->execute();
+        $thongbaos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } elseif ($idDot) {
+        $stmt = $conn->prepare("
+            SELECT tb.ID, tb.TieuDe, tb.NoiDung, tb.NgayDang, tb.ID_Dot, dt.TenDot
+            FROM thongbao tb
+            LEFT JOIN dotthuctap dt ON tb.ID_Dot = dt.ID
+            WHERE tb.ID_Dot = ? AND tb.TrangThai=1
+            ORDER BY tb.NgayDang DESC
+            LIMIT 10
+        ");
+        $stmt->execute([$idDot]);
+        $thongbaos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // Lấy trạng thái đợt cuối cùng
+    $stmt = $conn->prepare("SELECT dt.TrangThai 
+        FROM sinhvien sv 
+        LEFT JOIN dotthuctap dt ON sv.ID_Dot = dt.ID 
+        WHERE sv.ID_TaiKhoan = ?");
+    $stmt->execute([$idTaiKhoan]);
+    $trangThaiDot = $stmt->fetchColumn();
+
+} catch (PDOException $e) {
+    // Ghi log lỗi
+    error_log("Database error in trangchu.php: " . $e->getMessage());
+    $errorMsg = "Có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại sau.";
+    
+    // Đặt giá trị mặc định để tránh lỗi
+    $thongbaos = [];
+    $trangThaiDot = 0;
+    $cho_phep_nop = false;
+    $idDot = null;
+}
 
 // Xử lý trạng thái panel
 $panelActive = [];
@@ -164,7 +202,7 @@ if ($idTaiKhoan) {
   <meta charset="UTF-8">
   <title>Trang Chủ</title>
   <?php
-  require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php";
+  require_once __DIR__ . "/../../template/head.php";
   ?>
   <style>
 
@@ -175,13 +213,19 @@ if ($idTaiKhoan) {
 
   <div id="wrapper">
     <?php
-    require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_Sinhvien.php";
+    require_once __DIR__ . "/../../template/slidebar_Sinhvien.php";
     ?>
     <div id="page-wrapper">
       <div class="container-fluid">
         <div class="row">
           <div class="col-lg-12">
             <h1 class="page-header">Quy Trình Thực Tập Tốt Nghiệp</h1>
+
+            <?php if (!empty($errorMsg)): ?>
+              <div class="alert alert-danger">
+                <i class="fa fa-exclamation-triangle"></i> <?= htmlspecialchars($errorMsg) ?>
+              </div>
+            <?php endif; ?>
 
             <?php if ($idTaiKhoan && $statusInfo['message']): ?>
               <div class="status-indicator <?= $statusInfo['class'] ?>">
@@ -301,10 +345,9 @@ if ($idTaiKhoan) {
   </div>
   </div>
 
-  <?
-
-  require $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"
-    ?>
+  <?php
+  require __DIR__ . "/../../template/footer.php";
+  ?>
   <script>
     const thongbaos = <?= json_encode($thongbaos) ?>;
     const pageSize = 5;

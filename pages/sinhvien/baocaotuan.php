@@ -1,6 +1,11 @@
 <?php
-require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/template/config.php';
+// Bắt đầu session an toàn
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
+require_once __DIR__ . '/../../middleware/check_role.php';
+require_once __DIR__ . '/../../template/config.php';
 
 
 $idSinhVien = isset($_SESSION['user']['ID_TaiKhoan']) ? $_SESSION['user']['ID_TaiKhoan'] : 0;
@@ -17,7 +22,7 @@ $idDot = $dotRow ? $dotRow['ID_Dot'] : 0;
 $dotThucTapInfo = null;
 $isDotActive = false;
 if ($idDot > 0) {
-    $dotInfoSql = "SELECT TenDot, ThoiGianBatDau, ThoiGianKetThuc, TrangThai FROM DotThucTap WHERE ID = :id";
+    $dotInfoSql = "SELECT TenDot, ThoiGianBatDau, ThoiGianKetThuc, TrangThai FROM dotthuctap WHERE ID = :id";
     $dotInfoStmt = $conn->prepare($dotInfoSql);
     $dotInfoStmt->bindParam(':id', $idDot, PDO::PARAM_INT);
     $dotInfoStmt->execute();
@@ -203,7 +208,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_task_id'])) {
 <head>
     <meta charset="UTF-8">
     <title>Báo cáo tuần <?php echo $idSinhVien?></title>
-    <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php"; ?>
+    <?php require_once __DIR__ . "/../../template/head.php"; ?>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
         body {
@@ -759,11 +764,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_task_id'])) {
 <body>
     <div id="wrapper">
         <?php
-            require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
-            require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_Sinhvien.php";
-            
-            // Lấy ID sinh viên từ session hoặc gán tạm
-            $idSinhVien = isset($_SESSION['userId']) ? $_SESSION['userId'] : 1;
+            require_once __DIR__ . "/../../template/slidebar_Sinhvien.php";
         ?>
         <div id="page-wrapper">
             <div class="container-fluid">
@@ -928,7 +929,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_task_id'])) {
         <input type="hidden" name="update_task_progress" id="update-task-progress">
         <input type="hidden" name="update_task_action" id="update-task-action" value="">
     </form>
-    <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/footer.php"; ?>
+    <?php require_once __DIR__ . "/../../template/footer.php"; ?>
     
     <script>
         // Pass PHP tasks data to JavaScript
