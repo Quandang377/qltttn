@@ -477,7 +477,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_POST['action'] === 'preview_phanc
     $giaoviens = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Lấy tổng số SV CHƯA phân công (đã sửa để kiểm tra cả NULL và chuỗi rỗng)
-    $stmt = $conn->prepare("SELECT COUNT(*) FROM SinhVien WHERE ID_Dot = :id AND (ID_GVHD IS NULL OR ID_GVHD = '')");
+    $stmt = $conn->prepare("SELECT COUNT(*) FROM sinhvien WHERE ID_Dot = :id AND (ID_GVHD IS NULL OR ID_GVHD = '')");
     $stmt->execute(['id' => $id]);
     $svChuaPhan = (int) $stmt->fetchColumn();
 
@@ -485,8 +485,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_POST['action'] === 'preview_phanc
     $phanCong = [];
     $soGVChuaCoSV = 0;
 
-    foreach ($giaoViens as $gv) {
-        $stmt = $conn->prepare("SELECT COUNT(*) FROM SinhVien 
+    foreach ($giaoviens as $gv) {
+        $stmt = $conn->prepare("SELECT COUNT(*) FROM sinhvien 
                                 WHERE ID_Dot = :id AND ID_GVHD = :gv");
         $stmt->execute(['id' => $id, 'gv' => $gv['id']]);
         $soLuong = (int) $stmt->fetchColumn();
@@ -502,14 +502,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_POST['action'] === 'preview_phanc
     }
 
     // Tính tổng sinh viên
-    $tongSinhVien = array_sum(array_column($phanCong, 'soLuong')) + $svChuaPhan;
+    $tongsinhvien = array_sum(array_column($phanCong, 'soLuong')) + $svChuaPhan;
 
     echo json_encode([
         'success' => true,
         'phancong' => $phanCong,
         'sv_con_lai' => $svChuaPhan,
         'so_gv_chua_cosv' => $soGVChuaCoSV,
-        'tong_sinhvien' => $tongSinhVien
+        'tong_sinhvien' => $tongsinhvien
     ], JSON_UNESCAPED_UNICODE);
 
     exit;
@@ -605,37 +605,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_POST['action'] === 'auto_phancong
     $conn->beginTransaction();
     try {
         // 1. Lấy tổng số sinh viên trong đợt
-        $stmt = $conn->prepare("SELECT COUNT(*) FROM SinhVien WHERE ID_Dot = :id");
+        $stmt = $conn->prepare("SELECT COUNT(*) FROM sinhvien WHERE ID_Dot = :id");
         $stmt->execute(['id' => $idDot]);
-        $tongSinhVien = $stmt->fetchColumn();
+        $tongsinhvien = $stmt->fetchColumn();
 
         // 2. Tính tổng phân công mới
         $tongPhanCongMoi = array_sum($phanCong);
 
-        if ($tongPhanCongMoi > $tongSinhVien) {
-            throw new Exception("Tổng phân công ($tongPhanCongMoi) vượt quá số sinh viên ($tongSinhVien)");
+        if ($tongPhanCongMoi > $tongsinhvien) {
+            throw new Exception("Tổng phân công ($tongPhanCongMoi) vượt quá số sinh viên ($tongsinhvien)");
         }
 
         // 3. Reset toàn bộ phân công cũ
-        $stmt = $conn->prepare("UPDATE SinhVien SET ID_GVHD = NULL WHERE ID_Dot = :id");
+        $stmt = $conn->prepare("UPDATE sinhvien SET ID_GVHD = NULL WHERE ID_Dot = :id");
         $stmt->execute(['id' => $idDot]);
 
         // 4. Phân công mới
-        $stmt = $conn->prepare("SELECT ID_TaiKhoan FROM SinhVien 
+        $stmt = $conn->prepare("SELECT ID_taikhoan FROM sinhvien 
                                WHERE ID_Dot = :id 
-                               ORDER BY ID_TaiKhoan");
+                               ORDER BY ID_taikhoan");
         $stmt->execute(['id' => $idDot]);
-        $sinhViens = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        $sinhviens = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
         $index = 0;
         $daPhanCong = 0;
 
         foreach ($phanCong as $idGV => $soLuong) {
             $count = 0;
-            while ($count < $soLuong && $index < count($sinhViens)) {
-                $svId = $sinhViens[$index++];
-                $stmt = $conn->prepare("UPDATE SinhVien SET ID_GVHD = :gv 
-                                      WHERE ID_TaiKhoan = :sv");
+            while ($count < $soLuong && $index < count($sinhviens)) {
+                $svId = $sinhviens[$index++];
+                $stmt = $conn->prepare("UPDATE sinhvien SET ID_GVHD = :gv 
+                                      WHERE ID_taikhoan = :sv");
                 $stmt->execute(['gv' => $idGV, 'sv' => $svId]);
                 $count++;
                 $daPhanCong++;
@@ -664,24 +664,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_POST['action'] === 'preview_phanc
     }
 
     // Lấy danh sách GV trong đợt
-    $stmt = $conn->prepare("SELECT GV.ID_TaiKhoan as id, GV.Ten 
+    $stmt = $conn->prepare("SELECT GV.ID_taikhoan as id, GV.Ten 
                             FROM dot_giaovien DG 
-                            JOIN GiaoVien GV ON DG.ID_GVHD = GV.ID_TaiKhoan 
+                            JOIN giaovien GV ON DG.ID_GVHD = GV.ID_taikhoan 
                             WHERE DG.ID_Dot = :id 
                             ORDER BY GV.Ten");
     $stmt->execute(['id' => $id]);
     $giaoviens = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Tính tổng số sinh viên trong đợt
-    $stmt = $conn->prepare("SELECT COUNT(*) FROM SinhVien WHERE ID_Dot = :id");
+    $stmt = $conn->prepare("SELECT COUNT(*) FROM sinhvien WHERE ID_Dot = :id");
     $stmt->execute(['id' => $id]);
-    $tongSinhVien = (int) $stmt->fetchColumn();
+    $tongsinhvien = (int) $stmt->fetchColumn();
 
     // Đếm số lượng SV của từng GV
     $phanCong = [];
     $soGVChuaCoSV = 0;
-    foreach ($giaoViens as $gv) {
-        $stmt = $conn->prepare("SELECT COUNT(*) FROM SinhVien 
+    foreach ($giaoviens as $gv) {
+        $stmt = $conn->prepare("SELECT COUNT(*) FROM sinhvien 
                                 WHERE ID_Dot = :id AND ID_GVHD = :gv");
         $stmt->execute(['id' => $id, 'gv' => $gv['id']]);
         $soLuong = (int) $stmt->fetchColumn();
@@ -699,9 +699,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_POST['action'] === 'preview_phanc
     echo json_encode([
         'success' => true,
         'phancong' => $phanCong, // vẫn giữ nguyên soLuong cũ
-        'sv_con_lai' => $tongSinhVien,
+        'sv_con_lai' => $tongsinhvien,
         'so_gv_chua_cosv' => $soGVChuaCoSV,
-        'tong_sinhvien' => $tongSinhVien
+        'tong_sinhvien' => $tongsinhvien
     ], JSON_UNESCAPED_UNICODE);
 
     exit;
@@ -1429,15 +1429,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                     return;
                                 }
 
-                                const tongSinhVien = res.tong_sinhvien;
+                                const tongsinhvien = res.tong_sinhvien;
                                 const tongDaGan = res.phancong.reduce((sum, p) => sum + p.soLuong, 0);
-                                const conLai = tongSinhVien - tongDaGan;
+                                const conLai = tongsinhvien - tongDaGan;
 
                                 $('#svConLaiCount').text(conLai);
                                 $('#gvChuaCoSVCount').text(res.phancong.filter(gv => gv.soLuong === 0).length);
 
                                 // Gắn tổng SV của đợt (để dùng khi submit)
-                                $('#formPhanCongCustom').append(`<input type="hidden" id="tongSinhVienTrongDot" value="${tongSinhVien}">`);
+                                $('#formPhanCongCustom').append(`<input type="hidden" id="tongsinhvienTrongDot" value="${tongsinhvien}">`);
 
                                 let html = res.phancong.map((item, i) => `
             <tr>
@@ -1482,7 +1482,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                         if (val === 0) gvChuaCoSV++;
                                     });
 
-                                    const conLai = tongSinhVien - tong;
+                                    const conLai = tongsinhvien - tong;
 
                                     if (conLai >= 0) {
                                         $('#svConLaiCount').text(conLai);
@@ -1546,14 +1546,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                     return;
                                 }
 
-                                const tongSinhVien = res.tong_sinhvien;
+                                const tongsinhvien = res.tong_sinhvien;
                                 const tongDaGan = res.phancong.reduce((sum, p) => sum + p.soLuong, 0);
-                                const svConLai = tongSinhVien - tongDaGan;
+                                const svConLai = tongsinhvien - tongDaGan;
 
                                 // Chia đều sinh viên
                                 const soGV = res.phancong.length;
-                                const moiMoi = Math.floor((tongSinhVien - res.phancong.reduce((sum, p) => sum + p.soLuong, 0)) / soGV);
-                                const du = (tongSinhVien - res.phancong.reduce((sum, p) => sum + p.soLuong, 0)) % soGV;
+                                const moiMoi = Math.floor((tongsinhvien - res.phancong.reduce((sum, p) => sum + p.soLuong, 0)) / soGV);
+                                const du = (tongsinhvien - res.phancong.reduce((sum, p) => sum + p.soLuong, 0)) % soGV;
 
                                 const phanCongData = JSON.parse(JSON.stringify(res.phancong));
                                 phanCongData.forEach((gv, i) => {
@@ -1562,15 +1562,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
                                 // ✅ Tính lại sau chia (không dùng từ DB nữa)
                                 const tongSauChia = phanCongData.reduce((sum, gv) => sum + gv.soLuong, 0);
-                                const svConLaiSauChia = tongSinhVien - tongSauChia;
+                                const svConLaiSauChia = tongsinhvien - tongSauChia;
                                 const gvChuaCoSVPreview = phanCongData.filter(gv => gv.soLuong === 0).length;
 
                                 // ✅ Hiển thị đúng preview
                                 $('#svConLaiCount').text(svConLaiSauChia);
                                 $('#gvChuaCoSVCount').text(gvChuaCoSVPreview);
 
-                                $('#formPhanCongCustom #tongSinhVienTrongDot').remove();
-                                $('#formPhanCongCustom').append(`<input type="hidden" id="tongSinhVienTrongDot" value="${tongSinhVien}">`);
+                                $('#formPhanCongCustom #tongsinhvienTrongDot').remove();
+                                $('#formPhanCongCustom').append(`<input type="hidden" id="tongsinhvienTrongDot" value="${tongsinhvien}">`);
 
                                 // Tạo bảng
                                 const html = phanCongData.map((item, i) => `
@@ -1617,7 +1617,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                         if (val === 0) gvChuaCoSV++;
                                     });
 
-                                    const conLai = tongSinhVien - tong;
+                                    const conLai = tongsinhvien - tong;
 
                                     if (conLai >= 0) {
                                         $('#svConLaiCount').text(conLai);
@@ -1666,10 +1666,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 });
 
                 // Lấy tổng số sinh viên trong đợt
-                const tongSinhVien = parseInt($('#tongSinhVienTrongDot').val()) || 0;
+                const tongsinhvien = parseInt($('#tongsinhvienTrongDot').val()) || 0;
 
                 // Kiểm tra cơ bản
-                if (tongPhanCongMoi > tongSinhVien) {
+                if (tongPhanCongMoi > tongsinhvien) {
                     Swal.fire('Lỗi', 'Tổng phân công không thể vượt quá tổng số sinh viên', 'error');
                     return;
                 }
