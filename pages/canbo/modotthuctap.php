@@ -91,8 +91,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 }
 
 $danhSachDotThucTap = getAllInternships($conn);
-$canbokhoa = $conn->query("SELECT ID_TaiKhoan,Ten FROM canbokhoa where TrangThai=1")->fetchAll();
-
+$stmt = $conn->query("
+    SELECT ID_TaiKhoan, Ten FROM canbokhoa WHERE TrangThai = 1
+    UNION
+    SELECT ID_TaiKhoan, Ten FROM admin WHERE TrangThai = 1
+");
+$nguoiQuanLyList = $stmt->fetchAll(PDO::FETCH_ASSOC);
 if (isset($_SESSION['deleted'])) {
     $successMessage = $_SESSION['deleted'];
     unset($_SESSION['deleted']);
@@ -486,7 +490,7 @@ if (isset($_SESSION['deleted'])) {
                                     <div class="form-group">
                                         <label>Người quản lý đợt</label>
                                         <select id="NguoiQuanLy" name="NguoiQuanLy" class="form-control">
-                                            <?php foreach ($canbokhoa as $i => $cb): ?>
+                                            <?php foreach ($nguoiQuanLyList as $i => $cb): ?>
                                                 <option value="<?= $cb['ID_TaiKhoan'] ?>" <?= $i === 0 ? 'selected' : '' ?>>
                                                     <?= htmlspecialchars($cb['Ten']) ?>
                                                 </option>
