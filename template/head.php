@@ -13,8 +13,6 @@ if (!function_exists('isLocalhost')) {
 <link href="access/css/dataTables/dataTables.bootstrap.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap.min.css">
 <!-- <script src="access/ckeditor5/ckeditor.js?v=123"></script> -->
-<link rel="stylesheet" href="./style.css">
-		<link rel="stylesheet" href="https://cdn.ckeditor.com/ckeditor5/46.0.0/ckeditor5.css" crossorigin>
 	
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
 <style>

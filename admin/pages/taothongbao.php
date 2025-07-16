@@ -507,7 +507,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
     }
   </style>
-  </style>
+  <link rel="stylesheet" href="/datn/access/css/style.css">
+  <link rel="stylesheet" href="https://cdn.ckeditor.com/ckeditor5/46.0.0/ckeditor5.css" crossorigin>
 </head>
 
 <body>
@@ -540,29 +541,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <!-- Tiêu đề -->
                 <div class="form-group mb-3">
                   <label for="tieude"><strong>Tiêu đề</strong></label>
-                  <input class="search-bar" id="tieude" name="tieude" type="text"
-                    placeholder="Nhập tiêu đề" required>
+                  <input class="search-bar" id="tieude" name="tieude" type="text" placeholder="Nhập tiêu đề" required>
                 </div>
 
                 <!-- Nội dung thông báo -->
                 <div class="form-group mb-3">
                   <label><strong>Nội dung thông báo</strong></label>
-                  <div class="editor-container" id="editor-container">
-                    <div class="editor-container__editor">
-                      <div id="editor"></div>
+                    <div
+                      class="editor-container editor-container_classic-editor editor-container_include-style editor-container_include-block-toolbar editor-container_include-word-count editor-container_include-fullscreen"
+                      id="editor-container">
+                      <div class="editor-container__editor">
+                        <textarea id="editor" name="noidung"></textarea>
+                      </div>
+                      <div class="editor_container__word-count" id="editor-word-count"></div>
                     </div>
-                    <div class="editor_container__word-count" id="editor-word-count"></div>
                   </div>
-                  <!-- CKEditor import map -->
-                  <script type="importmap">
-            {
-              "imports": {
-                "ckeditor5": "/datn/access/ckeditor5/ckeditor5.js",
-                "ckeditor5/": "/datn/access/ckeditor5/"
-              }
-            }
-          </script>
-                </div>
+
+                  <!-- Tải CKEditor từ CDN (UMD build) -->
+                  <script src="https://cdn.ckeditor.com/ckeditor5/46.0.0/ckeditor5.umd.js"></script>
+
+                  <!-- Tải cấu hình main.js -->
+                  </div>
+
 
                 <!-- Nút Đăng tải -->
                 <div class="form-group text-center mt-4">
@@ -584,13 +584,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 </html>
 <script>
-  const form = document.querySelector('#Formthongbao');
+  let editor;
+  ClassicEditor.create(document.querySelector('#editor'))
+    .then(newEditor => {
+      editor = newEditor;
+    })
+    .catch(error => {
+      console.error(error);
+    });
 
-  form.addEventListener('submit', (e) => {
-    const textarea = document.createElement('textarea');
-    textarea.name = 'noidung';
-    textarea.style.display = 'none';
-    textarea.value = editor.getData();
-    form.appendChild(textarea);
-  });
 </script>

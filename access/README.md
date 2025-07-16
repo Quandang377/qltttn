@@ -1,13 +1,23 @@
-# CKEditor 5 sample
+# CKEditor 5 Sample Project
 
-Thank you for downloading the sample. To run it, start a web server (`nginx`, `caddy` or any other) that will serve the file.
+## Setup instructions
 
-Want to test more features? Get started with CKEditor 5 Builder 🚀
+### 1. Fill the required information
 
-With [CKEditor’s interactive builder](https://ckeditor.com/ckeditor-5/builder/), select:
+Make sure to fill in the required information, as the editor requires a license to start. If you don't have an account, you can [create a free account](https://portal.ckeditor.com/checkout?plan=free) to access all premium features for a 14-day trial.
 
-* The features you need.
-* Your preferred framework (React, Angular, Vue, or Vanilla JS).
-* Your preferred distribution method (CDN or npm).
+### 2. Run the web server
 
-You’ll get ready-to-use code snippets, tailored to your needs.
+Run local HTTP server (like `nginx`, `caddy` or `serve`) that will serve the files that you created. It's required, as we are using type="module" in our scripts.
+
+### 3. Start the project
+
+Open `index.html`.
+
+## Integrate with your project
+
+The editor files are in two folders: `ckeditor5` and `ckeditor5-premium-features` (if you use premium features). You need to copy them to your project's assets, and then import with a similar way as the sample `index.html` does.
+
+---
+
+For more information, please refer to the official [CKEditor 5 documentation](https://ckeditor.com/docs/ckeditor5/latest/getting-started/index.html).

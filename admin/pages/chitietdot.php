@@ -778,15 +778,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $mail->isHTML(true);
             $mail->Subject = 'Thông báo hoàn tất phân công hướng dẫn thực tập';
             $mail->Body = '
-        <html>
-        <body style="font-family: Arial, sans-serif; font-size:14px; line-height:1.6;">
-            <p style="color:#000000;">Chào thầy/cô <strong style="color:#000000;">' . htmlspecialchars($gv['Ten']) . '</strong>,</p>
-            <p style="color:#000000;">Đợt thực tập <strong style="color:#000000;">' . htmlspecialchars($dot['TenDot']) . '</strong> đã được phân công hoàn tất.</p>
-            <p style="color:#000000;">Thầy/cô có thể đăng nhập hệ thống để xem danh sách sinh viên mình hướng dẫn.</p>
-            <br>
-            <p style="color:#000000;">Trân trọng,<br><strong style="color:#000000;">Khoa Công Nghệ Thông Tin</strong></p>
-        </body>
-        </html>';
+                <html>
+                    <body style="font-family: Arial, sans-serif; font-size:14px; line-height:1.6;">
+                        <p style="color:#000000;">Chào thầy/cô <strong style="color:#000000;">' . htmlspecialchars($gv['Ten']) . '</strong>,</p>
+                        <p style="color:#000000;">Đợt thực tập <strong style="color:#000000;">' . htmlspecialchars($dot['TenDot']) . '</strong> đã được phân công hoàn tất.</p>
+                        <p style="color:#000000;">
+                            Thầy/cô có thể <a href="https://tttn-caothang.io.vn/datn" style="color: #1a0dab;">đăng nhập hệ thống</a> để xem danh sách sinh viên mình hướng dẫn.
+                        </p>
+                        <br>
+                        <p style="color:#000000;">Trân trọng,<br><strong style="color:#000000;">Khoa Công Nghệ Thông Tin</strong></p>
+                    </body>
+                </html>';
 
             $mail->send();
             file_put_contents('mail_debug.log', "Đã gửi tới: " . $gv['Email'] . PHP_EOL, FILE_APPEND);
