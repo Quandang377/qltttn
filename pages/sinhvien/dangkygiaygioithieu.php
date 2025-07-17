@@ -1,130 +1,156 @@
 <?php
-error_reporting(E_ALL);
 ini_set('display_errors', 1);
-ini_set('log_errors', 1);
-ini_set('error_log', __DIR__ . '/../../error.log');
-// Bắt đầu session an toàn
-if (session_status() == PHP_SESSION_NONE) {
-    session_start();
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
+require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
+
+// Kiểm tra đăng nhập và quyền truy cập
+if (!isset($_SESSION['user_id'])) {
+    header('Location: /datn/login.php');
+    exit();
 }
 
-require_once __DIR__ . '/../../middleware/check_role.php';
-require_once __DIR__ . "/../../template/config.php";
-// Bắt đầu session an toàn
-if (session_status() == PHP_SESSION_NONE) {
-    session_start();
+// Utility functions
+function shortAddress($address, $max = 50) {
+    $address = trim($address);
+    if (mb_strlen($address, 'UTF-8') > $max) {
+        return mb_substr($address, 0, $max, 'UTF-8') . '...';
+    }
+    return $address;
 }
 
-require_once __DIR__ . '/../../middleware/check_role.php';
-require_once __DIR__ . "/../../template/config.php";
-
-$message = '';
-$messageType = 'success';
-
-// Kiểm tra thông báo từ URL sau khi redirect
-if (isset($_GET['success']) && $_GET['success'] == '1' && isset($_GET['msg'])) {
-    $message = urldecode($_GET['msg']);
-    $messageType = 'success';
-}
-
-// Lấy ID sinh viên từ session
-$idSinhVien = $_SESSION['user']['ID_TaiKhoan'] ?? 3;
-
-// Lấy thông tin đợt thực tập của sinh viên
-$stmt = $conn->prepare("SELECT ID_Dot FROM sinhvien WHERE ID_TaiKhoan = ?");
-$stmt = $conn->prepare("SELECT ID_Dot FROM sinhvien WHERE ID_TaiKhoan = ?");
-$stmt->execute([$idSinhVien]);
-$sinhVienInfo = $stmt->fetch(PDO::FETCH_ASSOC);
-$idDot = $sinhVienInfo['ID_Dot'] ?? null;
-
-// Lấy thông tin chi tiết đợt thực tập
-$dotThucTapInfo = null;
-if ($idDot) {
-    $stmt = $conn->prepare("SELECT TenDot, ThoiGianBatDau, ThoiGianKetThuc, TrangThai FROM dotthuctap WHERE ID = ?");
-    $stmt = $conn->prepare("SELECT TenDot, ThoiGianBatDau, ThoiGianKetThuc, TrangThai FROM dotthuctap WHERE ID = ?");
-    $stmt->execute([$idDot]);
-    $dotThucTapInfo = $stmt->fetch(PDO::FETCH_ASSOC);
-}
-
-// Xử lý form submit
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['from_panel'])) {
-    $taxCode = trim($_POST['ma_so_thue']);
-    $name = trim($_POST['ten_cong_ty']);
-    $address = trim($_POST['dia_chi']);
-    $field = trim($_POST['linh_vuc']);
-    $phone = trim($_POST['sdt']);
-    $email = trim($_POST['email']);
-
-    // Kiểm tra dữ liệu phía server
-    if (!$taxCode || !$name || !$address || !$field || !$phone || !$email) {
-        $message = 'Vui lòng nhập đầy đủ tất cả các trường!';
-        $messageType = 'danger';
-    } elseif (!$idDot) {
-        $message = 'Bạn chưa được phân công vào đợt thực tập nào!';
-        $messageType = 'danger';
-    } elseif ($dotThucTapInfo && $dotThucTapInfo['TrangThai'] < 2) {
-        $message = 'Đợt thực tập của bạn đã kết thúc hoặc chưa bắt đầu. Không thể đăng ký giấy giới thiệu!';
-        $messageType = 'danger';
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $message = 'Email không hợp lệ!';
-        $messageType = 'danger';
-    } elseif (!preg_match('/^[0-9\-\+\s]{8,}$/', $phone)) {
-        $message = 'Số điện thoại không hợp lệ!';
-        $messageType = 'danger';
-    } else {
-        try {
-            // Kiểm tra xem công ty đã có trong database hay chưa
-            $checkStmt = $conn->prepare("SELECT ID FROM congty WHERE MaSoThue = ? AND TrangThai = 1");
-            $checkStmt->execute([$taxCode]);
-            $existingCompany = $checkStmt->fetch(PDO::FETCH_ASSOC);
-            
-            // Nếu công ty đã có trong DB và trạng thái active thì set trạng thái = 1 (đã duyệt)
-            // Ngược lại set trạng thái = 0 (chờ duyệt)
-            $trangThai = $existingCompany ? 1 : 0;
-            
-            $stmt = $conn->prepare("INSERT INTO giaygioithieu (TenCty, MaSoThue, DiaChi, LinhVuc, Sdt, Email, IdSinhVien, id_dot, TrangThai) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$name, $taxCode, $address, $field, $phone, $email, $idSinhVien, $idDot, $trangThai]);
-            
-            if ($trangThai == 1) {
-                $message = 'Đã gửi phiếu đăng ký thực tập và tự động duyệt (công ty đã có trong hệ thống)!';
-            } else {
-                $message = 'Đã gửi phiếu đăng ký thực tập, vui lòng chờ duyệt!';
+function getLettersByStatus() {
+    global $conn;
+    
+    try {
+        // Optimized query - lấy tất cả trong một lần và group theo status
+        $stmt = $conn->prepare("
+                SELECT 
+                    g.ID, g.TenCty, g.DiaChi, g.Idsinhvien, g.TrangThai, g.id_dot, 
+                    g.id_nguoinhan, g.ngay_nhan, g.ghi_chu, g.MaSoThue,
+                    s.Ten AS Tensinhvien, s.MSSV,
+                    sn.Ten AS TenNguoiNhan, sn.MSSV AS MSSVNguoiNhan,
+                    d.TenDot, d.ThoiGianBatDau, d.ThoiGianKetThuc
+                FROM giaygioithieu g
+                LEFT JOIN sinhvien s ON g.Idsinhvien = s.ID_taikhoan
+                LEFT JOIN sinhvien sn ON g.id_nguoinhan = sn.ID_taikhoan
+                LEFT JOIN dotthuctap d ON g.id_dot = d.ID
+                ORDER BY g.TrangThai ASC, g.MaSoThue, g.TenCty, g.ID DESC
+        ");
+        $stmt->execute();
+        $allLetters = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Group by status
+        $result = [
+            'pending' => [],   // TrangThai = 0
+            'approved' => [],  // TrangThai = 1  
+            'printed' => [],   // TrangThai = 2
+            'waiting' => [],   // TrangThai = 4 - Chờ lấy
+            'received' => []   // TrangThai = 3
+        ];
+        
+        foreach ($allLetters as $letter) {
+            switch ($letter['TrangThai']) {
+                case 0:
+                    $result['pending'][] = $letter;
+                    break;
+                case 1:
+                    $result['approved'][] = $letter;
+                    break;
+                case 2:
+                    $result['printed'][] = $letter;
+                    break;
+                case 3:
+                    $result['received'][] = $letter;
+                    break;
+                case 4:
+                    $result['waiting'][] = $letter;
+                    break;
             }
-            
-            // Redirect để tránh resubmit form khi refresh
-            header("Location: dangkygiaygioithieu");
-            exit();
-        } catch (Exception $e) {
-            $message = 'Có lỗi xảy ra khi lưu dữ liệu: ' . $e->getMessage();
-            $messageType = 'danger';
         }
+        
+        return $result;
+    } catch (PDOException $e) {
+        error_log("Database error in getLettersByStatus: " . $e->getMessage());
+        return ['pending' => [], 'approved' => [], 'printed' => [], 'waiting' => [], 'received' => []];
     }
 }
 
-// Lấy danh sách công ty
-$stmt = $conn->prepare("SELECT ID, TenCty, MaSoThue, DiaChi, Sdt, Email, Linhvuc FROM congty WHERE TrangThai = 1");
-$stmt->execute();
-$companyList = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// Lấy dữ liệu
+$letters = getLettersByStatus();
+$pendingList = $letters['pending'];
+$approvedList = $letters['approved'];
+$printedList = $letters['printed'];
+$waitingList = $letters['waiting'];
+$receivedList = $letters['received'];
 
-// Lấy danh sách giấy giới thiệu của sinh viên với thông tin đợt thực tập
-$stmt = $conn->prepare("
-    SELECT g.ID, g.TenCty, g.MaSoThue, g.DiaChi, g.Sdt, g.Email, g.LinhVuc, g.TrangThai,
-           d.TenDot, d.ThoiGianBatDau, d.ThoiGianKetThuc
-    FROM giaygioithieu g
-    LEFT JOIN dotthuctap d ON g.id_dot = d.ID
-    WHERE g.IdSinhVien = ?
-    ORDER BY g.ID DESC
-");
-$stmt->execute([$idSinhVien]);
-$giayList = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// Phân chia danh sách đã duyệt thành 2 phần
+function categorizeApprovedLetters($approvedList) {
+    // Đếm số lượng sinh viên theo mã số thuế
+    $taxCodeCount = [];
+    foreach ($approvedList as $letter) {
+        $taxCode = $letter['MaSoThue'] ?? '';
+        if (!isset($taxCodeCount[$taxCode])) {
+            $taxCodeCount[$taxCode] = 0;
+        }
+        $taxCodeCount[$taxCode]++;
+    }
+    
+    $individualLetters = []; // Sinh viên đăng ký riêng lẻ
+    $groupedLetters = [];    // Sinh viên cùng công ty
+    
+    foreach ($approvedList as $letter) {
+        $taxCode = $letter['MaSoThue'] ?? '';
+        
+        if ($taxCodeCount[$taxCode] === 1) {
+            // Chỉ có 1 sinh viên với mã số thuế này -> riêng lẻ
+            $individualLetters[] = $letter;
+        } else {
+            // Có nhiều sinh viên với mã số thuế này -> nhóm
+            if (!isset($groupedLetters[$taxCode])) {
+                $groupedLetters[$taxCode] = [];
+            }
+            $groupedLetters[$taxCode][] = $letter;
+        }
+    }
+    
+    return [
+        'individual' => $individualLetters,
+        'grouped' => $groupedLetters
+    ];
+}
+
+$categorizedApproved = categorizeApprovedLetters($approvedList);
+$individualLetters = $categorizedApproved['individual'];
+$groupedLetters = $categorizedApproved['grouped'];
+
+// Hàm gộp giấy theo công ty để in
+function groupLettersByCompany($letters) {
+    $grouped = [];
+    foreach ($letters as $letter) {
+        $key = $letter['TenCty'] . '|' . $letter['id_dot'];
+        if (!isset($grouped[$key])) {
+            $grouped[$key] = [
+                'company_info' => $letter,
+                'students' => []
+            ];
+        }
+        $grouped[$key]['students'][] = $letter;
+    }
+    return $grouped;
+}
 ?>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Đăng ký giấy giới thiệu</title>
-    <?php require_once __DIR__ . "/../../template/head.php"; ?>
-    <?php require_once __DIR__ . "/../../template/head.php"; ?>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <!-- Force refresh timestamp: <?php echo time(); ?> -->
+    <title>Quản lý giấy giới thiệu</title>
+    <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/head.php"; ?>
     <style>
         /* === RESET & BASE === */
         * {
@@ -157,9 +183,9 @@ $giayList = $stmt->fetchAll(PDO::FETCH_ASSOC);
             text-shadow: 0 2px 4px rgba(30, 64, 175, 0.1);
         }
         
-        /* === SEARCH BAR === */
-        .search-bar {
-            background: white;
+        /* === FILTER BAR === */
+        .filter-bar {
+            background: white;      
             border-radius: 12px;
             padding: 20px;
             margin-bottom: 25px;
@@ -170,7 +196,52 @@ $giayList = $stmt->fetchAll(PDO::FETCH_ASSOC);
             flex-wrap: wrap;
         }
         
-        .search-bar input {
+        .status-toggle {
+            display: flex;
+            gap: 5px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            background: #f9fafb;
+            padding: 4px;
+        }
+        
+        .status-btn {
+            padding: 10px 16px;
+            border: none;
+            background: transparent;
+            color: #6b7280;
+            font-weight: 500;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        
+        .status-btn:hover {
+            background: #f3f4f6;
+            color: #374151;
+        }
+        
+        .status-btn.active {
+            background: #3b82f6;
+            color: white;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+        }
+        
+        .status-btn .badge {
+            background: #6b7280;
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 5px;
+        }
+        
+        .status-btn.active .badge {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .search-input {
             flex: 1;
             min-width: 250px;
             padding: 10px 16px;
@@ -181,11 +252,17 @@ $giayList = $stmt->fetchAll(PDO::FETCH_ASSOC);
             transition: all 0.2s ease;
         }
         
-        .search-bar input:focus {
+        .search-input:focus {
             outline: none;
             border-color: #3b82f6;
             background: white;
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-left: auto;
         }
         
         .btn {
@@ -222,1185 +299,2724 @@ $giayList = $stmt->fetchAll(PDO::FETCH_ASSOC);
             box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
         }
         
-        .btn-info {
-            background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
-            color: white;
-        }
-        
-        .btn-info:hover {
-            background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
-        }
-        
-        .btn-secondary {
-            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
-            color: white;
-        }
-        
-        .btn-secondary:hover {
-            background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
-        }
-        .card {
-            background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            margin-bottom: 25px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-        }
-        
-        .card-header {
-            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-            color: white;
-            padding: 16px 20px;
-            font-size: 16px;
-            font-weight: 600;
-            border-bottom: none;
-        }
-        
-        .card-body {
-            padding: 20px;
-            min-height: 300px;
-        }
-        
-        .card-footer {
-            background: #f8fafc;
-            border-top: 1px solid #e2e8f0;
-            padding: 12px 20px;
-        }
-        .company-panel.disabled {
+        .btn.disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
             pointer-events: none;
-            opacity: 0.5;
-            cursor: not-allowed;
         }
         
-        .company-panel.disabled:hover {
-            border-color: #e2e8f0;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-            transform: none;
+        /* === CARDS GRID === */
+        .cards-container {
+            margin-bottom: 30px;
         }
         
-        .search-bar input:disabled,
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
+        .status-section {
+            display: block; /* Change from grid to block */
         }
         
-        .company-panel {
+        /* Default grid layout for other status sections */
+        .status-section:not(#approved-cards) {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+        
+        .letter-card {
             background: white;
-            border: 1px solid #e2e8f0;
             border-radius: 12px;
-            margin-bottom: 20px;
             padding: 20px;
-            transition: all 0.2s ease;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            position: relative;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        
+        .letter-card.fade-in {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .letter-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            border-color: #3b82f6;
+            cursor: pointer;
+        }
+        
+        .letter-card.has-checkbox {
+            padding-left: 45px;
             cursor: pointer;
             position: relative;
-            min-height: 120px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
         
-        .company-panel:hover {
-            border-color: #3b82f6;
-            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.1);
-            transform: translateY(-2px);
+        .letter-card.has-checkbox::before {
+            content: "👆 Click để chọn";
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(59, 130, 246, 0.9);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            pointer-events: none;
+            z-index: 100;
         }
         
-        .company-panel .font-weight-bold {
+        .letter-card.has-checkbox:hover::before {
+            opacity: 1;
+        }
+        
+        .letter-card.has-checkbox.selected::before {
+            content: "✅ Đã chọn";
+            background: rgba(16, 185, 129, 0.9);
+        }
+        
+        .letter-card.has-checkbox:hover {
+            background: #f0f9ff;
+        }
+        
+        .letter-card.clickable:hover {
+            background: #f8fafc;
+            cursor: pointer;
+        }
+
+        /* Section Headers - Compact */
+        .section-header {
+            margin: 15px 0 10px 0;
+            padding: 12px 18px;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            border-radius: 8px;
+            color: white;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+            border-left: 3px solid #10b981;
+        }
+
+        .section-header h3 {
+            margin: 0;
             font-size: 16px;
             font-weight: 600;
-            color: #1e40af;
-            margin-bottom: 8px;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-        
-        .company-panel .company-info {
-            font-size: 14px;
-            color: #64748b;
-            margin-bottom: 4px;
-        }
-        
-        .company-panel .company-info strong {
-            color: #475569;
-        }
-        .company-list-pagination {
             display: flex;
-            justify-content: center;
             align-items: center;
             gap: 8px;
-            padding: 15px 0;
         }
-        
-        .company-list-pagination button {
-            background: white;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            width: 36px;
-            height: 36px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 500;
-            color: #374151;
-            cursor: pointer;
-            transition: all 0.2s ease;
+
+        .section-header h3 i {
+            font-size: 16px;
+            color: #fbbf24;
         }
-        
-        .company-list-pagination button:hover {
-            background: #f3f4f6;
-            border-color: #3b82f6;
-            color: #3b82f6;
-        }
-        
-        .company-list-pagination button.active {
-            background: #3b82f6;
-            border-color: #3b82f6;
+
+        .badge-count {
+            background: rgba(255, 255, 255, 0.2);
             color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 8px;
         }
-        
-        .company-list-pagination span {
+
+        /* === SUB-TABS FOR APPROVED === */
+        .sub-tabs {
+            display: none;
+            background: white;
+            border-radius: 8px;
+            padding: 15px 20px 0 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .sub-tabs.show {
+            display: block;
+        }
+
+        .sub-toggle {
+            display: flex;
+            gap: 4px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            background: #f9fafb;
+            padding: 3px;
+            width: fit-content;
+        }
+
+        .sub-btn {
+            padding: 8px 16px;
+            border: none;
+            background: transparent;
             color: #6b7280;
             font-weight: 500;
-            padding: 0 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            position: relative;
         }
-        /* === MODALS === */
-        .modal-content {
+
+        .sub-btn:hover {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .sub-btn.active {
+            background: #10b981;
+            color: white;
+            box-shadow: 0 1px 3px rgba(16, 185, 129, 0.3);
+        }
+
+        .sub-btn .badge {
+            background: #9ca3af;
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 8px;
+            margin-left: 6px;
+        }
+
+        .sub-btn.active .badge {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        /* Sub-sections */
+        .sub-section {
+            transition: all 0.3s ease;
+        }
+
+        .sub-section.hidden {
+            display: none;
+        }
+
+        /* Individual Letters Grid - Side by Side Layout */
+        .individual-letters-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 25px;
+            align-items: start;
+        }
+
+        /* Company Groups Grid - Side by Side Layout */
+        .grouped-letters-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        /* Individual Letter Card - Fixed Height with Scroll */
+        #individual-section .letter-card {
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            height: 300px; /* Fixed height for all cards */
+            overflow: hidden;
+            border: 2px solid #e5e7eb;
             border-radius: 12px;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+        }
+
+        /* Card Content Area with Scroll */
+        #individual-section .card-content {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 5px;
+            margin-bottom: 15px;
+        }
+
+        /* Custom Scrollbar for card content */
+        #individual-section .card-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #individual-section .card-content::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        #individual-section .card-content::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+
+        #individual-section .card-content::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        #individual-section .letter-card .card-header {
+            flex-shrink: 0;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        #individual-section .letter-card .company-name {
+            font-size: 18px;
+            margin-bottom: 8px;
+            font-weight: 700;
+            color: #1f2937;
+            line-height: 1.3;
+        }
+
+        #individual-section .letter-card .company-address {
+            font-size: 14px;
+            color: #6b7280;
+            line-height: 1.4;
+        }
+
+        #individual-section .letter-card .student-info {
+            flex-shrink: 0;
+            margin-bottom: 15px;
+            font-size: 14px;
+            color: #3b82f6;
+            font-weight: 500;
+        }
+
+        #individual-section .letter-card .card-actions {
+            flex-shrink: 0;
+            display: flex;
+            gap: 10px;
+            margin-top: auto;
+            padding-top: 15px;
+            border-top: 1px solid #f3f4f6;
+        }
+
+        #individual-section .letter-card .status-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 10;
+        }
+
+        #individual-section .letter-card.has-checkbox {
+            padding-left: 45px;
+            position: relative;
+        }
+
+        /* Hover effect for fixed height cards */
+        #individual-section .letter-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            border-color: #3b82f6;
+        }
+
+        /* Responsive for individual cards */
+        @media (max-width: 768px) {
+            .individual-letters-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .grouped-letters-container {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            #individual-section .letter-card {
+                height: 250px; /* Smaller height on mobile */
+            }
+        }
+
+        /* Company Groups - Compact for 2-column layout */
+        .company-group {
+            margin-bottom: 20px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            overflow: hidden;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            height: fit-content; /* Change back to fit-content */
+        }
+
+        .company-group-header {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .company-info h4 {
+            margin: 0 0 4px 0;
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .company-info h4::before {
+            content: "🏢";
+            font-size: 14px;
+        }
+
+        .company-details {
+            margin: 0;
+            opacity: 0.9;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .group-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .student-count {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 11px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-outline-light {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            color: white;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            font-size: 12px;
+            padding: 6px 10px;
+        }
+
+        .btn-outline-light:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: white;
+            color: white;
+        }
+
+        .btn-light {
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid transparent;
+            color: #047857;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            font-size: 12px;
+            padding: 6px 10px;
+        }
+
+        .btn-light:hover {
+            background: white;
+            color: #065f46;
+        }
+
+        .company-students-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 12px;
+            padding: 15px;
+            background: #f8fafc;
+        }
+
+        /* Compact Letter Cards - Compact */
+        .letter-card.compact {
+            padding: 15px;
+            min-height: auto;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .letter-card.compact:hover {
+            border-color: #3b82f6;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+        }
+
+        .letter-card.compact.selected {
+            border-color: #10b981;
+            background: #f0fdf4;
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1);
+        }
+
+        .student-info.compact {
+            font-size: 14px;
+            margin: 10px 0;
+            line-height: 1.5;
+        }
+
+        .student-info.compact strong {
+            color: #1f2937;
+            font-weight: 600;
+        }
+
+        .card-actions.compact {
+            margin-top: 12px;
+            display: flex;
+            gap: 6px;
+        }
+
+        .btn.btn-xs {
+            padding: 4px 8px;
+            font-size: 11px;
+            border-radius: 6px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .btn.btn-xs:hover {
+            transform: translateY(-1px);
+        }
+
+        /* Empty Sections - Compact */
+        .empty-section {
+            text-align: center;
+            padding: 30px 20px;
+            color: #6b7280;
+            background: #f9fafb;
+            border-radius: 8px;
+            border: 1px dashed #d1d5db;
+            margin: 15px 0;
+        }
+
+        .empty-section i {
+            font-size: 36px;
+            margin-bottom: 12px;
+            opacity: 0.4;
+            color: #9ca3af;
+        }
+
+        .empty-section p {
+            margin: 0 0 5px 0;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .empty-section small {
+            font-size: 12px;
+            color: #9ca3af;
+        }
+        
+        /* Responsive improvements */
+        @media (max-width: 768px) {
+            .company-students-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+                padding: 12px;
+            }
+            
+            .company-group-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+                padding: 12px 15px;
+            }
+            
+            .group-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .company-info h4 {
+                font-size: 14px;
+            }
+            
+            .company-details {
+                font-size: 12px;
+            }
+            
+            .section-header {
+                margin: 10px 0 8px 0;
+                padding: 10px 15px;
+            }
+            
+            .section-header h3 {
+                font-size: 14px;
+            }
+            
+            /* Override for approved cards sub-sections */
+            .individual-letters-grid,
+            .grouped-letters-container {
+                grid-template-columns: 1fr !important;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .company-group-header {
+                padding: 10px 12px;
+            }
+            
+            .company-info h4 {
+                font-size: 13px;
+            }
+            
+            .group-actions {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+                width: 100%;
+            }
+            
+            .btn.btn-xs {
+                font-size: 10px;
+                padding: 3px 6px;
+            }
+        }
+        
+        
+        .card-header {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        
+        .company-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1f2937;
+            margin: 0 0 8px 0;
+            line-height: 1.3;
+        }
+        
+        .company-address {
+            color: #6b7280;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        
+        .student-info {
+            color: #3b82f6;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 15px;
+        }
+        
+        .status-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .status-pending {
+            background: #fef3c7;
+            color: #d97706;
+        }
+        
+        .status-approved {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+        
+        .status-printed {
+            background: #e0e7ff;
+            color: #4f46e5;
+        }
+        
+        .status-received {
+            background: #f3e8ff;
+            color: #7c3aed;
+        }
+        
+        .status-waiting {
+            background: #fef3c7;
+            color: #f59e0b;
+        }
+        
+        .received-note {
+            background: #f8fafc;
+            border-left: 3px solid #3b82f6;
+            padding: 8px 12px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        
+        /* === MODAL STYLES === */
+        .modal-content {
             border: none;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
         }
         
         .modal-header {
             background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
             color: white;
-            border-bottom: none;
             border-radius: 12px 12px 0 0;
-            padding: 16px 20px;
+            border: none;
         }
         
         .modal-title {
             font-weight: 600;
-            font-size: 16px;
         }
         
-        .modal-body {
-            padding: 20px;
+        .close {
+            color: white;
+            opacity: 0.8;
         }
         
-        .modal-footer {
-            background: #f8fafc;
-            border-top: 1px solid #e2e8f0;
-            border-radius: 0 0 12px 12px;
-            padding: 12px 20px;
+        .close:hover {
+            color: white;
+            opacity: 1;
         }
         
-        /* Notify modal đặc biệt */
-        #notifyModal .modal-content {
-            border-radius: 16px;
-            max-width: 400px;
-            margin: auto;
-        }
-        
-        #notifyModal .modal-body {
-            text-align: center;
-            padding: 30px 20px 20px;
-        }
-        
-        #notifyModal .modal-footer {
-            border: none;
+        .student-filter {
+            position: sticky;
+            top: 0;
             background: white;
-            justify-content: center;
-            padding: 10px 20px 25px;
+            z-index: 10;
         }
         
-        #notifyModalLabel {
-            font-weight: 700;
-            font-size: 18px;
-            margin-bottom: 10px;
-        }
-        
-        #notifyModalBody {
-            font-size: 14px;
-            color: #6b7280;
-            margin-bottom: 15px;
-        }
-        
-        .btn-close-modal {
-            background: #f3f4f6;
-            border: none;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
+        .card-actions {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            color: #6b7280;
-            transition: all 0.2s ease;
-            cursor: pointer;
+            gap: 10px;
+            margin-top: 15px;
         }
         
-        .btn-close-modal:hover {
-            background: #e5e7eb;
-            color: #374151;
-        }
-        /* === FORM CONTROLS === */
-        .form-group label {
-            font-weight: 600;
-            color: #374151;
-            margin-bottom: 6px;
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
         }
         
-        .form-control {
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            padding: 10px 12px;
-            font-size: 14px;
+        /* === SELECTION STYLES === */
+        .selection-controls {
             background: white;
-            transition: all 0.2s ease;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            display: none;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
         }
         
-        .form-control:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        .selection-controls.show {
+            display: flex;
+        }
+        
+        .selection-info {
+            color: #374151;
+            font-weight: 500;
+        }
+        
+        .selection-actions {
+            display: flex;
+            gap: 10px;
+            margin-left: auto;
+        }
+        
+        .card-checkbox {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            width: 20px;
+            height: 20px;
+            accent-color: #3b82f6;
+            cursor: pointer;
+            z-index: 10;
+        }
+        
+        .letter-card.selected {
+            border: 2px solid #3b82f6;
+            background: #f0f9ff;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+        }
+        
+        .letter-card.selected:hover {
+            background: #e0f2fe;
+        }
+        
+        .letter-card.has-checkbox {
+            padding-left: 45px;
+        }
+        
+        /* === EMPTY STATE === */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6b7280;
+            grid-column: 1 / -1;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: #d1d5db;
+        }
+        
+        .empty-state h3 {
+            margin: 0 0 10px 0;
+            color: #4b5563;
         }
         
         /* === RESPONSIVE === */
-        @media (max-width: 1199px) {
-            .col-xl-8 {
-                order: 1;
+        @media (max-width: 768px) {
+            #page-wrapper { padding: 15px; }
+            .filter-bar { 
+                flex-direction: column; 
+                align-items: stretch;
+                gap: 15px;
             }
-            .col-xl-4 {
-                order: 2;
+            .action-buttons { 
+                margin-left: 0;
+                justify-content: center;
             }
+            .status-section { 
+                grid-template-columns: 1fr; 
+                gap: 15px;
+            }
+            .page-header h1 { font-size: 1.8rem; }
         }
         
-        @media (max-width: 991px) {
-            .page-header h1 {
-                font-size: 1.75rem;
+        @media (max-width: 480px) {
+            .status-toggle { 
+                flex-direction: column; 
+                gap: 5px;
             }
-            
-            .search-bar {
-                flex-direction: column;
-                gap: 12px;
+            .status-btn { 
+                padding: 12px 16px; 
+                text-align: center;
             }
-            
-            .search-bar input {
-                min-width: 100%;
-            }
-            
-            .card-body {
+            .letter-card {
                 padding: 15px;
             }
-            
-            .company-panel {
-                padding: 15px;
-                margin-bottom: 15px;
+        }
+        
+        /* === PRINT STYLES === */
+        @media print {
+            .print-controls, .warning-banner {
+                display: none !important;
             }
             
-            .giay-panel {
-                padding: 12px;
-                margin-bottom: 12px;
-            }
-            
-            .col-lg-7, .col-lg-5 {
-                order: 1;
-            }
-            
-            #company-panel-list .col-md-3 {
-                flex: 0 0 50%;
-                max-width: 50%;
+            body {
+                background: white !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                font-size: 12pt;
             }
         }
         
-        @media (max-width: 767px) {
-            #company-panel-list .col-md-3,
-            #company-panel-list .col-sm-6 {
-                flex: 0 0 100%;
-                max-width: 100%;
-            }
+        /* === LOADING & ANIMATIONS === */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
         }
         
-        @media (max-width: 576px) {
-            #page-wrapper {
-                padding: 15px;
-            }
-            
-            .page-header {
-                margin-bottom: 20px;
-            }
-            
-            .page-header h1 {
-                font-size: 1.5rem;
-            }
-            
-            .modal-dialog {
-                margin: 10px;
-            }
-            
-            .search-bar {
-                padding: 15px;
-            }
-            
-            .btn {
-                padding: 8px 12px;
-                font-size: 14px;
-            }
-        }
-        .giay-panel {
-            background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            margin-bottom: 15px;
-            padding: 16px;
-            transition: all 0.2s ease;
-            position: relative;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
-        .giay-panel:hover {
-            border-color: #3b82f6;
-            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.1);
+        .hidden { display: none !important; }
+        .loading { opacity: 0.6; pointer-events: none; }
+        
+        /* Pagination Styles */
+        .pagination-wrapper {
+            margin: 20px 0;
+            text-align: center;
         }
         
-        .giay-panel .tencty {
-            font-size: 15px;
-            font-weight: 600;
-            color: #1e40af;
-            margin-bottom: 8px;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-        
-        .giay-panel .trangthai {
-            font-size: 14px;
-            margin-bottom: 8px;
-        }
-        
-        .giay-panel .dot-info {
-            font-size: 12px;
-            color: #6b7280;
-            margin-top: 8px;
-        }
-        
-        .badge {
-            font-size: 11px;
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-weight: 500;
-        }
-        
-        .badge-warning {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-            color: white;
-        }
-        
-        .badge-success {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: white;
-        }
-        
-        .badge-info {
-            background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
-            color: white;
-        }
-        
-        .badge-primary {
-            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-            color: white;
-        }
-        
-        .badge-danger {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-            color: white;
-        }
-        .giay-list-pagination {
+        .pagination-controls {
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 6px;
-            padding: 10px 0;
+            gap: 10px;
+            margin-bottom: 10px;
         }
         
-        .giay-list-pagination button {
-            background: white;
+        .page-numbers {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .page-btn {
+            min-width: 40px;
+            height: 32px;
+            border-radius: 6px;
             border: 1px solid #d1d5db;
-            border-radius: 6px;
-            width: 28px;
-            height: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 500;
-            font-size: 12px;
+            background: white;
             color: #374151;
-            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
             transition: all 0.2s ease;
         }
         
-        .giay-list-pagination button:hover {
+        .page-btn:hover {
             background: #f3f4f6;
-            border-color: #3b82f6;
-            color: #3b82f6;
+            border-color: #9ca3af;
+            transform: translateY(-1px);
         }
         
-        .giay-list-pagination button.active {
+        .page-btn.active {
             background: #3b82f6;
             border-color: #3b82f6;
             color: white;
         }
         
-        .giay-list-pagination span {
+        .pagination-info {
             color: #6b7280;
-            font-weight: 500;
-            padding: 0 4px;
-            font-size: 12px;
-        }
-        @media (max-width: 991px) {
-            .page-header h1 {
-                font-size: 1.75rem;
-            }
-            
-            .search-bar {
-                flex-direction: column;
-                gap: 12px;
-            }
-            
-            .search-bar input {
-                min-width: 100%;
-            }
-            
-            .card-body {
-                padding: 15px;
-            }
-            
-            .company-panel {
-                padding: 15px;
-                margin-bottom: 15px;
-            }
-            
-            .giay-panel {
-                padding: 12px;
-                margin-bottom: 12px;
-            }
+            font-size: 14px;
+            margin-top: 5px;
         }
         
-        @media (max-width: 576px) {
-            #page-wrapper {
-                padding: 15px;
-            }
-            
-            .page-header {
-                margin-bottom: 20px;
-            }
-            
-            .page-header h1 {
-                font-size: 1.5rem;
-            }
-            
-            .modal-dialog {
-                margin: 10px;
-            }
+        /* Companies Container */
+        #companies-container {
+            min-height: 200px;
         }
-
-        #company-panel-list > .col-md-3:last-child .company-panel,
-        #company-panel-list > .col-sm-6:last-child .company-panel {
-            margin-bottom: 0 !important;
+        
+        @media (max-width: 768px) {
+            .pagination-controls {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .page-numbers {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
         }
     </style>
 </head>
 <body>
     <div id="wrapper">
-        <?php
-            require_once __DIR__ . "/../../template/slidebar_Sinhvien.php";
-            require_once __DIR__ . "/../../template/slidebar_Sinhvien.php";
-        ?>
+       <?php require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/slidebar_Sinhvien.php"; ?>
+        
         <div id="page-wrapper">
             <div class="container-fluid">
-                <h1 class="page-header">Đăng ký giấy giới thiệu</h1>
+                <div class="page-header">
+                    <h1>
+                        <i class="fa fa-file-text"></i>
+                        Quản lý giấy giới thiệu
+                    </h1>
+                </div>
                 
-                <!-- Thông tin đợt thực tập -->
-                <?php if ($dotThucTapInfo): ?>
-                    <?php if ($dotThucTapInfo['TrangThai'] < 2): ?>
-                        <div class="alert alert-warning" style="border-radius: 12px; background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%); border: 1px solid #ffeaa7;">
-                            <i class="fa fa-exclamation-triangle"></i>
-                            <strong>Đợt của bạn đã kết thúc hoặc chưa bắt đầu:</strong> 
-                            <?php echo htmlspecialchars($dotThucTapInfo['TenDot']); ?>
-                            <?php if ($dotThucTapInfo['ThoiGianBatDau'] && $dotThucTapInfo['ThoiGianKetThuc']): ?>
-                                | <strong>Thời gian:</strong> 
-                                <?php echo date('d/m/Y', strtotime($dotThucTapInfo['ThoiGianBatDau'])); ?> - 
-                                <?php echo date('d/m/Y', strtotime($dotThucTapInfo['ThoiGianKetThuc'])); ?>
-                            <?php endif; ?>
-                        </div>
-                    <?php else: ?>
-                        <div class="alert alert-info" style="border-radius: 12px; background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%); border: 1px solid #b8daff;">
-                            <i class="fa fa-info-circle"></i>
-                            <strong>Đợt thực tập:</strong> <?php echo htmlspecialchars($dotThucTapInfo['TenDot']); ?>
-                            <?php if ($dotThucTapInfo['ThoiGianBatDau'] && $dotThucTapInfo['ThoiGianKetThuc']): ?>
-                                | <strong>Thời gian:</strong> 
-                                <?php echo date('d/m/Y', strtotime($dotThucTapInfo['ThoiGianBatDau'])); ?> - 
-                                <?php echo date('d/m/Y', strtotime($dotThucTapInfo['ThoiGianKetThuc'])); ?>
-                            <?php endif; ?>
-                        </div>
-                    <?php endif; ?>
-                <?php else: ?>
-                    <div class="alert alert-warning" style="border-radius: 12px; background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%); border: 1px solid #ffeaa7;">
-                        <i class="fa fa-exclamation-triangle"></i>
-                        <strong>Chưa có đợt thực tập:</strong> Bạn chưa được phân công vào đợt thực tập nào. Vui lòng liên hệ giáo viên hướng dẫn.
+                <!-- Filter Bar -->
+                <div class="filter-bar">
+                    <div class="status-toggle">
+                        <button class="status-btn active" data-status="approved" id="btnapp">
+                            <i class="fa fa-check-circle"></i>
+                            Đã duyệt
+                            <span class="badge"><?php echo count($approvedList); ?></span>
+                        </button>
+                        <button class="status-btn" data-status="pending" id="btnpen">
+                            <i class="fa fa-clock-o"></i>
+                            Chưa duyệt
+                            <span class="badge"><?php echo count($pendingList); ?></span>
+                        </button>
+                        <button class="status-btn" data-status="printed" id="btnprinted">
+                            <i class="fa fa-print"></i>
+                            Đã in
+                            <span class="badge"><?php echo count($printedList); ?></span>
+                        </button>
+                        <button class="status-btn" data-status="waiting" id="btnwaiting">
+                            <i class="fa fa-hourglass-half"></i>
+                            Chờ lấy
+                            <span class="badge"><?php echo count($waitingList); ?></span>
+                        </button>
+                        <button class="status-btn" data-status="received" id="btnreceived">
+                            <i class="fa fa-check-square"></i>
+                            Đã nhận
+                            <span class="badge"><?php echo count($receivedList); ?></span>
+                        </button>
                     </div>
-                <?php endif; ?>
+                    
+                    <input type="text" class="search-input" id="searchInput" 
+                           placeholder="🔍 Tìm kiếm theo MSSV, tên sinh viên hoặc tên công ty...">
+                    
+                    <div class="action-buttons">
+                        <button id="printGroupedBtn" class="btn btn-primary">
+                            <i class="fa fa-print"></i>
+                            In theo công ty
+                        </button>
+                        <button id="printAllBtn" class="btn btn-primary">
+                            <i class="fa fa-print"></i>
+                            In tất cả
+                        </button>
+                    </div>
+                </div>
 
-                <!-- Modal thông báo -->
-                <div class="modal fade" id="notifyModal" tabindex="-1" role="dialog" aria-labelledby="notifyModalLabel" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 400px;">
+                <!-- Selection Controls -->
+                <div class="selection-controls" id="selectionControls">
+                    <div class="selection-info">
+                        <i class="fa fa-check-square-o"></i>
+                        Đã chọn: <span id="selectedCount">0</span> giấy
+                    </div>
+                    <div class="selection-actions">
+                        <button id="selectAllBtn" class="btn btn-primary btn-sm">
+                            <i class="fa fa-check-square"></i>
+                            Chọn tất cả
+                        </button>
+                        <button id="clearSelectionBtn" class="btn btn-secondary btn-sm">
+                            <i class="fa fa-times"></i>
+                            Bỏ chọn
+                        </button>
+                        <button id="printSelectedBtn" class="btn btn-success btn-sm">
+                            <i class="fa fa-print"></i>
+                            In đã chọn
+                        </button>
+                        <button id="markSelectedBtn" class="btn btn-warning btn-sm" style="display: none;">
+                            <i class="fa fa-edit"></i>
+                            Cập nhật đã chọn
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Sub-tabs for Approved Letters -->
+                <div class="sub-tabs" id="approvedSubTabs">
+                    <div class="sub-toggle">
+                        <button class="sub-btn active" data-sub-status="individual" id="btnIndividual">
+                            <i class="fa fa-user"></i>
+                            Riêng lẻ
+                            <span class="badge"><?php echo count($individualLetters); ?></span>
+                        </button>
+                        <button class="sub-btn" data-sub-status="grouped" id="btnGrouped">
+                            <i class="fa fa-users"></i>
+                            Cùng công ty
+                            <span class="badge"><?php echo array_sum(array_map('count', $groupedLetters)); ?></span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Cards Container -->
+                <div class="cards-container" id="cardsContainer">
+                    <!-- Approved Letters -->
+                    <div id="approved-cards" class="status-section">
+                        <!-- Individual Letters Sub-section -->
+                        <div id="individual-section" class="sub-section">
+                            <div class="individual-letters-grid">
+                            <?php if (count($individualLetters) > 0): ?>
+                                <?php foreach ($individualLetters as $letter): ?>
+                                    <div class="letter-card fade-in has-checkbox" 
+                                         data-id="<?php echo $letter['ID']; ?>"
+                                         data-status="approved"
+                                         data-type="individual"
+                                         data-mssv="<?php echo htmlspecialchars($letter['MSSV']); ?>"
+                                         data-student="<?php echo htmlspecialchars($letter['Tensinhvien']); ?>"
+                                         data-company="<?php echo htmlspecialchars($letter['TenCty']); ?>"
+                                         onclick="toggleCardSelectionByClick(this)">
+                                        
+                                        <input type="checkbox" class="card-checkbox" 
+                                               data-id="<?php echo $letter['ID']; ?>"
+                                               onclick="event.stopPropagation()">
+                                        
+                                        <div class="status-badge status-approved">
+                                            <i class="fa fa-check"></i> Đã duyệt
+                                        </div>
+                                        
+                                        <div class="card-content">
+                                            <div class="card-header">
+                                                <h3 class="company-name"><?php echo htmlspecialchars($letter['TenCty']); ?></h3>
+                                                <p class="company-address"><?php echo htmlspecialchars(shortAddress($letter['DiaChi'])); ?></p>
+                                                <?php if ($letter['MaSoThue']): ?>
+                                                    <p class="tax-code"><i class="fa fa-barcode"></i> MST: <?php echo htmlspecialchars($letter['MaSoThue']); ?></p>
+                                                <?php endif; ?>
+                                            </div>
+                                            
+                                            <div class="student-info">
+                                                <i class="fa fa-user"></i>
+                                                <?php echo htmlspecialchars($letter['Tensinhvien']); ?> 
+                                                (<?php echo htmlspecialchars($letter['MSSV']); ?>)
+                                                <?php if ($letter['TenDot']): ?>
+                                                    <br><i class="fa fa-calendar"></i>
+                                                    <small>Đợt: <?php echo htmlspecialchars($letter['TenDot']); ?></small>
+                                                    <?php if ($letter['ThoiGianBatDau'] && $letter['ThoiGianKetThuc']): ?>
+                                                        <br><small style="color: #6b7280;">
+                                                            <?php echo date('d/m/Y', strtotime($letter['ThoiGianBatDau'])); ?> - 
+                                                            <?php echo date('d/m/Y', strtotime($letter['ThoiGianKetThuc'])); ?>
+                                                        </small>
+                                                    <?php endif; ?>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="card-actions">
+                                            <button type="button" class="btn btn-sm btn-primary" onclick="event.stopPropagation(); viewDetails(<?php echo $letter['ID']; ?>)">
+                                                <i class="fa fa-eye"></i> Chi tiết
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-success" onclick="event.stopPropagation(); printLetter(<?php echo $letter['ID']; ?>)">
+                                                <i class="fa fa-print"></i> In
+                                            </button>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <div class="empty-section">
+                                    <i class="fa fa-user-plus"></i>
+                                    <p>Chưa có đăng ký riêng lẻ</p>
+                                    <small>Sinh viên đăng ký công ty riêng sẽ hiển thị ở đây</small>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                        </div>
+
+                        <!-- Grouped Letters Sub-section -->
+                        <div id="grouped-section" class="sub-section hidden">
+                            <div id="companies-container" class="grouped-letters-container">
+                                <!-- Companies will be loaded here via JavaScript pagination -->
+                            </div>
+                            
+                            <!-- Pagination container -->
+                            <div id="companies-pagination">
+                                <!-- Pagination will be loaded here via JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pending Letters -->
+                    <div id="pending-cards" class="status-section hidden">
+                        <?php if (count($pendingList) > 0): ?>
+                            <?php foreach ($pendingList as $letter): ?>
+                                <div class="letter-card fade-in" 
+                                     data-id="<?php echo $letter['ID']; ?>"
+                                     data-status="pending"
+                                     data-mssv="<?php echo htmlspecialchars($letter['MSSV']); ?>"
+                                     data-student="<?php echo htmlspecialchars($letter['Tensinhvien']); ?>"
+                                     data-company="<?php echo htmlspecialchars($letter['TenCty']); ?>">
+                                    
+                                    <div class="status-badge status-pending">
+                                        <i class="fa fa-clock-o"></i> Chưa duyệt
+                                    </div>
+                                    
+                                    <div class="card-header">
+                                        <h3 class="company-name"><?php echo htmlspecialchars($letter['TenCty']); ?></h3>
+                                        <p class="company-address"><?php echo htmlspecialchars(shortAddress($letter['DiaChi'])); ?></p>
+                                    </div>
+                                    
+                                    <div class="student-info">
+                                        <i class="fa fa-user"></i>
+                                        <?php echo htmlspecialchars($letter['Tensinhvien']); ?> 
+                                        (<?php echo htmlspecialchars($letter['MSSV']); ?>)
+                                        <?php if ($letter['TenDot']): ?>
+                                            <br><i class="fa fa-calendar"></i>
+                                            <small>Đợt: <?php echo htmlspecialchars($letter['TenDot']); ?></small>
+                                            <?php if ($letter['ThoiGianBatDau'] && $letter['ThoiGianKetThuc']): ?>
+                                                <br><small style="color: #6b7280;">
+                                                    <?php echo date('d/m/Y', strtotime($letter['ThoiGianBatDau'])); ?> - 
+                                                    <?php echo date('d/m/Y', strtotime($letter['ThoiGianKetThuc'])); ?>
+                                                </small>
+                                            <?php endif; ?>
+                                        <?php endif; ?>
+                                    </div>
+                                    
+                                    <div class="card-actions">
+                                        <button type="button" class="btn btn-sm btn-primary" onclick="event.stopPropagation(); viewDetails(<?php echo $letter['ID']; ?>)">
+                                            <i class="fa fa-eye"></i> Chi tiết
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-success" onclick="event.stopPropagation(); approveLetter(<?php echo $letter['ID']; ?>)">
+                                            <i class="fa fa-check"></i> Duyệt
+                                        </button>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="empty-state">
+                                <i class="fa fa-clock-o"></i>
+                                <h3>Không có giấy giới thiệu chưa duyệt</h3>
+                                <p>Tất cả giấy giới thiệu đã được xử lý</p>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- Printed Letters -->
+                    <div id="printed-cards" class="status-section hidden">
+                        <?php if (count($printedList) > 0): ?>
+                            <?php foreach ($printedList as $letter): ?>
+                                <div class="letter-card fade-in has-checkbox" 
+                                     data-id="<?php echo $letter['ID']; ?>"
+                                     data-status="printed"
+                                     data-mssv="<?php echo htmlspecialchars($letter['MSSV']); ?>"
+                                     data-student="<?php echo htmlspecialchars($letter['Tensinhvien']); ?>"
+                                     data-company="<?php echo htmlspecialchars($letter['TenCty']); ?>"
+                                     onclick="toggleCardSelectionByClick(this)">
+                                    
+                                    <input type="checkbox" class="card-checkbox" 
+                                           data-id="<?php echo $letter['ID']; ?>"
+                                           onclick="event.stopPropagation()">
+                                    
+                                    <div class="status-badge status-printed">
+                                        <i class="fa fa-print"></i> Đã in
+                                    </div>
+                                    
+                                    <div class="card-header">
+                                        <h3 class="company-name"><?php echo htmlspecialchars($letter['TenCty']); ?></h3>
+                                        <p class="company-address"><?php echo htmlspecialchars(shortAddress($letter['DiaChi'])); ?></p>
+                                    </div>
+                                    
+                                    <div class="student-info">
+                                        <i class="fa fa-user"></i>
+                                        <?php echo htmlspecialchars($letter['Tensinhvien']); ?> 
+                                        (<?php echo htmlspecialchars($letter['MSSV']); ?>)
+                                        <?php if ($letter['TenDot']): ?>
+                                            <br><i class="fa fa-calendar"></i>
+                                            <small>Đợt: <?php echo htmlspecialchars($letter['TenDot']); ?></small>
+                                            <?php if ($letter['ThoiGianBatDau'] && $letter['ThoiGianKetThuc']): ?>
+                                                <br><small style="color: #6b7280;">
+                                                    <?php echo date('d/m/Y', strtotime($letter['ThoiGianBatDau'])); ?> - 
+                                                    <?php echo date('d/m/Y', strtotime($letter['ThoiGianKetThuc'])); ?>
+                                                </small>
+                                            <?php endif; ?>
+                                        <?php endif; ?>
+                                    </div>
+                                    
+                                    <div class="card-actions">
+                                        <button type="button" class="btn btn-sm btn-primary" onclick="viewDetails(<?php echo $letter['ID']; ?>)">
+                                            <i class="fa fa-eye"></i> Chi tiết
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-warning" onclick="markAsWaiting(<?php echo $letter['ID']; ?>)">
+                                            <i class="fa fa-hourglass-half"></i> Chờ lấy
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-success" onclick="markAsReceived(<?php echo $letter['ID']; ?>)">
+                                            <i class="fa fa-hand-o-up"></i> Ghi nhận
+                                        </button>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="empty-state">
+                                <i class="fa fa-print"></i>
+                                <h3>Không có giấy giới thiệu đã in</h3>
+                                <p>Chưa có giấy giới thiệu nào được in</p>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- Waiting Letters -->
+                    <div id="waiting-cards" class="status-section hidden">
+                        <?php if (count($waitingList) > 0): ?>
+                            <?php foreach ($waitingList as $letter): ?>
+                                <div class="letter-card fade-in" 
+                                     data-id="<?php echo $letter['ID']; ?>"
+                                     data-status="waiting"
+                                     data-mssv="<?php echo htmlspecialchars($letter['MSSV']); ?>"
+                                     data-student="<?php echo htmlspecialchars($letter['Tensinhvien']); ?>"
+                                     data-company="<?php echo htmlspecialchars($letter['TenCty']); ?>">
+                                    
+                                    <div class="status-badge status-waiting">
+                                        <i class="fa fa-hourglass-half"></i> Chờ lấy
+                                    </div>
+                                    
+                                    <div class="card-header">
+                                        <h3 class="company-name"><?php echo htmlspecialchars($letter['TenCty']); ?></h3>
+                                        <p class="company-address"><?php echo htmlspecialchars(shortAddress($letter['DiaChi'])); ?></p>
+                                    </div>
+                                    
+                                    <div class="student-info">
+                                        <i class="fa fa-user"></i>
+                                        <?php echo htmlspecialchars($letter['Tensinhvien']); ?> 
+                                        (<?php echo htmlspecialchars($letter['MSSV']); ?>)
+                                        <?php if ($letter['TenDot']): ?>
+                                            <br><i class="fa fa-calendar"></i>
+                                            <small>Đợt: <?php echo htmlspecialchars($letter['TenDot']); ?></small>
+                                            <?php if ($letter['ThoiGianBatDau'] && $letter['ThoiGianKetThuc']): ?>
+                                                <br><small style="color: #6b7280;">
+                                                    <?php echo date('d/m/Y', strtotime($letter['ThoiGianBatDau'])); ?> - 
+                                                    <?php echo date('d/m/Y', strtotime($letter['ThoiGianKetThuc'])); ?>
+                                                </small>
+                                            <?php endif; ?>
+                                        <?php endif; ?>
+                                    </div>
+                                    
+                                    <div class="card-actions">
+                                        <button type="button" class="btn btn-sm btn-primary" onclick="viewDetails(<?php echo $letter['ID']; ?>)">
+                                            <i class="fa fa-eye"></i> Chi tiết
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-success" onclick="markAsReceived(<?php echo $letter['ID']; ?>)">
+                                            <i class="fa fa-hand-o-up"></i> Ghi nhận
+                                        </button>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="empty-state">
+                                <i class="fa fa-hourglass-half"></i>
+                                <h3>Không có giấy giới thiệu chờ lấy</h3>
+                                <p>Chưa có giấy giới thiệu nào ở trạng thái chờ lấy</p>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- Received Letters -->
+                    <div id="received-cards" class="status-section hidden">
+                        <?php if (count($receivedList) > 0): ?>
+                            <?php foreach ($receivedList as $letter): ?>
+                                <div class="letter-card fade-in" 
+                                     data-id="<?php echo $letter['ID']; ?>"
+                                     data-status="received"
+                                     data-mssv="<?php echo htmlspecialchars($letter['MSSV']); ?>"
+                                     data-student="<?php echo htmlspecialchars($letter['Tensinhvien']); ?>"
+                                     data-company="<?php echo htmlspecialchars($letter['TenCty']); ?>">
+                                    
+                                    <div class="status-badge status-received">
+                                        <i class="fa fa-check-square"></i> Đã nhận
+                                    </div>
+                                    
+                                    <div class="card-header">
+                                        <h3 class="company-name"><?php echo htmlspecialchars($letter['TenCty']); ?></h3>
+                                        <p class="company-address"><?php echo htmlspecialchars(shortAddress($letter['DiaChi'])); ?></p>
+                                    </div>
+                                    
+                                    <div class="student-info">
+                                        <i class="fa fa-user"></i>
+                                        <?php echo htmlspecialchars($letter['Tensinhvien']); ?> 
+                                        (<?php echo htmlspecialchars($letter['MSSV']); ?>)
+                                        <?php if ($letter['TenDot']): ?>
+                                            <br><i class="fa fa-calendar"></i>
+                                            <small>Đợt: <?php echo htmlspecialchars($letter['TenDot']); ?></small>
+                                            <?php if ($letter['ThoiGianBatDau'] && $letter['ThoiGianKetThuc']): ?>
+                                                <br><small style="color: #6b7280;">
+                                                    <?php echo date('d/m/Y', strtotime($letter['ThoiGianBatDau'])); ?> - 
+                                                    <?php echo date('d/m/Y', strtotime($letter['ThoiGianKetThuc'])); ?>
+                                                </small>
+                                            <?php endif; ?>
+                                        <?php endif; ?>
+                                        
+                                        <?php if ($letter['TenNguoiNhan']): ?>
+                                            <br><i class="fa fa-hand-o-up"></i>
+                                            <small style="color: #16a34a;">
+                                                Người nhận: <?php echo htmlspecialchars($letter['TenNguoiNhan']); ?> 
+                                                (<?php echo htmlspecialchars($letter['MSSVNguoiNhan']); ?>)
+                                            </small>
+                                        <?php endif; ?>
+                                        
+                                        <?php if ($letter['ngay_nhan']): ?>
+                                            <br><i class="fa fa-clock-o"></i>
+                                            <small style="color: #6b7280;">
+                                                Ngày nhận: <?php echo date('d/m/Y H:i', strtotime($letter['ngay_nhan'])); ?>
+                                            </small>
+                                        <?php endif; ?>
+                                    </div>
+                                    
+                                    <?php if ($letter['ghi_chu']): ?>
+                                        <div class="received-note">
+                                            <i class="fa fa-comment"></i>
+                                            <small><?php echo htmlspecialchars($letter['ghi_chu']); ?></small>
+                                        </div>
+                                    <?php endif; ?>
+                                    
+                                    <div class="card-actions">
+                                        <button type="button" class="btn btn-sm btn-primary" onclick="viewDetails(<?php echo $letter['ID']; ?>)">
+                                            <i class="fa fa-eye"></i> Chi tiết
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-success disabled">
+                                            <i class="fa fa-check"></i> Đã hoàn thành
+                                        </button>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="empty-state">
+                                <i class="fa fa-check-square"></i>
+                                <h3>Không có giấy giới thiệu đã nhận</h3>
+                                <p>Chưa có giấy giới thiệu nào được nhận</p>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                
+                <!-- Modal ghi nhận thông tin -->
+                <div id="receiveModal" class="modal fade" tabindex="-1" role="dialog">
+                    <div class="modal-dialog modal-lg" role="document">
                         <div class="modal-content">
+                            <div class="modal-header">
+                                <h4 class="modal-title">
+                                    <i class="fa fa-hand-o-up"></i>
+                                    Ghi nhận thông tin nhận giấy
+                                </h4>
+                                <button type="button" class="close" data-dismiss="modal">
+                                    <span>&times;</span>
+                                </button>
+                            </div>
                             <div class="modal-body">
-                                <div id="notifyIcon" class="text-center mb-3"></div>
-                                <h5 class="modal-title text-center" id="notifyModalLabel"></h5>
-                                <div id="notifyModalBody" class="text-center"></div>
+                                <form id="receiveForm">
+                                    <input type="hidden" id="receive_letter_id" name="letter_id">
+                                    
+                                    <!-- Thông tin công ty -->
+                                    <div class="form-group">
+                                        <label class="font-weight-bold">Thông tin công ty:</label>
+                                        <div id="company_info" class="alert alert-info">
+                                            <!-- Sẽ được load bằng JS -->
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Danh sách sinh viên cùng công ty -->
+                                    <div class="form-group">
+                                        <label class="font-weight-bold">Danh sách sinh viên cùng công ty:</label>
+                                        <div class="student-filter mb-3">
+                                            <input type="text" id="student_search" class="form-control" 
+                                                   placeholder="🔍 Tìm kiếm sinh viên theo MSSV hoặc tên...">
+                                        </div>
+                                        <div id="students_list" class="border rounded p-3" style="max-height: 300px; overflow-y: auto;">
+                                            <!-- Sẽ được load bằng JS -->
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Chọn người nhận -->
+                                    <div class="form-group">
+                                        <label for="receive_nguoinhan" class="font-weight-bold">Người đại diện nhận giấy: <span class="text-danger">*</span></label>
+                                        <select id="receive_nguoinhan" name="nguoinhan" class="form-control" required>
+                                            <option value="">-- Chọn sinh viên đại diện --</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <!-- Ghi chú -->
+                                    <div class="form-group">
+                                        <label for="receive_ghichu" class="font-weight-bold">Ghi chú:</label>
+                                        <textarea id="receive_ghichu" name="ghichu" class="form-control" rows="3" 
+                                                  placeholder="Nhập ghi chú nếu có..."></textarea>
+                                    </div>
+                                </form>
                             </div>
                             <div class="modal-footer">
-                                <button type="button" class="btn-close-modal mx-auto" data-dismiss="modal" aria-label="Đóng">
-                                    &times;
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                                    <i class="fa fa-times"></i> Hủy
+                                </button>
+                                <button type="button" class="btn btn-success" onclick="submitReceiveInfo()">
+                                    <i class="fa fa-save"></i> Lưu thông tin
                                 </button>
                             </div>
                         </div>
                     </div>
                 </div>
-
-                <?php if (!empty($message)): ?>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        $('.modal').modal('hide');
-        setTimeout(function() {
-            var modal = $('#notifyModal');
-            var type = '<?= $messageType ?>';
-            let iconHtml = '';
-            if(type === 'success') {
-                iconHtml = `<div>
-                    <svg width="60" height="60" fill="none" viewBox="0 0 60 60">
-                        <circle cx="30" cy="30" r="30" fill="#d1fae5"/>
-                        <path d="M18 32l8 8 16-20" stroke="#10b981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </div>`;
-            } else {
-                iconHtml = `<div>
-                    <svg width="60" height="60" fill="none" viewBox="0 0 60 60">
-                        <circle cx="30" cy="30" r="30" fill="#fee2e2"/>
-                        <path d="M20 20l20 20M40 20l-20 20" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>
-                    </svg>
-                </div>`;
-            }
-            $('#notifyIcon').html(iconHtml);
-            $('#notifyModalLabel').text(type === 'success' ? 'Thành công' : 'Lỗi');
-            $('#notifyModalLabel').css('color', type === 'success' ? '#10b981' : '#ef4444');
-            $('#notifyModalBody').html('<?= htmlspecialchars($message) ?>');
-            modal.modal({backdrop: 'static', keyboard: true});
-            modal.modal('show');
-            // Tự động đóng sau 3s
-            setTimeout(function() {
-                modal.modal('hide');
-            }, 3000);
-        }, 300);
-    });
-</script>
-<?php endif; ?>
-
-                <!-- Thanh tìm kiếm và nút tự điền -->
-                <?php if ($dotThucTapInfo && $dotThucTapInfo['TrangThai'] >= 2): ?>
-                <div class="search-bar">
-                    <input type="text" id="search-company" placeholder="Tìm kiếm công ty theo tên, MST, lĩnh vực...">
-                    <button type="button" class="btn btn-info" id="btn-add-manual">
-                        <i class="fa fa-plus"></i> Thêm
-                    </button>
-                </div>
-                <?php else: ?>
-                <div class="search-bar" style="opacity: 0.5;">
-                    <input type="text" id="search-company" placeholder="Tìm kiếm công ty theo tên, MST, lĩnh vực..." disabled>
-                    <button type="button" class="btn btn-info" id="btn-add-manual" disabled>
-                        <i class="fa fa-plus"></i> Thêm
-                    </button>
-                </div>
-                <?php endif; ?>
-                <div class="row">
-                    <!-- Card 1: Danh sách công ty thực tập -->
-                    <div class="col-xl-8 col-lg-7 mb-4">
-                        <div class="card">
-                            <div class="card-header">
-                                <i class="fa fa-building"></i> Danh sách công ty thực tập
+                
+                <!-- Modal xác nhận in -->
+                <div id="printConfirmModal" class="modal fade" tabindex="-1" role="dialog">
+                    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 500px;">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h4 class="modal-title">
+                                    <i class="fa fa-print"></i>
+                                    Xác nhận đã in xong
+                                </h4>
+                                <button type="button" class="close" data-dismiss="modal">
+                                    <span>&times;</span>
+                                </button>
                             </div>
-                            <div class="card-body">
-                                <!-- Danh sách công ty dạng panel -->
-                                <div id="company-panel-list" class="row"></div>
-                            </div>
-                            <div class="card-footer">
-                                <div class="company-list-pagination" id="company-pagination"></div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Card 2: Trạng thái giấy đăng ký giới thiệu -->
-                    <div class="col-xl-4 col-lg-5 mb-4">
-                        <div class="card">
-                            <div class="card-header">
-                                <i class="fa fa-file-text"></i> Phiếu đăng ký của bạn
-                            </div>
-                            <div class="card-body">
-                                <div id="giay-panel-list"></div>
-                            </div>
-                            <div class="card-footer">
-                                <div class="giay-list-pagination" id="giay-pagination"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-               
-
-                <!-- Modal chi tiết công ty -->
-                <div class="modal fade" id="companyModal" tabindex="-1" role="dialog" aria-labelledby="companyModalLabel" aria-hidden="true">
-                  <div class="modal-dialog modal-lg" role="document">
-                    <div class="modal-content">
-                      <div class="modal-header">
-                        <h5 class="modal-title" id="companyModalLabel">Thông tin công ty</h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Đóng">
-                          <span aria-hidden="true">&times;</span>
-                        </button>
-                      </div>
-                      <div class="modal-body" id="company-modal-body">
-                        <!-- Nội dung sẽ được fill bằng JS -->
-                        <form method="post" id="company-approve-form" style="display:none;">
-                            <input type="hidden" name="ma_so_thue" id="approve-ma-so-thue">
-                            <input type="hidden" name="ten_cong_ty" id="approve-ten-cong-ty">
-                            <input type="hidden" name="dia_chi" id="approve-dia-chi">
-                            <input type="hidden" name="linh_vuc" id="approve-linh-vuc">
-                            <input type="hidden" name="sdt" id="approve-sdt">
-                            <input type="hidden" name="email" id="approve-email">
-                            <input type="hidden" name="from_panel" value="1">
-                        </form>
-                      </div>
-                      <div class="modal-footer">
-                        <?php if ($dotThucTapInfo && $dotThucTapInfo['TrangThai'] >= 2): ?>
-                        <button type="button" class="btn btn-success" id="btn-approve-company">
-                            <i class="fa fa-check"></i> Gửi (Đã duyệt)
-                        </button>
-                        <?php else: ?>
-                        <button type="button" class="btn btn-success" id="btn-approve-company" disabled>
-                            <i class="fa fa-check"></i> Gửi (Đã duyệt)
-                        </button>
-                        <?php endif; ?>
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Modal nhập thủ công -->
-                <div class="modal fade" id="manualModal" tabindex="-1" role="dialog" aria-labelledby="manualModalLabel" aria-hidden="true">
-                  <div class="modal-dialog" role="document">
-                    <form method="post" id="manual-company-form" class="modal-content">
-                      <div class="modal-header">
-                        <h5 class="modal-title" id="manualModalLabel">Nhập thông tin công ty thủ công</h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Đóng">
-                          <span aria-hidden="true">&times;</span>
-                        </button>
-                      </div>
-                      <div class="modal-body">
-                        <!-- Input hidden để PHP nhận biết request từ modal nhập thủ công -->
-                        <input type="hidden" name="from_panel" value="1">
-                        
-                        <div class="form-group">
-                            <label for="manual-ma-so-thue">Mã số thuế</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control" id="manual-ma-so-thue" name="ma_so_thue" placeholder="Mã số thuế" required>
-                                <div class="input-group-append">
-                                    <button class="btn btn-primary" type="button" id="btn-fill-api">
-                                        <i class="fa fa-sync"></i> Lấy thông tin
-                                    </button>
+                            <div class="modal-body text-center">
+                                <div class="mb-4">
+                                    <i class="fa fa-question-circle text-warning" style="font-size: 4rem;"></i>
+                                </div>
+                                <h5 id="printConfirmTitle" class="mb-3"></h5>
+                                <p id="printConfirmMessage" class="text-muted mb-4"></p>
+                                <div class="alert alert-info">
+                                    <i class="fa fa-info-circle"></i>
+                                    <strong>Lưu ý:</strong> Chỉ xác nhận "Đã in xong" khi việc in đã hoàn tất thành công. 
+                                    Nếu có vấn đề kỹ thuật, hãy chọn "Chưa xong" để in lại sau.
                                 </div>
                             </div>
+                            <div class="modal-footer justify-content-center">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                                    <i class="fa fa-times"></i> Chưa xong
+                                </button>
+                                <button type="button" class="btn btn-success" id="confirmPrintBtn">
+                                    <i class="fa fa-check"></i> Đã in xong
+                                </button>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="manual-ten-cong-ty">Tên công ty</label>
-                            <input type="text" class="form-control" id="manual-ten-cong-ty" name="ten_cong_ty" placeholder="Tên công ty" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="manual-dia-chi">Địa chỉ</label>
-                            <input type="text" class="form-control" id="manual-dia-chi" name="dia_chi" placeholder="Địa chỉ" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="manual-linh-vuc">Lĩnh vực</label>
-                            <input type="text" class="form-control" id="manual-linh-vuc" name="linh_vuc" placeholder="Lĩnh vực" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="manual-sdt">SĐT</label>
-                            <input type="text" class="form-control" id="manual-sdt" name="sdt" placeholder="Số điện thoại" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="manual-email">Email</label>
-                            <input type="email" class="form-control" id="manual-email" name="email" placeholder="Email" required>
-                        </div>
-                      </div>
-                      <div class="modal-footer">
-                        <?php if ($dotThucTapInfo && $dotThucTapInfo['TrangThai'] >= 2): ?>
-                        <button type="submit" class="btn btn-success"><i class="fa fa-paper-plane"></i> Gửi yêu cầu</button>
-                        <?php else: ?>
-                        <button type="button" class="btn btn-success" disabled><i class="fa fa-paper-plane"></i> Gửi yêu cầu</button>
-                        <?php endif; ?>
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
-                      </div>
-                    </form>
-                  </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-    <?php require_once __DIR__ . "/../../template/footer.php"; ?>
+
+    <!-- Scripts -->
     <script>
-    /**
-     * Gọi API VietQR để lấy thông tin doanh nghiệp theo mã số thuế
-     * @param {string} taxCode - Mã số thuế doanh nghiệp
-     * @returns {Promise<Object>} - Trả về Promise chứa dữ liệu doanh nghiệp hoặc null nếu lỗi
-     */
-    async function getBusinessInfoByTaxCode(taxCode) {
-        try {
-            // Gọi trực tiếp API VietQR
-            const response = await fetch(`https://api.vietqr.io/v2/business/${taxCode}`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json'
+    // Global variables
+    let currentStatus = 'approved';
+    let currentSubStatus = 'individual'; // New variable for sub-tabs
+    let searchKeyword = '';
+    let selectedCards = new Set();
+
+    // DOM ready
+    document.addEventListener('DOMContentLoaded', function() {
+        // FORCE CLEAR ALL AJAX CACHE AND OLD FUNCTIONS
+        console.log('=== FORCE CLEARING ALL AJAX CACHE ===');
+        
+        // Clear any old AJAX intervals or cached calls
+        if (window.oldAjaxInterval) {
+            clearInterval(window.oldAjaxInterval);
+        }
+        
+        // Override any possible old AJAX functions
+        window.loadCompaniesAjax = undefined;
+        window.loadCompaniesPage_old = undefined;
+        window.fetchCompaniesPage = undefined;
+        
+        // Clear any potential fetch cache
+        if ('caches' in window) {
+            caches.keys().then(function(names) {
+                names.forEach(function(name) {
+                    if (name.includes('companies') || name.includes('ajax')) {
+                        caches.delete(name);
+                    }
+                });
+            });
+        }
+        
+        // Force disable any potential service worker cache
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                registrations.forEach(function(registration) {
+                    registration.unregister();
+                });
+            });
+        }
+        
+        console.log('=== INITIALIZING PURE JAVASCRIPT VERSION v3.0 ===');
+        console.log('Grouped letters data:', Object.keys(groupedLettersData).length, 'companies');
+        
+        // OVERRIDE AND BLOCK ANY OLD AJAX CALLS
+        const originalXHR = window.XMLHttpRequest;
+        const originalFetch = window.fetch;
+        
+        // Override XMLHttpRequest to block old AJAX calls
+        window.XMLHttpRequest = function() {
+            const xhr = new originalXHR();
+            const originalOpen = xhr.open;
+            
+            xhr.open = function(method, url, ...args) {
+                if (url && (url.includes('get_companies_page') || url.includes('get_companies_simple') || url.includes('get_companies_mock'))) {
+                    console.error('BLOCKED OLD AJAX CALL TO:', url);
+                    return; // Block the call
+                }
+                return originalOpen.apply(this, [method, url, ...args]);
+            };
+            
+            return xhr;
+        };
+        
+        // Override fetch to block old AJAX calls
+        window.fetch = function(url, ...args) {
+            if (url && (url.includes('get_companies_page') || url.includes('get_companies_simple') || url.includes('get_companies_mock'))) {
+                console.error('BLOCKED OLD FETCH CALL TO:', url);
+                return Promise.reject(new Error('Blocked old AJAX call'));
+            }
+            return originalFetch.apply(this, [url, ...args]);
+        };
+        
+        initializeEventListeners();
+        updateDisplay();
+        updateSelectionDisplay();
+    });
+
+    function initializeEventListeners() {
+        // Status toggle buttons
+        document.querySelectorAll('.status-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const newStatus = this.getAttribute('data-status');
+                if (newStatus !== currentStatus) {
+                    switchStatus(newStatus);
                 }
             });
-            
-            if (response.ok) {
-                const data = await response.json();
-                if (data && data.data) {
-                    return data.data;
+        });
+
+        // Sub-status toggle buttons (for approved tab)
+        document.querySelectorAll('.sub-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const newSubStatus = this.getAttribute('data-sub-status');
+                if (newSubStatus !== currentSubStatus) {
+                    switchSubStatus(newSubStatus);
                 }
-            }
-            return null;
-        } catch (error) {
-            console.error('Lỗi khi gọi API VietQR:', error);
-            return null;
-        }
-    }
-    </script>
-    <script>
-    const companyList = <?= json_encode($companyList) ?>;
-    let filteredCompanies = [...companyList];
-    let currentPage = 1;
-    const perPage = 8;
-    
-    // Kiểm tra trạng thái đợt
-    const dotTrangThai = <?= json_encode($dotThucTapInfo['TrangThai'] ?? 0) ?>;
-    const canRegister = dotTrangThai >= 2;
-
-    function renderCompanyPanels() {
-        const list = document.getElementById('company-panel-list');
-        list.innerHTML = '';
-        const start = (currentPage - 1) * perPage;
-        const end = start + perPage;
-        const pageCompanies = filteredCompanies.slice(start, end);
-
-        if (pageCompanies.length === 0) {
-            list.innerHTML = `
-                <div class="col-12 text-center py-4">
-                    <div class="text-muted">
-                        <i class="fa fa-search fa-2x mb-3"></i>
-                        <p>Không tìm thấy công ty phù hợp.</p>
-                    </div>
-                </div>`;
-            return;
-        }
-
-        pageCompanies.forEach((cty, idx) => {
-            const col = document.createElement('div');
-            col.className = 'col-md-3 col-sm-6 mb-3';
-            const disabledClass = canRegister ? '' : ' disabled';
-            const disabledStyle = canRegister ? '' : 'pointer-events: none; opacity: 0.5;';
-            col.innerHTML = `
-                <div class="company-panel${disabledClass}" data-index="${start + idx}" style="${disabledStyle}">
-                    <div class="font-weight-bold">${cty.TenCty}</div>
-                    <div class="company-info"><strong>MST:</strong> ${cty.MaSoThue}</div>
-                    <div class="company-info"><strong>Lĩnh vực:</strong> ${cty.Linhvuc}</div>
-                    <div class="company-info"><strong>SĐT:</strong> ${cty.Sdt}</div>
-                </div>
-            `;
-            list.appendChild(col);
+            });
         });
-    }
 
-    function renderPagination() {
-        const pag = document.getElementById('company-pagination');
-        pag.innerHTML = '';
-        let total = Math.ceil(filteredCompanies.length / perPage);
-        if (total < 1) total = 1;
-
-        const maxShow = 5; // Số nút trang hiển thị gần trang hiện tại
-        let pages = [];
-
-        if (total <= maxShow + 2) {
-            // Hiển thị tất cả nếu số trang ít
-            for (let i = 1; i <= total; i++) pages.push(i);
-        } else {
-            // Luôn hiển thị trang đầu và cuối
-            pages.push(1);
-            let start = Math.max(2, currentPage - 2);
-            let end = Math.min(total - 1, currentPage + 2);
-
-            if (start > 2) pages.push('...');
-            for (let i = start; i <= end; i++) pages.push(i);
-            if (end < total - 1) pages.push('...');
-            pages.push(total);
-        }
-
-        pages.forEach(p => {
-            if (p === '...') {
-                const span = document.createElement('span');
-                span.textContent = '...';
-                span.style.cssText = 'padding:0 8px;color:#007bff;font-weight:bold;font-size:18px;user-select:none;';
-                pag.appendChild(span);
-            } else {
-                const btn = document.createElement('button');
-                btn.textContent = p;
-                btn.className = (p === currentPage) ? 'active' : '';
-                btn.onclick = () => {
-                    currentPage = p;
-                    renderCompanyPanels();
-                    renderPagination();
-                };
-                pag.appendChild(btn);
-            }
+        // Search input
+        const searchInput = document.getElementById('searchInput');
+        searchInput.addEventListener('input', function() {
+            searchKeyword = this.value.trim().toLowerCase();
+            filterCards();
         });
-    }
 
-    function filterCompanies(keyword) {
-        keyword = keyword.trim().toLowerCase();
-        if (!keyword) {
-            filteredCompanies = [...companyList];
-        } else {
-            filteredCompanies = companyList.filter(c =>
-                (c.TenCty && c.TenCty.toLowerCase().includes(keyword)) ||
-                (c.MaSoThue && c.MaSoThue.toLowerCase().includes(keyword)) ||
-                (c.Linhvuc && c.Linhvuc.toLowerCase().includes(keyword))
-            );
-        }
-        currentPage = 1;
-        renderCompanyPanels();
-        renderPagination();
-    }
-
-    // Dữ liệu giấy giới thiệu từ PHP
-    const giayList = <?= json_encode($giayList) ?>;
-    let giayCurrentPage = 1;
-    const giayPerPage = 3; // mỗi trang chỉ 3 panel
-
-    // Hàm reload dữ liệu giấy giới thiệu sau khi thêm mới
-    function reloadGiayData() {
-        // Reload trang để cập nhật dữ liệu mới từ database
-        if (window.location.search.includes('success=1')) {
-            // Nếu có thông báo success, load lại data không có parameter
-            const url = new URL(window.location);
-            url.searchParams.delete('success');
-            url.searchParams.delete('msg');
-            window.history.replaceState({}, document.title, url.pathname);
-            
-            // Reload dữ liệu giấy bằng AJAX (tùy chọn)
-            // Hoặc có thể reload toàn bộ trang
-            location.reload();
-        }
-    }
-
-    function renderGiayPanels() {
-        const list = document.getElementById('giay-panel-list');
-        list.innerHTML = '';
-        const start = (giayCurrentPage - 1) * giayPerPage;
-        const end = start + giayPerPage;
-        const pageGiay = giayList.slice(start, end);
-
-        if (pageGiay.length === 0) {
-            list.innerHTML = `
-                <div class="text-center py-4">
-                    <div class="text-muted">
-                        <i class="fa fa-file-text fa-2x mb-3"></i>
-                        <p>Chưa có phiếu giới thiệu nào.</p>
-                        <small>Hãy chọn công ty để đăng ký!</small>
-                    </div>
-                </div>`;
-            return;
-        }
-
-        const trangThaiMap = {
-            0: '<span class="badge badge-warning">Chờ duyệt</span>',
-            1: '<span class="badge badge-success">Đã duyệt</span>',
-            2: '<span class="badge badge-info">Đã in</span>',
-            3: '<span class="badge badge-primary">Đã nhận</span>',
-        };
-
-        pageGiay.forEach(giay => {
-            const div = document.createElement('div');
-            div.className = 'giay-panel';
-            
-            // Hiển thị thông tin đợt thực tập nếu có
-            let dotInfo = '';
-            if (giay.TenDot) {
-                dotInfo = `<div class="dot-info">
-                    <i class="fa fa-calendar"></i> ${giay.TenDot}`;
-                if (giay.ThoiGianBatDau && giay.ThoiGianKetThuc) {
-                    const startDate = new Date(giay.ThoiGianBatDau).toLocaleDateString('vi-VN');
-                    const endDate = new Date(giay.ThoiGianKetThuc).toLocaleDateString('vi-VN');
-                    dotInfo += `<br><small>${startDate} - ${endDate}</small>`;
-                }
-                dotInfo += `</div>`;
-            }
-            
-            div.innerHTML = `
-                <div class="tencty">${giay.TenCty}</div>
-                <div class="trangthai">Trạng thái: ${trangThaiMap[giay.TrangThai] || '<span class="badge badge-danger">Từ chối</span>'}</div>
-                ${dotInfo}
-            `;
-            list.appendChild(div);
-        });
-    }
-
-    function renderGiayPagination() {
-        const pag = document.getElementById('giay-pagination');
-        pag.innerHTML = '';
-        let total = Math.ceil(giayList.length / giayPerPage);
-        if (total < 1) total = 1;
-
-        const maxShow = 3;
-        let pages = [];
-
-        if (total <= maxShow + 2) {
-            for (let i = 1; i <= total; i++) pages.push(i);
-        } else {
-            pages.push(1);
-            let start = Math.max(2, giayCurrentPage - 1);
-            let end = Math.min(total - 1, giayCurrentPage + 1);
-
-            if (start > 2) pages.push('...');
-            for (let i = start; i <= end; i++) pages.push(i);
-            if (end < total - 1) pages.push('...');
-            pages.push(total);
-        }
-
-        pages.forEach(p => {
-            if (p === '...') {
-                const span = document.createElement('span');
-                span.textContent = '...';
-                pag.appendChild(span);
-            } else {
-                const btn = document.createElement('button');
-                btn.textContent = p;
-                btn.className = (p === giayCurrentPage) ? 'active' : '';
-                btn.onclick = () => {
-                    giayCurrentPage = p;
-                    renderGiayPanels();
-                    renderGiayPagination();
-                };
-                pag.appendChild(btn);
-            }
-        });
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        // Kiểm tra và reload dữ liệu nếu có thông báo success
-        reloadGiayData();
+        // Print all button
+        document.getElementById('printAllBtn').addEventListener('click', handlePrintAll);
         
-        renderCompanyPanels();
-        renderPagination();
-        renderGiayPanels();
-        renderGiayPagination();
+        // Print grouped button  
+        document.getElementById('printGroupedBtn').addEventListener('click', handlePrintGrouped);
+        
+        // Student search in modal
+        document.getElementById('student_search').addEventListener('input', filterStudentsInModal);
+        
+        // Selection controls
+        document.getElementById('selectAllBtn').addEventListener('click', selectAllCards);
+        document.getElementById('clearSelectionBtn').addEventListener('click', clearAllSelection);
+        document.getElementById('printSelectedBtn').addEventListener('click', printSelectedCards);
+        document.getElementById('markSelectedBtn').addEventListener('click', markSelectedCards);
+    }
 
-        document.getElementById('search-company').addEventListener('input', function() {
-            filterCompanies(this.value);
+    function switchStatus(newStatus) {
+        // Update current status
+        currentStatus = newStatus;
+        
+        // Update button states
+        document.querySelectorAll('.status-btn').forEach(btn => {
+            btn.classList.remove('active');
         });
+        document.querySelector(`[data-status="${newStatus}"]`).classList.add('active');
+        
+        // Update display
+        updateDisplay();
+        
+        // Reset search
+        document.getElementById('searchInput').value = '';
+        searchKeyword = '';
+        
+        // Clear selection when switching tabs
+        clearAllSelection();
+        
+        // Update print button visibility
+        updatePrintButtonVisibility();
+        
+        // Update selection controls visibility
+        updateSelectionControlsVisibility();
+        
+        // Update sub-tabs visibility
+        updateSubTabsVisibility();
+    }
 
-        // Panel click mở modal
-        document.getElementById('company-panel-list').addEventListener('click', function(e) {
-            let panel = e.target.closest('.company-panel');
-            if (!panel) return;
+    // Grouped letters data for JavaScript pagination
+    const groupedLettersData = <?php echo json_encode($groupedLetters); ?>;
+    
+    // Pagination variables
+    let currentCompanyPage = 1;
+    const companiesPerPage = 4;
+    let companiesData = [];
+
+    function switchSubStatus(newSubStatus) {
+        // Update current sub status
+        currentSubStatus = newSubStatus;
+        
+        // Update sub-button states
+        document.querySelectorAll('.sub-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`[data-sub-status="${newSubStatus}"]`).classList.add('active');
+        
+        // Update sub-section display
+        updateSubSectionDisplay();
+        
+        // Load companies for grouped view
+        if (newSubStatus === 'grouped') {
+            console.log('SWITCHING TO GROUPED VIEW - JAVASCRIPT ONLY');
+            currentCompanyPage = 1;
+            loadCompaniesPage(1);
+        }
+        
+        // Clear selection when switching sub-tabs
+        clearAllSelection();
+    }
+
+    function updateSubTabsVisibility() {
+        const subTabs = document.getElementById('approvedSubTabs');
+        
+        if (currentStatus === 'approved') {
+            subTabs.classList.add('show');
+        } else {
+            subTabs.classList.remove('show');
+        }
+    }
+
+    function updateSubSectionDisplay() {
+        // Hide all sub-sections
+        document.querySelectorAll('.sub-section').forEach(section => {
+            section.classList.add('hidden');
+        });
+        
+        // Show current sub-section
+        const currentSubSection = document.getElementById(`${currentSubStatus}-section`);
+        if (currentSubSection) {
+            currentSubSection.classList.remove('hidden');
             
-            // Kiểm tra trạng thái đợt
-            if (!canRegister) {
-                alert('Đợt thực tập của bạn đã kết thúc hoặc chưa bắt đầu. Không thể đăng ký giấy giới thiệu!');
-                return;
+            // Add fade-in animation to cards
+            const cards = currentSubSection.querySelectorAll('.letter-card');
+            cards.forEach((card, index) => {
+                setTimeout(() => {
+                    card.classList.add('fade-in');
+                }, index * 30);
+            });
+        }
+    }
+
+    function updateDisplay() {
+        // Hide all sections
+        document.querySelectorAll('.status-section').forEach(section => {
+            section.classList.add('hidden');
+        });
+        
+        // Show current section
+        const currentSection = document.getElementById(`${currentStatus}-cards`);
+        if (currentSection) {
+            currentSection.classList.remove('hidden');
+            
+            // For approved status, also update sub-sections
+            if (currentStatus === 'approved') {
+                updateSubSectionDisplay();
+            } else {
+                // Add fade-in animation to cards for non-approved sections
+                const cards = currentSection.querySelectorAll('.letter-card');
+                cards.forEach((card, index) => {
+                    setTimeout(() => {
+                        card.classList.add('fade-in');
+                    }, index * 50);
+                });
             }
-            
-            const idx = +panel.getAttribute('data-index');
-            const cty = filteredCompanies[idx];
-            if (!cty) return;
+        }
+    }
 
-            // Fill modal với thông tin chi tiết hơn
-            document.getElementById('company-modal-body').innerHTML = `
-                <div class="row">
-                    <div class="col-md-6">
-                        <p><strong>Tên công ty:</strong><br>${cty.TenCty}</p>
-                        <p><strong>Mã số thuế:</strong><br>${cty.MaSoThue}</p>
-                        <p><strong>Lĩnh vực:</strong><br>${cty.Linhvuc}</p>
+    function filterCards() {
+        const currentSection = document.getElementById(`${currentStatus}-cards`);
+        if (!currentSection) return;
+        
+        let cards;
+        if (currentStatus === 'approved') {
+            // For approved status, filter within current sub-section
+            const currentSubSection = document.getElementById(`${currentSubStatus}-section`);
+            cards = currentSubSection ? currentSubSection.querySelectorAll('.letter-card') : [];
+        } else {
+            cards = currentSection.querySelectorAll('.letter-card');
+        }
+        
+        let visibleCount = 0;
+        
+        cards.forEach(card => {
+            const mssv = card.getAttribute('data-mssv') || '';
+            const student = card.getAttribute('data-student') || '';
+            const company = card.getAttribute('data-company') || '';
+            
+            const searchText = (mssv + ' ' + student + ' ' + company).toLowerCase();
+            const isVisible = searchKeyword === '' || searchText.indexOf(searchKeyword) !== -1;
+            
+            if (isVisible) {
+                card.style.display = '';
+                visibleCount++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+        
+        // Show/hide empty state
+        const emptyState = currentSection.querySelector('.empty-state');
+        if (emptyState) {
+            emptyState.style.display = visibleCount === 0 ? 'block' : 'none';
+        }
+    }
+
+    function updatePrintButtonVisibility() {
+        const printBtn = document.getElementById('printAllBtn');
+        const printGroupedBtn = document.getElementById('printGroupedBtn');
+        
+        // Hiển thị nút in cho trạng thái đã duyệt
+        if (currentStatus === 'approved') {
+            printBtn.style.display = 'inline-flex';
+            printGroupedBtn.style.display = 'inline-flex';
+        } else {
+            printBtn.style.display = 'none';
+            printGroupedBtn.style.display = 'none';
+        }
+    }
+
+    function viewDetails(letterId) {
+        // Tạo form ẩn để submit
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/datn/pages/canbo/chitietgiaygioithieu';
+        
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'giay_id';
+        input.value = letterId;
+        
+        form.appendChild(input);
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    function approveLetter(letterId) {
+        if (!confirm('Bạn có chắc chắn muốn duyệt giấy giới thiệu này?\n\nViệc duyệt sẽ thêm công ty vào hệ thống và không thể hoàn tác.')) {
+            return;
+        }
+        
+        // Hiển thị loading
+        const btn = event.target.closest('button');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Đang xử lý...';
+        btn.disabled = true;
+        
+        // Gửi AJAX request
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/datn/pages/canbo/approve_letter_ajax.php', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    
+                    if (response.success) {
+                        // Hiển thị thông báo thành công
+                        alert('✅ ' + response.message);
+                        
+                        // Reload trang để cập nhật dữ liệu
+                        location.reload();
+                    } else {
+                        // Hiển thị lỗi
+                        alert('❌ ' + response.message);
+                        
+                        // Khôi phục nút
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                    }
+                } catch (e) {
+                    alert('❌ Có lỗi xảy ra khi xử lý phản hồi');
+                    console.error('Parse error:', e);
+                    
+                    // Khôi phục nút
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            }
+        };
+        
+        xhr.onerror = function() {
+            alert('❌ Có lỗi kết nối');
+            
+            // Khôi phục nút
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        };
+        
+        xhr.send('letter_id=' + encodeURIComponent(letterId));
+    }
+
+    function markAsReceived(letterId) {
+        // Load thông tin cho modal
+        loadReceiveModalData(letterId);
+        
+        // Hiển thị modal
+        $('#receiveModal').modal('show');
+    }
+    
+    function markAsWaiting(letterId) {
+        if (!confirm('Chuyển giấy giới thiệu này sang trạng thái "Chờ lấy"?\n\nSinh viên sẽ có thể theo dõi và đến nhận giấy.')) {
+            return;
+        }
+        
+        // Hiển thị loading
+        const btn = event.target.closest('button');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Đang xử lý...';
+        btn.disabled = true;
+        
+        // Gửi AJAX request
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/datn/pages/canbo/mark_as_waiting.php', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    
+                    if (response.success) {
+                        alert('✅ ' + response.message);
+                        location.reload();
+                    } else {
+                        alert('❌ ' + response.message);
+                        // Khôi phục nút
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                    }
+                } catch (e) {
+                    alert('❌ Có lỗi xảy ra khi xử lý phản hồi');
+                    console.error('Parse error:', e);
+                    // Khôi phục nút
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            }
+        };
+        
+        xhr.onerror = function() {
+            alert('❌ Có lỗi kết nối');
+            // Khôi phục nút
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        };
+        
+        xhr.send('letter_ids[]=' + encodeURIComponent(letterId));
+    }
+    
+    function loadReceiveModalData(letterId) {
+        // Set letter ID
+        document.getElementById('receive_letter_id').value = letterId;
+        
+        // Load thông tin công ty và danh sách sinh viên
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/datn/pages/canbo/get_company_students.php', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    
+                    if (response.success) {
+                        // Hiển thị thông tin công ty
+                        document.getElementById('company_info').innerHTML = `
+                            <strong>${response.company.TenCty}</strong><br>
+                            <small>Địa chỉ: ${response.company.DiaChi}</small><br>
+                            <small>Đợt: ${response.company.TenDot || 'Chưa xác định'}</small>
+                        `;
+                        
+                        // Hiển thị danh sách sinh viên
+                        displayStudentsList(response.students);
+                        
+                        // Populate select box
+                        populateStudentSelect(response.students);
+                    } else {
+                        alert('❌ ' + response.message);
+                    }
+                } catch (e) {
+                    alert('❌ Có lỗi xảy ra khi tải dữ liệu');
+                    console.error('Parse error:', e);
+                }
+            }
+        };
+        
+        xhr.send('letter_id=' + encodeURIComponent(letterId));
+    }
+    
+    function displayStudentsList(students) {
+        const container = document.getElementById('students_list');
+        
+        if (students.length === 0) {
+            container.innerHTML = '<p class="text-muted">Không có sinh viên nào.</p>';
+            return;
+        }
+        
+        let html = '<div class="table-responsive"><table class="table table-sm table-striped">';
+        html += '<thead><tr><th>STT</th><th>MSSV</th><th>Họ tên</th><th>Đợt</th></tr></thead><tbody>';
+        
+        students.forEach((student, index) => {
+            html += `
+                <tr data-mssv="${student.MSSV}" data-name="${student.Ten}">
+                    <td>${index + 1}</td>
+                    <td>${student.MSSV}</td>
+                    <td>${student.Ten}</td>
+                    <td>${student.TenDot || 'Chưa xác định'}</td>
+                </tr>
+            `;
+        });
+        
+        html += '</tbody></table></div>';
+        container.innerHTML = html;
+    }
+    
+    function populateStudentSelect(students) {
+        const select = document.getElementById('receive_nguoinhan');
+        select.innerHTML = '<option value="">-- Chọn sinh viên đại diện --</option>';
+        
+        students.forEach(student => {
+            const option = document.createElement('option');
+            option.value = student.ID_taikhoan;
+            option.textContent = `${student.Ten} (${student.MSSV})`;
+            select.appendChild(option);
+        });
+    }
+    
+    function filterStudentsInModal() {
+        const searchValue = document.getElementById('student_search').value.toLowerCase();
+        const rows = document.querySelectorAll('#students_list tbody tr');
+        
+        rows.forEach(row => {
+            const mssv = row.getAttribute('data-mssv').toLowerCase();
+            const name = row.getAttribute('data-name').toLowerCase();
+            
+            if (mssv.includes(searchValue) || name.includes(searchValue)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+    
+    function submitReceiveInfo() {
+        const form = document.getElementById('receiveForm');
+        const formData = new FormData(form);
+        
+        // Validate
+        const nguoinhan = document.getElementById('receive_nguoinhan').value;
+        if (!nguoinhan) {
+            alert('Vui lòng chọn người đại diện nhận giấy!');
+            return;
+        }
+        
+        // Disable submit button
+        const submitBtn = event.target;
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Đang lưu...';
+        submitBtn.disabled = true;
+        
+        // Send request
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/datn/pages/canbo/save_receive_info.php', true);
+        
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    
+                    if (response.success) {
+                        alert('✅ ' + response.message);
+                        $('#receiveModal').modal('hide');
+                        location.reload();
+                    } else {
+                        alert('❌ ' + response.message);
+                    }
+                } catch (e) {
+                    alert('❌ Có lỗi xảy ra khi lưu thông tin');
+                    console.error('Parse error:', e);
+                }
+                
+                // Restore button
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        };
+        
+        xhr.send(formData);
+    }
+    
+    function handlePrintGrouped() {
+        // Kiểm tra xem có giấy nào để in không
+        const approvedCount = <?php echo count($approvedList); ?>;
+        if (approvedCount === 0) {
+            alert('Không có giấy giới thiệu nào để in!');
+            return;
+        }
+        
+        if (!confirm('In theo công ty sẽ gộp sinh viên cùng công ty vào một giấy.\n\nBạn có muốn tiếp tục không?')) {
+            return;
+        }
+        
+        // Hiển thị loading
+        const printBtn = document.getElementById('printGroupedBtn');
+        const originalText = printBtn.innerHTML;
+        printBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Đang mở...';
+        printBtn.disabled = true;
+        
+        // Mở file in trước, chưa cập nhật trạng thái
+        const printUrl = '/datn/pages/canbo/print_grouped_letters.php';
+        const printWindow = window.open(printUrl, '_blank', 'width=1024,height=768,scrollbars=yes,resizable=yes');
+        
+        // Khôi phục nút sau khi mở
+        setTimeout(() => {
+            printBtn.innerHTML = originalText;
+            printBtn.disabled = false;
+            
+            // Hiển thị modal xác nhận đã in xong
+            setTimeout(() => {
+                showPrintConfirmModal(
+                    'Xác nhận in theo công ty',
+                    'Bạn đã in xong tất cả giấy theo công ty chưa?',
+                    () => confirmPrintGroupedCompleted()
+                );
+            }, 2000); // Delay 2s để người dùng thấy trang in
+        }, 1000);
+    }
+    
+    function confirmPrintGroupedCompleted() {
+        // Hiển thị loading
+        const printBtn = document.getElementById('printGroupedBtn');
+        const originalText = printBtn.innerHTML;
+        printBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Đang cập nhật...';
+        printBtn.disabled = true;
+        
+        // Cập nhật trạng thái đã in
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/datn/pages/canbo/mark_as_printed.php', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    
+                    if (response.success) {
+                        alert('✅ Đã chuyển tất cả giấy sang trạng thái "Chờ lấy"! Sinh viên có thể đến nhận giấy.');
+                        location.reload();
+                    } else {
+                        alert('❌ ' + response.message);
+                        // Khôi phục nút
+                        printBtn.innerHTML = originalText;
+                        printBtn.disabled = false;
+                    }
+                } catch (e) {
+                    alert('❌ Có lỗi xảy ra khi cập nhật trạng thái');
+                    console.error('Parse error:', e);
+                    // Khôi phục nút
+                    printBtn.innerHTML = originalText;
+                    printBtn.disabled = false;
+                }
+            }
+        };
+        
+        xhr.send('action=print_grouped');
+    }
+
+    function printLetter(letterId) {
+        if (!confirm('In giấy giới thiệu này?\n\nBạn có muốn tiếp tục không?')) {
+            return;
+        }
+        
+        // Hiển thị loading
+        const btn = event.target.closest('button');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Đang mở...';
+        btn.disabled = true;
+        
+        // Mở trang in trước, chưa cập nhật trạng thái
+        const printUrl = '/datn/pages/canbo/print_letter_template.php?id=' + letterId;
+        const printWindow = window.open(printUrl, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
+        
+        // Khôi phục nút sau khi mở
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            
+            // Hiển thị modal xác nhận đã in xong
+            setTimeout(() => {
+                showPrintConfirmModal(
+                    'Xác nhận in giấy giới thiệu',
+                    'Bạn đã in xong giấy giới thiệu này chưa?',
+                    () => confirmPrintSingleCompleted(letterId)
+                );
+            }, 2000); // Delay 2s để người dùng thấy trang in
+        }, 1000);
+    }
+    
+    function confirmPrintSingleCompleted(letterId) {
+        // Cập nhật trạng thái đã in
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/datn/pages/canbo/mark_as_printed.php', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    
+                    if (response.success) {
+                        alert('✅ Đã chuyển giấy sang trạng thái "Chờ lấy"! Sinh viên có thể đến nhận giấy.');
+                        location.reload();
+                    } else {
+                        alert('❌ ' + response.message);
+                    }
+                } catch (e) {
+                    alert('❌ Có lỗi xảy ra khi cập nhật trạng thái');
+                    console.error('Parse error:', e);
+                }
+            }
+        };
+        
+        xhr.send('action=print_single&letter_ids[]=' + encodeURIComponent(letterId));
+    }
+
+    function handlePrintAll() {
+        // Kiểm tra xem có giấy nào để in không
+        const approvedCount = <?php echo count($approvedList); ?>;
+        if (approvedCount === 0) {
+            alert('Không có giấy giới thiệu nào để in!');
+            return;
+        }
+        
+        if (!confirm(`Bạn có muốn in tất cả ${approvedCount} giấy giới thiệu đã duyệt?\n\nMỗi sinh viên sẽ có một giấy riêng. Bạn có muốn tiếp tục không?`)) {
+            return;
+        }
+        
+        // Hiển thị loading
+        const printBtn = document.getElementById('printAllBtn');
+        const originalText = printBtn.innerHTML;
+        printBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Đang mở...';
+        printBtn.disabled = true;
+        
+        // Mở từng giấy trong tab mới với delay, chưa cập nhật trạng thái
+        const letterIds = <?php echo json_encode(array_column($approvedList, 'ID')); ?>;
+        
+        letterIds.forEach((id, index) => {
+            setTimeout(() => {
+                const printUrl = '/datn/pages/canbo/print_letter_template.php?id=' + id;
+                window.open(printUrl, '_blank' + index, 'width=800,height=600,scrollbars=yes,resizable=yes');
+            }, index * 500); // Delay 500ms giữa các tab
+        });
+        
+        // Khôi phục nút sau khi mở hết các tab
+        setTimeout(() => {
+            printBtn.innerHTML = originalText;
+            printBtn.disabled = false;
+            
+            // Hiển thị modal xác nhận đã in xong
+            setTimeout(() => {
+                showPrintConfirmModal(
+                    'Xác nhận in tất cả giấy',
+                    `Bạn đã in xong tất cả ${approvedCount} giấy giới thiệu chưa?`,
+                    () => confirmPrintAllCompleted()
+                );
+            }, 3000); // Delay 3s để người dùng thấy các trang in
+        }, letterIds.length * 500 + 1000);
+    }
+    
+    function confirmPrintAllCompleted() {
+        // Hiển thị loading
+        const printBtn = document.getElementById('printAllBtn');
+        const originalText = printBtn.innerHTML;
+        printBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Đang cập nhật...';
+        printBtn.disabled = true;
+        
+        // Cập nhật trạng thái đã in cho tất cả
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/datn/pages/canbo/mark_as_printed.php', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    
+                    if (response.success) {
+                        alert('✅ Đã chuyển tất cả giấy sang trạng thái "Chờ lấy"! Sinh viên có thể đến nhận giấy.');
+                        location.reload();
+                    } else {
+                        alert('❌ ' + response.message);
+                        // Khôi phục nút
+                        printBtn.innerHTML = originalText;
+                        printBtn.disabled = false;
+                    }
+                } catch (e) {
+                    alert('❌ Có lỗi xảy ra khi cập nhật trạng thái');
+                    console.error('Parse error:', e);
+                    // Khôi phục nút
+                    printBtn.innerHTML = originalText;
+                    printBtn.disabled = false;
+                }
+            }
+        };
+        
+        xhr.send('action=print_all');
+    }
+
+    // Utility functions
+    function showLoading(element) {
+        element.classList.add('loading');
+    }
+
+    function hideLoading(element) {
+        element.classList.remove('loading');
+    }
+    
+    function showPrintConfirmModal(title, message, onConfirm) {
+        // Cập nhật nội dung modal
+        document.getElementById('printConfirmTitle').textContent = title;
+        document.getElementById('printConfirmMessage').textContent = message;
+        
+        // Xóa event listener cũ và thêm mới
+        const confirmBtn = document.getElementById('confirmPrintBtn');
+        const newConfirmBtn = confirmBtn.cloneNode(true);
+        confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+        
+        newConfirmBtn.onclick = function() {
+            $('#printConfirmModal').modal('hide');
+            onConfirm();
+        };
+        
+        // Hiển thị modal
+        $('#printConfirmModal').modal('show');
+    }
+    
+    // === SELECTION FUNCTIONS ===
+    function toggleCardSelection(checkbox) {
+        const cardId = checkbox.getAttribute('data-id');
+        const card = checkbox.closest('.letter-card');
+        
+        if (checkbox.checked) {
+            selectedCards.add(cardId);
+            card.classList.add('selected');
+        } else {
+            selectedCards.delete(cardId);
+            card.classList.remove('selected');
+        }
+        
+        updateSelectionDisplay();
+    }
+    
+    function toggleCardSelectionByClick(cardElement) {
+        // Tìm checkbox trong card này
+        const checkbox = cardElement.querySelector('.card-checkbox');
+        if (!checkbox) return;
+        
+        // Toggle checkbox
+        checkbox.checked = !checkbox.checked;
+        
+        // Cập nhật selection
+        const cardId = checkbox.getAttribute('data-id');
+        
+        if (checkbox.checked) {
+            selectedCards.add(cardId);
+            cardElement.classList.add('selected');
+        } else {
+            selectedCards.delete(cardId);
+            cardElement.classList.remove('selected');
+        }
+        
+        updateSelectionDisplay();
+    }
+    
+    function selectAllCards() {
+        const currentSection = document.getElementById(`${currentStatus}-cards`);
+        if (!currentSection) return;
+        
+        const checkboxes = currentSection.querySelectorAll('.card-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = true;
+            const cardId = checkbox.getAttribute('data-id');
+            const card = checkbox.closest('.letter-card');
+            selectedCards.add(cardId);
+            card.classList.add('selected');
+        });
+        
+        updateSelectionDisplay();
+    }
+    
+    // Companies pagination functions
+    function loadCompaniesPage(page) {
+        console.log('Loading companies page:', page, '(JavaScript only, no AJAX)');
+        currentCompanyPage = page;
+        
+        // Convert grouped letters to companies array
+        companiesData = Object.keys(groupedLettersData).map(taxCode => ({
+            taxCode: taxCode,
+            letters: groupedLettersData[taxCode]
+        }));
+        
+        console.log('Companies data:', companiesData.length, 'companies total');
+        
+        // Calculate pagination
+        const totalCompanies = companiesData.length;
+        const totalPages = Math.ceil(totalCompanies / companiesPerPage);
+        const startIndex = (page - 1) * companiesPerPage;
+        const endIndex = startIndex + companiesPerPage;
+        const pageCompanies = companiesData.slice(startIndex, endIndex);
+        
+        console.log('Page', page, '- showing companies', startIndex, 'to', endIndex-1);
+        
+        // Generate companies HTML
+        const companiesContainer = document.getElementById('companies-container');
+        companiesContainer.innerHTML = generateCompaniesHTML(pageCompanies);
+        
+        // Generate pagination HTML
+        const paginationContainer = document.getElementById('companies-pagination');
+        paginationContainer.innerHTML = generatePaginationHTML(page, totalPages);
+    }
+    
+    function generateCompaniesHTML(companies) {
+        if (companies.length === 0) {
+            return `
+                <div class="empty-section">
+                    <i class="fa fa-building-o"></i>
+                    <p>Chưa có nhóm công ty</p>
+                    <small>Sinh viên cùng mã số thuế sẽ được nhóm ở đây</small>
+                </div>
+            `;
+        }
+        
+        return companies.map(company => {
+            const firstLetter = company.letters[0];
+            return `
+                <div class="company-group" data-tax-code="${escapeHtml(company.taxCode)}">
+                    <div class="company-group-header">
+                        <div class="company-info">
+                            <h4>${escapeHtml(firstLetter.TenCty)}</h4>
+                            <p class="company-details">
+                                <i class="fa fa-map-marker"></i> ${escapeHtml(shortAddress(firstLetter.DiaChi, 60))}
+                                ${company.taxCode ? `| <i class="fa fa-barcode"></i> MST: ${escapeHtml(company.taxCode)}` : ''}
+                            </p>
+                        </div>
+                        <div class="group-actions">
+                            <span class="student-count">
+                                <i class="fa fa-users"></i>
+                                ${company.letters.length}
+                            </span>
+                            <button type="button" class="btn btn-xs btn-outline-light" onclick="selectCompanyGroup('${escapeHtml(company.taxCode)}')">
+                                <i class="fa fa-check"></i> Chọn
+                            </button>
+                            <button type="button" class="btn btn-xs btn-light" onclick="printCompanyGroup('${escapeHtml(company.taxCode)}')">
+                                <i class="fa fa-print"></i> In
+                            </button>
+                        </div>
                     </div>
-                    <div class="col-md-6">
-                        <p><strong>Địa chỉ:</strong><br>${cty.DiaChi}</p>
-                        <p><strong>Số điện thoại:</strong><br>${cty.Sdt}</p>
-                        <p><strong>Email:</strong><br>${cty.Email}</p>
+                    
+                    <div class="company-students-grid">
+                        ${company.letters.map(letter => generateLetterCardHTML(letter, company.taxCode)).join('')}
                     </div>
                 </div>
-                <form method="post" id="company-approve-form" style="display:none;">
-                    <input type="hidden" name="ma_so_thue" id="approve-ma-so-thue">
-                    <input type="hidden" name="ten_cong_ty" id="approve-ten-cong-ty">
-                    <input type="hidden" name="dia_chi" id="approve-dia-chi">
-                    <input type="hidden" name="linh_vuc" id="approve-linh-vuc">
-                    <input type="hidden" name="sdt" id="approve-sdt">
-                    <input type="hidden" name="email" id="approve-email">
-                    <input type="hidden" name="from_panel" value="1">
-                </form>
             `;
-            $('#companyModal').modal('show');
-
-            // Đảm bảo chỉ gán sự kiện 1 lần: Xóa sự kiện cũ trước khi gán mới
-            const btnApprove = document.getElementById('btn-approve-company');
-            const newBtnApprove = btnApprove.cloneNode(true);
-            btnApprove.parentNode.replaceChild(newBtnApprove, btnApprove);
-
-            newBtnApprove.onclick = function() {
-                // Kiểm tra trạng thái đợt
-                if (!canRegister) {
-                    alert('Đợt thực tập của bạn đã kết thúc hoặc chưa bắt đầu. Không thể đăng ký giấy giới thiệu!');
-                    return;
-                }
+        }).join('');
+    }
+    
+    function generateLetterCardHTML(letter, taxCode) {
+        return `
+            <div class="letter-card fade-in has-checkbox compact" 
+                 data-id="${letter.ID}"
+                 data-status="approved"
+                 data-type="grouped"
+                 data-tax-code="${escapeHtml(taxCode)}"
+                 data-mssv="${escapeHtml(letter.MSSV)}"
+                 data-student="${escapeHtml(letter.Tensinhvien)}"
+                 data-company="${escapeHtml(letter.TenCty)}"
+                 onclick="toggleCardSelectionByClick(this)">
                 
-                // Lấy lại input hidden vừa tạo trong modal-body
-                document.getElementById('approve-ten-cong-ty').value = cty.TenCty;
-                document.getElementById('approve-ma-so-thue').value = cty.MaSoThue;
-                document.getElementById('approve-dia-chi').value = cty.DiaChi;
-                document.getElementById('approve-linh-vuc').value = cty.Linhvuc;
-                document.getElementById('approve-sdt').value = cty.Sdt;
-                document.getElementById('approve-email').value = cty.Email;
-                // Submit form ẩn để lưu về CSDL bằng PHP thuần
-                document.getElementById('company-approve-form').submit();
-            };
+                <input type="checkbox" class="card-checkbox" 
+                       data-id="${letter.ID}"
+                       onclick="event.stopPropagation()">
+                
+                <div class="status-badge status-approved">
+                    <i class="fa fa-check"></i> Đã duyệt
+                </div>
+                
+                <div class="student-info compact">
+                    <i class="fa fa-user"></i>
+                    <strong>${escapeHtml(letter.Tensinhvien)}</strong>
+                    <br>MSSV: ${escapeHtml(letter.MSSV)}
+                    ${letter.TenNguoiNhan ? `<br><small><i class="fa fa-arrow-right"></i> ${escapeHtml(letter.TenNguoiNhan)}</small>` : ''}
+                    ${letter.TenDot ? `<br><small><i class="fa fa-calendar"></i> ${escapeHtml(letter.TenDot)}</small>` : ''}
+                    ${letter.ghi_chu ? `<br><small><i class="fa fa-sticky-note"></i> ${escapeHtml(letter.ghi_chu)}</small>` : ''}
+                </div>
+                
+                <div class="card-actions compact">
+                    <button type="button" class="btn btn-xs btn-primary" onclick="event.stopPropagation(); viewDetails(${letter.ID})">
+                        <i class="fa fa-eye"></i>
+                    </button>
+                    <button type="button" class="btn btn-xs btn-success" onclick="event.stopPropagation(); printLetter(${letter.ID})">
+                        <i class="fa fa-print"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+    
+    function generatePaginationHTML(currentPage, totalPages) {
+        if (totalPages <= 1) return '';
+        
+        let paginationHTML = '<div class="pagination-wrapper">';
+        paginationHTML += '<div class="pagination-controls">';
+        
+        // Previous button
+        if (currentPage > 1) {
+            paginationHTML += `<button type="button" class="btn btn-sm btn-outline-secondary" onclick="loadCompaniesPage(${currentPage - 1})">
+                <i class="fa fa-chevron-left"></i> Trước
+            </button>`;
+        }
+        
+        // Page numbers
+        paginationHTML += '<div class="page-numbers">';
+        for (let i = 1; i <= totalPages; i++) {
+            const activeClass = i === currentPage ? 'active' : '';
+            paginationHTML += `<button type="button" class="btn btn-sm btn-outline-primary page-btn ${activeClass}" onclick="loadCompaniesPage(${i})">${i}</button>`;
+        }
+        paginationHTML += '</div>';
+        
+        // Next button
+        if (currentPage < totalPages) {
+            paginationHTML += `<button type="button" class="btn btn-sm btn-outline-secondary" onclick="loadCompaniesPage(${currentPage + 1})">
+                Sau <i class="fa fa-chevron-right"></i>
+            </button>`;
+        }
+        
+        paginationHTML += '</div>';
+        paginationHTML += `<div class="pagination-info">Trang ${currentPage} / ${totalPages} (${companiesData.length} công ty)</div>`;
+        paginationHTML += '</div>';
+        
+        return paginationHTML;
+    }
+    
+    function escapeHtml(unsafe) {
+        return unsafe
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+    
+    function shortAddress(address, maxLength) {
+        if (!address || address.length <= maxLength) {
+            return address || '';
+        }
+        return address.substring(0, maxLength) + '...';
+    }
+    
+    function clearAllSelection() {
+        selectedCards.clear();
+        
+        document.querySelectorAll('.card-checkbox').forEach(checkbox => {
+            checkbox.checked = false;
         });
-
-        // Nút mở modal nhập thủ công
-        document.getElementById('btn-add-manual').onclick = function() {
-            // Kiểm tra trạng thái đợt
-            if (!canRegister) {
-                alert('Đợt thực tập của bạn đã kết thúc hoặc chưa bắt đầu. Không thể đăng ký giấy giới thiệu!');
-                return;
+        
+        document.querySelectorAll('.letter-card.selected').forEach(card => {
+            card.classList.remove('selected');
+        });
+        
+        updateSelectionDisplay();
+    }
+    
+    function updateSelectionDisplay() {
+        const count = selectedCards.size;
+        document.getElementById('selectedCount').textContent = count;
+        
+        // Show/hide selection controls
+        const selectionControls = document.getElementById('selectionControls');
+        if ((currentStatus === 'approved' || currentStatus === 'printed') && count > 0) {
+            selectionControls.classList.add('show');
+        } else {
+            selectionControls.classList.remove('show');
+        }
+        
+        // Enable/disable buttons
+        const printSelectedBtn = document.getElementById('printSelectedBtn');
+        const markSelectedBtn = document.getElementById('markSelectedBtn');
+        
+        printSelectedBtn.disabled = count === 0;
+        markSelectedBtn.disabled = count === 0;
+        
+        // Show appropriate buttons based on current status
+        if (currentStatus === 'approved') {
+            printSelectedBtn.style.display = 'inline-flex';
+            markSelectedBtn.style.display = 'none';
+        } else if (currentStatus === 'printed') {
+            printSelectedBtn.style.display = 'none';
+            markSelectedBtn.style.display = 'inline-flex';
+            markSelectedBtn.innerHTML = '<i class="fa fa-hourglass-half"></i> Đổi sang "Chờ lấy"';
+        } else {
+            printSelectedBtn.style.display = 'none';
+            markSelectedBtn.style.display = 'none';
+        }
+    }
+    
+    // Company group selection functions
+    function selectCompanyGroup(taxCode) {
+        // Find all letter cards with the same tax code
+        const groupCards = document.querySelectorAll(`[data-tax-code="${taxCode}"]`);
+        
+        groupCards.forEach(card => {
+            const id = card.dataset.id;
+            const checkbox = card.querySelector('.card-checkbox');
+            
+            if (!selectedCards.has(id)) {
+                selectedCards.add(id);
+                card.classList.add('selected');
+                checkbox.checked = true;
             }
+        });
+        
+        updateSelectionDisplay();
+        
+        // Show success message
+        showNotification(`Đã chọn ${groupCards.length} sinh viên từ cùng công ty`, 'success');
+    }
+    
+    function printCompanyGroup(taxCode) {
+        // Find all letter cards with the same tax code
+        const groupCards = document.querySelectorAll(`[data-tax-code="${taxCode}"]`);
+        const ids = Array.from(groupCards).map(card => card.dataset.id);
+        
+        if (ids.length === 0) {
+            showNotification('Không tìm thấy sinh viên nào trong nhóm này', 'error');
+            return;
+        }
+        
+        // Clear current selection and select this group
+        clearAllSelection();
+        groupCards.forEach(card => {
+            const id = card.dataset.id;
+            const checkbox = card.querySelector('.card-checkbox');
             
-            // Reset form
-            document.getElementById('manual-company-form').reset();
-            $('#manualModal').modal('show');
-        };
-
-        // Lấy thông tin công ty bằng API với loading state
-        document.getElementById('btn-fill-api').onclick = async function(e) {
-            e.preventDefault();
-            const taxCode = document.getElementById('manual-ma-so-thue').value.trim();
-            if (!taxCode) {
-                alert('Vui lòng nhập mã số thuế');
-                return;
-            }
-            
-            // Kiểm tra định dạng mã số thuế
-            const cleanTaxCode = taxCode.replace(/[^0-9]/g, '');
-            if (cleanTaxCode.length < 10) {
-                alert('Mã số thuế phải có ít nhất 10 chữ số');
-                return;
-            }
-            
-            // Kiểm tra xem hàm API có tồn tại không
-            if (typeof getBusinessInfoByTaxCode !== 'function') {
-                alert('Chức năng lấy thông tin doanh nghiệp chưa sẵn sàng. Vui lòng thử lại sau.');
-                return;
-            }
-            
-            // Hiển thị loading
-            const btn = this;
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Đang tìm...';
-            btn.disabled = true;
-            
-            try {
-                // Sử dụng hàm API có sẵn
-                const info = await getBusinessInfoByTaxCode(cleanTaxCode);
-                
-                if (info) {
-                    // Fill dữ liệu vào form
-                    document.getElementById('manual-ten-cong-ty').value = info.name || info.shortName || '';
-                    document.getElementById('manual-dia-chi').value = info.address || info.diaChi || '';
-                    document.getElementById('manual-linh-vuc').value = info.businessLine || info.linhVuc || '';
-                    document.getElementById('manual-sdt').value = info.phone || info.soDienThoai || '';
-                    document.getElementById('manual-email').value = info.email || '';
+            selectedCards.add(id);
+            card.classList.add('selected');
+            checkbox.checked = true;
+        });
+        
+        updateSelectionDisplay();
+        
+        // Trigger print
+        printSelectedLetters();
+    }
+    
+    function showNotification(message, type = 'info') {
+        // Create notification element if it doesn't exist
+        let notification = document.getElementById('notification');
+        if (!notification) {
+            notification = document.createElement('div');
+            notification.id = 'notification';
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 8px;
+                color: white;
+                font-weight: 500;
+                z-index: 10000;
+                transform: translateX(400px);
+                transition: transform 0.3s ease;
+            `;
+            document.body.appendChild(notification);
+        }
+        
+        // Set style based on type
+        switch(type) {
+            case 'success':
+                notification.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+                break;
+            case 'error':
+                notification.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+                break;
+            default:
+                notification.style.background = 'linear-gradient(135deg, #3b82f6, #2563eb)';
+        }
+        
+        notification.textContent = message;
+        notification.style.transform = 'translateX(0)';
+        
+        // Auto hide after 3 seconds
+        setTimeout(() => {
+            notification.style.transform = 'translateX(400px)';
+        }, 3000);
+    }
+    
+    function updateSelectionControlsVisibility() {
+        const selectionControls = document.getElementById('selectionControls');
+        
+        // Only show selection controls for approved and printed tabs
+        if (currentStatus === 'approved' || currentStatus === 'printed') {
+            // Don't hide immediately, let updateSelectionDisplay handle it
+        } else {
+            selectionControls.classList.remove('show');
+        }
+    }
+    
+    function printSelectedCards() {
+        if (selectedCards.size === 0) {
+            alert('Vui lòng chọn ít nhất một giấy giới thiệu để in!');
+            return;
+        }
+        
+        const selectedIds = Array.from(selectedCards);
+        if (!confirm(`In ${selectedIds.length} giấy giới thiệu đã chọn?\n\nBạn có muốn tiếp tục không?`)) {
+            return;
+        }
+        
+        // Tạo URL với các ID đã chọn
+        const printUrl = '/datn/pages/canbo/print_selected_letters.php?' + 
+                        selectedIds.map(id => `ids[]=${id}`).join('&');
+        
+        // Mở trang in
+        const printWindow = window.open(printUrl, '_blank', 'width=1024,height=768,scrollbars=yes,resizable=yes');
+        
+        // Hiển thị modal xác nhận sau khi in
+        setTimeout(() => {
+            showPrintConfirmModal(
+                'Xác nhận đã in xong',
+                `Bạn đã in xong ${selectedIds.length} giấy giới thiệu?`,
+                () => confirmPrintSelectedCompleted(selectedIds)
+            );
+        }, 2000);
+    }
+    
+    function confirmPrintSelectedCompleted(selectedIds) {
+        // Cập nhật trạng thái đã in cho các giấy đã chọn
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/datn/pages/canbo/mark_as_printed.php', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                try {
+                    const response = JSON.parse(xhr.responseText);
                     
-                    // Hiển thị thông báo thành công
-                    alert('Đã lấy thông tin doanh nghiệp thành công!');
-                } else {
-                    alert('Không tìm thấy thông tin doanh nghiệp với mã số thuế này. Vui lòng nhập thủ công.');
+                    if (response.success) {
+                        alert(`✅ Đã chuyển ${selectedIds.length} giấy giới thiệu sang trạng thái "Chờ lấy"!`);
+                        location.reload();
+                    } else {
+                        alert('❌ ' + response.message);
+                    }
+                } catch (e) {
+                    alert('❌ Có lỗi xảy ra khi cập nhật trạng thái');
+                    console.error('Parse error:', e);
                 }
-            } catch (error) {
-                console.error('Lỗi khi lấy thông tin doanh nghiệp:', error);
-                alert('Không thể kết nối đến dịch vụ thông tin doanh nghiệp. Vui lòng kiểm tra kết nối mạng hoặc nhập thông tin thủ công.');
-            } finally {
-                // Khôi phục trạng thái button
-                btn.innerHTML = originalText;
-                btn.disabled = false;
             }
         };
-
-        // Gửi form nhập thủ công với validation
-        document.getElementById('manual-company-form').onsubmit = function(e) {
-            // Kiểm tra trạng thái đợt
-            if (!canRegister) {
-                alert('Đợt thực tập của bạn đã kết thúc hoặc chưa bắt đầu. Không thể đăng ký giấy giới thiệu!');
-                e.preventDefault();
-                return false;
+        
+        const params = 'action=print_selected&' + selectedIds.map(id => `letter_ids[]=${id}`).join('&');
+        xhr.send(params);
+        
+        // Ẩn modal
+        $('#printConfirmModal').modal('hide');
+    }
+    
+    function markSelectedCards() {
+        if (selectedCards.size === 0) {
+            alert('Vui lòng chọn ít nhất một giấy giới thiệu!');
+            return;
+        }
+        
+        const selectedIds = Array.from(selectedCards);
+        if (!confirm(`Chuyển ${selectedIds.length} giấy giới thiệu sang trạng thái "Chờ lấy"?\n\nBạn có muốn tiếp tục không?`)) {
+            return;
+        }
+        
+        // Cập nhật trạng thái
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/datn/pages/canbo/mark_as_waiting.php', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    
+                    if (response.success) {
+                        alert(`✅ Đã chuyển ${selectedIds.length} giấy giới thiệu sang trạng thái "Chờ lấy"!`);
+                        location.reload();
+                    } else {
+                        alert('❌ ' + response.message);
+                    }
+                } catch (e) {
+                    alert('❌ Có lỗi xảy ra khi cập nhật trạng thái');
+                    console.error('Parse error:', e);
+                }
             }
-            
-            const taxCode = document.getElementById('manual-ma-so-thue').value.trim();
-            const name = document.getElementById('manual-ten-cong-ty').value.trim();
-            const address = document.getElementById('manual-dia-chi').value.trim();
-            const field = document.getElementById('manual-linh-vuc').value.trim();
-            const phone = document.getElementById('manual-sdt').value.trim();
-            const email = document.getElementById('manual-email').value.trim();
-
-            // Kiểm tra rỗng
-            if (!taxCode || !name || !address || !field || !phone || !email) {
-                alert('Vui lòng nhập đầy đủ tất cả các trường!');
-                e.preventDefault();
-                return false;
-            }
-            
-            // Kiểm tra email hợp lệ
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(email)) {
-                alert('Email không hợp lệ!');
-                e.preventDefault();
-                return false;
-            }
-            
-            // Kiểm tra số điện thoại (chỉ số, tối thiểu 8 ký tự)
-            const phoneRegex = /^[0-9\-\+\s]{8,}$/;
-            if (!phoneRegex.test(phone)) {
-                alert('Số điện thoại không hợp lệ!');
-                e.preventDefault();
-                return false;
-            }
-            
-            // Đóng modal và submit form
-            $('#manualModal').modal('hide');
-            return true;
         };
-    });
+        
+        const params = selectedIds.map(id => `letter_ids[]=${id}`).join('&');
+        xhr.send(params);
+    }
+
+    // Initialize display on load
+    updatePrintButtonVisibility();
     </script>
+    <!-- jQuery đã được include trong template head.php -->
 </body>
 </html>

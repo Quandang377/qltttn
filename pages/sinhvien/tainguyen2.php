@@ -36,20 +36,20 @@ if (!$selectedDot) {
     
     // Lấy danh sách tài nguyên cho đợt hiện tại (loại bỏ duplicate)
     $stmt = $conn->prepare("
-        SELECT DISTINCT
-            f.ID,
-            f.TenFile,
-            f.TenHienThi,
-            f.NgayNop,
-            f.DIR,
-            dt.TenDot
-        FROM file f
-        INNER JOIN tainguyen_dot td ON f.ID = td.id_file
-        INNER JOIN dotthuctap dt ON td.id_dot = dt.ID
-        WHERE f.Loai = 'Tainguyen' 
-        AND f.TrangThai = 1 
-        AND td.id_dot = ?
-        ORDER BY f.NgayNop DESC
+    SELECT DISTINCT
+        f.ID,
+        f.TenFile,
+        f.TenHienThi,
+        f.NgayNop,
+        f.DIR,
+        dt.TenDot
+    FROM file f
+    LEFT JOIN tainguyen_dot td ON f.ID = td.id_file
+    LEFT JOIN dotthuctap dt ON td.id_dot = dt.ID
+    WHERE f.Loai = 'Tainguyen' 
+      AND f.TrangThai = 1
+      AND (td.id_dot = ? OR td.id_dot IS NULL)
+    ORDER BY f.NgayNop DESC
     ");
     $stmt->execute([$selectedDot]);
     $taiNguyenList = $stmt->fetchAll(PDO::FETCH_ASSOC);

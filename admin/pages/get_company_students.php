@@ -8,7 +8,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 header('Content-Type: application/json');
 
 // Kiểm tra đăng nhập và quyền truy cập
-if (!isset($_SESSION['user']['ID_TaiKhoan'])) {
+if (!isset($_SESSION['user_id'])) {
     echo json_encode(['success' => false, 'message' => 'Bạn cần đăng nhập để thực hiện thao tác này']);
     exit();
 }
@@ -31,13 +31,13 @@ try {
         SELECT g.TenCty, g.DiaChi, g.id_dot, d.TenDot, d.ThoiGianBatDau, d.ThoiGianKetThuc
         FROM giaygioithieu g
         LEFT JOIN dotthuctap d ON g.id_dot = d.ID
-        WHERE g.ID = ? AND g.TrangThai = 2
+        WHERE g.ID = ? AND g.TrangThai IN (2, 4)
     ");
     $stmt->execute([$letter_id]);
     $company = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if (!$company) {
-        echo json_encode(['success' => false, 'message' => 'Không tìm thấy giấy giới thiệu hoặc giấy chưa được in']);
+        echo json_encode(['success' => false, 'message' => 'Không tìm thấy giấy giới thiệu hoặc giấy không ở trạng thái cho phép chọn người nhận']);
         exit();
     }
     
@@ -45,11 +45,11 @@ try {
     $stmt = $conn->prepare("
         SELECT DISTINCT s.ID_TaiKhoan, s.Ten, s.MSSV, d.TenDot
         FROM giaygioithieu g
-        INNER JOIN sinhvien s ON g.IdSinhVien = s.ID_TaiKhoan
+        INNER JOIN sinhvien s ON g.Idsinhvien = s.ID_TaiKhoan
         LEFT JOIN dotthuctap d ON g.id_dot = d.ID
         WHERE g.TenCty = ? 
         AND (g.id_dot = ? OR (g.id_dot IS NULL AND ? IS NULL))
-        AND g.TrangThai = 2
+        AND g.TrangThai IN (2, 4)
         ORDER BY s.MSSV
     ");
     $stmt->execute([$company['TenCty'], $company['id_dot'], $company['id_dot']]);

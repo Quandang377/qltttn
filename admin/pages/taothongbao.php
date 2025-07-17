@@ -6,19 +6,27 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 
 $id_taikhoan = $_SESSION['user_id'] ?? null;
+$thongbaoHienTai = null;
+
+$idEdit = $_GET['id'] ?? null;
+if ($idEdit) {
+  $stmt = $conn->prepare("SELECT * FROM thongbao WHERE ID = :id LIMIT 1");
+  $stmt->execute(['id' => $idEdit]);
+  $thongbaoHienTai = $stmt->fetch(PDO::FETCH_ASSOC);
+  if (!$thongbaoHienTai) die("Không tìm thấy thông báo!");
+}
 
 $stmt = $conn->prepare("SELECT ID, TenDot FROM dotthuctap WHERE TrangThai >= 0 ORDER BY ID DESC");
 $stmt->execute();
 $dsDot = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+// Nếu POST thì xử lý tạo hoặc cập nhật
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  file_put_contents('debug_post.log', print_r($_POST, true));
-
   $tieude = $_POST['tieude'] ?? '';
   $noidung = $_POST['noidung'] ?? '';
   $id_dot = $_POST['id_dot'] ?? null;
+  $id_sua = $_POST['id_sua'] ?? null;
 
-  // Kiểm tra id_dot có hợp lệ không
   $validDot = false;
   foreach ($dsDot as $dot) {
     if ($dot['ID'] == $id_dot) {
@@ -26,22 +34,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       break;
     }
   }
-  if (!$validDot) {
-    die("Đợt thực tập không hợp lệ!");
-  }
+  if (!$validDot) die("Đợt thực tập không hợp lệ!");
 
-  $stmt = $conn->prepare("INSERT INTO thongbao (TIEUDE, NOIDUNG, NGAYDANG, TRANGTHAI, ID_Dot, ID_TaiKhoan) VALUES (:tieude, :noidung, NOW(),1, :id_dot, :id_taikhoan)");
-  $stmt->execute([
-    'tieude' => $tieude,
-    'noidung' => $noidung,
-    'id_dot' => $id_dot,
-    'id_taikhoan' => $id_taikhoan,
-  ]);
+  if ($id_sua) {
+    $stmt = $conn->prepare("UPDATE thongbao SET TIEUDE = :tieude, NOIDUNG = :noidung, ID_Dot = :id_dot WHERE ID = :id_sua");
+    $stmt->execute([
+      'tieude' => $tieude,
+      'noidung' => $noidung,
+      'id_dot' => $id_dot,
+      'id_sua' => $id_sua
+    ]);
+  } else {
+    $stmt = $conn->prepare("INSERT INTO thongbao (TIEUDE, NOIDUNG, NGAYDANG, TRANGTHAI, ID_Dot, ID_TaiKhoan) VALUES (:tieude, :noidung, NOW(), 1, :id_dot, :id_taikhoan)");
+    $stmt->execute([
+      'tieude' => $tieude,
+      'noidung' => $noidung,
+      'id_dot' => $id_dot,
+      'id_taikhoan' => $id_taikhoan
+    ]);
+  }
 
   header("Location: quanlythongbao");
   exit;
 }
-
 ?>
 
 <!DOCTYPE html>
@@ -526,6 +541,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <div class="col-md-12">
             <div class="form-container mt-4">
               <form id="Formthongbao" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="id_sua" value="<?= $thongbaoHienTai['ID'] ?? '' ?>">
 
                 <!-- Chọn đợt thực tập -->
                 <div class="form-group mb-3">
@@ -533,21 +549,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                   <select class="search-bar" name="id_dot" id="id_dot" required>
                     <option value="">-- Chọn đợt --</option>
                     <?php foreach ($dsDot as $dot): ?>
-                      <option value="<?= $dot['ID'] ?>"><?= htmlspecialchars($dot['TenDot']) ?></option>
+                      <option value="<?= $dot['ID'] ?>" <?= ($thongbaoHienTai && $thongbaoHienTai['ID_Dot'] == $dot['ID']) ? 'selected' : '' ?>>
+                        <?= htmlspecialchars($dot['TenDot']) ?>
+                      </option>
                     <?php endforeach; ?>
                   </select>
+
                 </div>
 
                 <!-- Tiêu đề -->
                 <div class="form-group mb-3">
                   <label for="tieude"><strong>Tiêu đề</strong></label>
-                  <input class="search-bar" id="tieude" name="tieude" type="text" placeholder="Nhập tiêu đề" required>
+                  <input class="search-bar" id="tieude" name="tieude" type="text"
+  value="<?= htmlspecialchars($thongbaoHienTai['TIEUDE'] ?? '') ?>" placeholder="Nhập tiêu đề" required>
                 </div>
 
                 <!-- Nội dung thông báo -->
                 <div class="form-group mb-3">
                   <label><strong>Nội dung thông báo</strong></label>
-                    <div
+                      <div
                       class="editor-container editor-container_classic-editor editor-container_include-style editor-container_include-block-toolbar editor-container_include-word-count editor-container_include-fullscreen"
                       id="editor-container">
                       <div class="editor-container__editor">
@@ -558,7 +578,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                   </div>
 
                   <!-- Tải CKEditor từ CDN (UMD build) -->
-                  <script src="https://cdn.ckeditor.com/ckeditor5/46.0.0/ckeditor5.umd.js"></script>
+                  <!--   <script src="https://cdn.ckeditor.com/ckeditor5/46.0.0/ckeditor5.umd.js"></script>-->
 
                   <!-- Tải cấu hình main.js -->
                   </div>
@@ -566,7 +586,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <!-- Nút Đăng tải -->
                 <div class="form-group text-center mt-4">
-                  <button type="submit" class="btn btn-primary btn-lg">Đăng tải</button>
+                  <button type="submit" class="btn btn-primary btn-lg">
+                    <?= isset($thongbaoHienTai) ? 'Cập nhật' : 'Đăng tải' ?>
+                  </button>
                 </div>
 
               </form>
@@ -583,14 +605,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </body>
 
 </html>
-<script>
-  let editor;
-  ClassicEditor.create(document.querySelector('#editor'))
-    .then(newEditor => {
-      editor = newEditor;
-    })
-    .catch(error => {
-      console.error(error);
-    });
+<script src="https://cdn.ckeditor.com/ckeditor5/46.0.0/ckeditor5.umd.js"></script>
 
+<script>
+  const noiDungThongBao = <?= json_encode($thongbaoHienTai['NOIDUNG'] ?? '') ?>;
+
+  window.addEventListener('load', () => {
+    if (window.ClassicEditor) {
+      ClassicEditor.create(document.querySelector('#editor'))
+        .then(editor => {
+          if (noiDungThongBao) {
+            editor.setData(noiDungThongBao);
+          }
+        })
+        .catch(error => console.error(error));
+    } else {
+      console.error("CKEditor chưa được tải!");
+    }
+  });
 </script>
+
+    

@@ -476,9 +476,9 @@ $dsDot = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <?= htmlspecialchars($thongbao['NGAYDANG']) ?>
                           </td>
                           <td>
-                            <form method="post" onsubmit="return confirm('Bạn có chắc chắn muốn xóa thông báo này?');">
+                            <form method="post" onsubmit="return confirm('Bạn có chắc chắn muốn xóa thông báo này?');" style="display:inline;">
                               <input type="hidden" name="xoa_thongbao_id" value="<?= $thongbao['ID'] ?>">
-                              <button type="submit" class="btn btn-danger btn-sm">Xoá</button>
+                              <button type="submit" class="btn btn-danger btn-sm">🗑️ Xoá</button>
                             </form>
                           </td>
                         </tr>

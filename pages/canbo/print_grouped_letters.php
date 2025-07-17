@@ -371,21 +371,23 @@ $ngayHienTai = date('d/m/Y');
         ?>
         
         <div class="document-container">
-            <div class="header">
-                <div class="header-left">
-                    <div class="org-name">BỘ CÔNG THƯƠNG</div>
-                    <div class="school-name">TRƯỜNG CĐ KỸ THUẬT CAO THẮNG</div>
-                    <div class="document-number">Số: <?= $soGiay ?></div>
-                    <div class="document-purpose"><em>V/v: Liên hệ thực tập tốt nghiệp</em></div>
-                </div>
-                
-                <div class="header-right">
-                    <div class="country-name">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
-                    <div class="motto">Độc lập – Tự do – Hạnh phúc</div>
-                    <div class="date-location">
-                        <em>TP.Hồ Chí Minh, ngày <?= date('d') ?> tháng <?= date('m') ?> năm <?= date('Y') ?></em>
-                    </div>
-                </div>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                <tr>
+                    <td style="width: 45%; vertical-align: top; text-align: center;">
+                        <div class="org-name">BỘ CÔNG THƯƠNG</div>
+                        <div class="school-name">TRƯỜNG CĐ KỸ THUẬT CAO THẮNG</div>
+                        <div class="document-number">Số: <?= $soGiay ?></div>
+                        <div class="document-purpose"><em>V/v: Liên hệ thực tập tốt nghiệp</em></div>
+                    </td>
+                    <td style="width: 55%; text-align: center; vertical-align: top;">
+                        <div class="country-name">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+                        <div class="motto">Độc lập – Tự do – Hạnh phúc</div>
+                        <div class="date-location">
+                            <em>TP.Hồ Chí Minh, ngày <?= date('d') ?> tháng <?= date('m') ?> năm <?= date('Y') ?></em>
+                        </div>
+                    </td>
+                </tr>
+            </table>
             </div>
 
             <div class="title-section">
@@ -445,7 +447,7 @@ $ngayHienTai = date('d/m/Y');
             </div>
 
             <!-- Thông tin sinh viên đính kèm -->
-            <div style="margin-top: 50px;">
+            <div style="margin-top: 50px; page-break-before: always;">
                 <h3 style="text-align: center; margin-bottom: 20px; text-decoration: underline;">
                     DANH SÁCH SINH VIÊN THỰC TẬP
                 </h3>

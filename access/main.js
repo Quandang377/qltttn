@@ -74,7 +74,7 @@ const {
 } = window.CKEDITOR;
 
 const LICENSE_KEY =
-	'eyJhbGciOiJFUzI1NiJ9.eyJleHAiOjE3ODQyNDYzOTksImp0aSI6IjEyMzM4NmIyLTliNGMtNDllZC04NDE3LTRjYWQyMTk2MDliNSIsImxpY2Vuc2VkSG9zdHMiOlsiMTI3LjAuMC4xIiwibG9jYWxob3N0IiwiMTkyLjE2OC4qLioiLCIxMC4qLiouKiIsIjE3Mi4qLiouKiIsIioudGVzdCIsIioubG9jYWxob3N0IiwiKi5sb2NhbCJdLCJ1c2FnZUVuZHBvaW50IjoiaHR0cHM6Ly9wcm94eS1ldmVudC5ja2VkaXRvci5jb20iLCJkaXN0cmlidXRpb25DaGFubmVsIjpbImNsb3VkIiwiZHJ1cGFsIl0sImxpY2Vuc2VUeXBlIjoiZGV2ZWxvcG1lbnQiLCJmZWF0dXJlcyI6WyJEUlVQIiwiRTJQIiwiRTJXIiwiQk9YIl0sInZjIjoiNzkxZDgxMjcifQ.CEGA2V1C7kJXPj4AWE0w62NsY9p-x3Z9679als5N5mNJqcdO8EIYum3hWSznuplDscmiqFa1994Ay5ECXgu1WQ';
+	'eyJhbGciOiJFUzI1NiJ9.eyJleHAiOjE3ODQyNDYzOTksImp0aSI6ImY3NDg5ZWM4LTg0ZDYtNDg4Zi1hZGUyLTUxN2Q3MTA5MDZlZiIsImxpY2Vuc2VkSG9zdHMiOlsidHR0bi1jYW90aGFuZy5pby52biJdLCJ1c2FnZUVuZHBvaW50IjoiaHR0cHM6Ly9wcm94eS1ldmVudC5ja2VkaXRvci5jb20iLCJkaXN0cmlidXRpb25DaGFubmVsIjpbImNsb3VkIiwiZHJ1cGFsIl0sImZlYXR1cmVzIjpbIkRSVVAiLCJFMlAiLCJFMlciLCJCT1giXSwidmMiOiI4ZjlmNzk0YSJ9.2Fo39S8epkV8lZc6VpnmEk48i5U1e0Fs4MHTA-BZUqm5HW07KDsouLG1aKHx9WBu7Spg4PG4YE4SYu9Q3_nUgw';
 
 const editorConfig = {
 	toolbar: {
@@ -182,7 +182,6 @@ const editorConfig = {
 		TableToolbar,
 		TextPartLanguage,
 		TextTransformation,
-		Title,
 		TodoList,
 		Underline,
 		WordCount
@@ -314,7 +313,7 @@ const editorConfig = {
 	menuBar: {
 		isVisible: true
 	},
-	placeholder: 'Type or paste your content here!',
+	placeholder: 'Nhập nội dung thông báo...',
 	style: {
 		definitions: [
 			{

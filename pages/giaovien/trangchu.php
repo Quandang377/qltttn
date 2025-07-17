@@ -205,14 +205,14 @@ if ($activeDot) {
                             <i class="fa fa-users"></i> <?= $dot['SoLuongSV'] ?> sinh viên
                           </div>
                           <div class="tab-actions">
-                            <a href="pages/giaovien/quanlygiaygioithieu?dot=<?= $dot['ID'] ?>"
+                            <a
                               class="btn btn-sm btn-primary">
                               <i class="fa fa-file-text"></i> Giấy GT
                             </a>
-                            <a href="pages/giaovien/xembaocaosinhvien?dot=<?= $dot['ID'] ?>" class="btn btn-sm btn-success">
+                            <a href="pages/giaovien/quanlybaocaotuan?dot=<?= $dot['ID'] ?>" class="btn btn-sm btn-success">
                               <i class="fa fa-briefcase"></i> Báo cáo
                             </a>
-                            <a href="pages/giaovien/chamdiem?dot=<?= $dot['ID'] ?>" class="btn btn-sm btn-warning">
+                            <a href="pages/giaovien/xembaocaotongket?dot=<?= $dot['ID'] ?>" class="btn btn-sm btn-warning">
                               <i class="fa fa-check-circle"></i> Chấm điểm
                             </a>
                           </div>
@@ -259,7 +259,7 @@ if ($activeDot) {
                           <?php endif; ?>
                         </div>
                       </div>
-                      <a href="pages/giaovien/quanlygiaygioithieu?dot=<?= $dot['ID'] ?>" class="panel-link"></a>
+                      <a></a>
                     </div>
                   </div>
 
@@ -279,7 +279,7 @@ if ($activeDot) {
                           <?php endif; ?>
                         </div>
                       </div>
-                      <a href="pages/giaovien/xembaocaosinhvien?dot=<?= $dot['ID'] ?>" class="panel-link"></a>
+                      <a href="pages/giaovien/quanlybaocaotuan?dot=<?= $dot['ID'] ?>" class="panel-link"></a>
                     </div>
                   </div>
 
@@ -299,7 +299,7 @@ if ($activeDot) {
                           <?php endif; ?>
                         </div>
                       </div>
-                      <a href="pages/giaovien/chamdiem?dot=<?= $dot['ID'] ?>" class="panel-link"></a>
+                      <a href="pages/giaovien/xembaocaotongket?dot=<?= $dot['ID'] ?>" class="panel-link"></a>
                     </div>
                   </div>
                 </div>
