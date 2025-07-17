@@ -54,7 +54,7 @@ $stmt = $conn->prepare("
         LEFT JOIN sinhvien SV ON GV.ID_taikhoan = SV.ID_GVHD AND SV.ID_Dot = DG.ID_Dot
         WHERE DG.ID_Dot = :id
         GROUP BY GV.ID_taikhoan, GV.Ten
-        ORDER BY SoLuong DESC
+        ORDER BY SoLuong
     ");
 $stmt->execute(['id' => $id]);
 $dsgiaovien = $stmt->fetchAll(PDO::FETCH_ASSOC);
