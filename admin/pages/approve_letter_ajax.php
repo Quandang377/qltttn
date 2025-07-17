@@ -32,9 +32,9 @@ try {
     
     // Lấy thông tin giấy giới thiệu
     $stmt = $conn->prepare("
-        SELECT g.*, s.Ten AS Tensinhvien, s.MSSV
+        SELECT g.*, s.Ten AS TenSinhVien, s.MSSV
         FROM giaygioithieu g
-        LEFT JOIN sinhvien s ON g.Idsinhvien = s.ID_TaiKhoan
+        LEFT JOIN sinhvien s ON g.IdSinhVien = s.ID_TaiKhoan
         WHERE g.ID = ? AND g.TrangThai = 0
     ");
     $stmt->execute([$letterId]);
@@ -79,7 +79,7 @@ try {
         'data' => [
             'id' => $letterId,
             'company_name' => $giay['TenCty'],
-            'student_name' => $giay['Tensinhvien'],
+            'student_name' => $giay['TenSinhVien'],
             'mssv' => $giay['MSSV']
         ]
     ]);

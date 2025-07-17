@@ -405,11 +405,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 const formData = new FormData(this);
                 formData.append('ajax', '1');
 
-                // Thêm ds_dot[] trực tiếp
-                $('#selectDot option:selected').each(function () {
-                    formData.append('ds_dot[]', $(this).val());
-                });
-
                 // Debug để kiểm tra
                 for (var pair of formData.entries()) {
                     console.log(pair[0] + ': ' + pair[1]);

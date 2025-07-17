@@ -182,7 +182,6 @@ const editorConfig = {
 		TableToolbar,
 		TextPartLanguage,
 		TextTransformation,
-		Title,
 		TodoList,
 		Underline,
 		WordCount
@@ -314,7 +313,7 @@ const editorConfig = {
 	menuBar: {
 		isVisible: true
 	},
-	placeholder: 'Type or paste your content here!',
+	placeholder: 'Nhập nội dung thông báo...',
 	style: {
 		definitions: [
 			{

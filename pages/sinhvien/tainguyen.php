@@ -616,17 +616,61 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
                 <?php
                 try {
                     // Truy vấn danh sách tài nguyên theo từng đợt
-                    $sql = "SELECT f.*, sv.Ten AS TenSinhVien, sv.Lop, sv.MSSV, 
-                                   dt.TenDot, dt.Nam, dt.ID as DotID, dt.ThoiGianBatDau
-                            FROM file f
-                            LEFT JOIN sinhvien sv ON f.ID_SV = sv.ID_TaiKhoan
-                            JOIN tainguyen_dot td ON f.ID = td.ID_File
-                            JOIN dotthuctap dt ON td.ID_Dot = dt.ID
-                            WHERE f.TrangThai = 1 AND f.Loai = 'Tainguyen' 
-                            ORDER BY dt.ThoiGianBatDau DESC, f.NgayNop DESC";
-                    $stmt = $conn->prepare($sql);
-                    $stmt->execute();
-                    $resources = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    $selectedDot = $_GET['id_dot'] ?? null;
+$resources = [];
+
+if ($selectedDot) {
+    // 1. Tài nguyên thuộc đợt đã chọn
+    $sql = "
+        SELECT f.*, sv.Ten AS TenSinhVien, sv.Lop, sv.MSSV,
+               dt.TenDot, dt.Nam, dt.ID as DotID, dt.ThoiGianBatDau
+        FROM file f
+        LEFT JOIN sinhvien sv ON f.ID_SV = sv.ID_TaiKhoan
+        JOIN tainguyen_dot td ON f.ID = td.ID_File
+        JOIN dotthuctap dt ON td.ID_Dot = dt.ID
+        WHERE f.TrangThai = 1
+          AND f.Loai = 'Tainguyen'
+          AND td.ID_Dot = :idDot
+    ";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute(['idDot' => $selectedDot]);
+    $resourcesDot = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // 2. Tài nguyên không thuộc đợt nào
+    $sqlChung = "
+        SELECT f.*, sv.Ten AS TenSinhVien, sv.Lop, sv.MSSV,
+               NULL AS TenDot, NULL AS Nam, NULL AS DotID, NULL AS ThoiGianBatDau
+        FROM file f
+        LEFT JOIN sinhvien sv ON f.ID_SV = sv.ID_TaiKhoan
+        WHERE f.TrangThai = 1
+          AND f.Loai = 'Tainguyen'
+          AND NOT EXISTS (
+              SELECT 1 FROM tainguyen_dot td WHERE td.ID_File = f.ID
+          )
+    ";
+    $stmtChung = $conn->prepare($sqlChung);
+    $stmtChung->execute();
+    $resourcesChung = $stmtChung->fetchAll(PDO::FETCH_ASSOC);
+
+    // Gộp lại
+    $resources = array_merge($resourcesDot, $resourcesChung);
+} else {
+    // Không chọn đợt => lấy hết
+    $sql = "
+        SELECT f.*, sv.Ten AS TenSinhVien, sv.Lop, sv.MSSV,
+               dt.TenDot, dt.Nam, dt.ID as DotID, dt.ThoiGianBatDau
+        FROM file f
+        LEFT JOIN sinhvien sv ON f.ID_SV = sv.ID_TaiKhoan
+        LEFT JOIN tainguyen_dot td ON f.ID = td.ID_File
+        LEFT JOIN dotthuctap dt ON td.ID_Dot = dt.ID
+        WHERE f.TrangThai = 1
+          AND f.Loai = 'Tainguyen'
+        ORDER BY dt.ThoiGianBatDau DESC, f.NgayNop DESC
+    ";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute();
+    $resources = $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
 
 
                     if (count($resources) > 0) {

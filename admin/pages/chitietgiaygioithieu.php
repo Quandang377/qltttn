@@ -23,7 +23,7 @@ if ($id) {
     $stmt = $conn->prepare("
         SELECT g.*, s.Ten AS Tensinhvien, s.MSSV
         FROM giaygioithieu g
-        LEFT JOIN sinhvien s ON g.Idsinhvien = s.ID_TaiKhoan
+        LEFT JOIN sinhvien s ON g.Idsinhvien = s.ID_taikhoan
         WHERE g.ID = ?
     ");
     $stmt->execute([$id]);
@@ -71,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['duyet']) && $id) {
         $stmt = $conn->prepare("
             SELECT g.*, s.Ten AS Tensinhvien, s.MSSV
             FROM giaygioithieu g
-            LEFT JOIN sinhvien s ON g.Idsinhvien = s.ID_TaiKhoan
+            LEFT JOIN sinhvien s ON g.Idsinhvien = s.ID_taikhoan
             WHERE g.ID = ?
         ");
         $stmt->execute([$id]);

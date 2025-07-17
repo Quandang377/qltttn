@@ -6,7 +6,7 @@ error_reporting(E_ALL);
 require_once $_SERVER['DOCUMENT_ROOT'] . "/datn/template/config.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . '/datn/middleware/check_role.php';
 
-if (!isset($_SESSION['user']['ID_TaiKhoan'])) {
+if (!isset($_SESSION['user_id'])) {
     header('Location: /datn/login.php');
     exit();
 }
@@ -430,23 +430,23 @@ switch ($letterData['TrangThai']) {
     <?php endif; ?>
 
     <div class="document-container">
-        <div class="header">
-            <div class="header-left">
-                <div class="org-name">BỘ CÔNG THƯƠNG</div>
-                <div class="school-name">TRƯỜNG CĐ KỸ THUẬT CAO THẮNG</div>
-                <div class="document-number">Số: <?= $soGiay ?></div>
-                <div class="document-purpose"><em>V/v: Liên hệ thực tập tốt nghiệp</em></div>
-            </div>
-            
-            <div class="header-right">
-                <div class="country-name">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
-                <div class="motto">Độc lập – Tự do – Hạnh phúc</div>
-                <div class="date-location">
-                    <em>TP.Hồ Chí Minh, ngày <?= date('d', strtotime($ngayTao)) ?> tháng <?= date('m', strtotime($ngayTao)) ?> năm <?= date('Y', strtotime($ngayTao)) ?></em>
-                </div>
-            </div>
-        </div>
-
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                <tr>
+                    <td style="width: 45%; vertical-align: top; text-align: center;">
+                        <div class="org-name">BỘ CÔNG THƯƠNG</div>
+                        <div class="school-name">TRƯỜNG CĐ KỸ THUẬT CAO THẮNG</div>
+                        <div class="document-number">Số: <?= $soGiay ?></div>
+                        <div class="document-purpose"><em>V/v: Liên hệ thực tập tốt nghiệp</em></div>
+                    </td>
+                    <td style="width: 55%; text-align: center; vertical-align: top;">
+                        <div class="country-name">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+                        <div class="motto">Độc lập – Tự do – Hạnh phúc</div>
+                        <div class="date-location">
+                            <em>TP.Hồ Chí Minh, ngày <?= date('d') ?> tháng <?= date('m') ?> năm <?= date('Y') ?></em>
+                        </div>
+                    </td>
+                </tr>
+            </table>
         <div class="title-section">
             <div class="title">Kính gửi: <?= strtoupper(htmlspecialchars($letterData['TenCty'])) ?></div>
         </div>
