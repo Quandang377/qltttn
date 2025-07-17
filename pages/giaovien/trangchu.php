@@ -205,7 +205,7 @@ if ($activeDot) {
                             <i class="fa fa-users"></i> <?= $dot['SoLuongSV'] ?> sinh viên
                           </div>
                           <div class="tab-actions">
-                            <a href="pages/giaovien/quanlygiaygioithieu?dot=<?= $dot['ID'] ?>"
+                            <a
                               class="btn btn-sm btn-primary">
                               <i class="fa fa-file-text"></i> Giấy GT
                             </a>
@@ -259,7 +259,7 @@ if ($activeDot) {
                           <?php endif; ?>
                         </div>
                       </div>
-                      <a href="pages/giaovien/quanlygiaygioithieu?dot=<?= $dot['ID'] ?>" class="panel-link"></a>
+                      <a></a>
                     </div>
                   </div>
 
